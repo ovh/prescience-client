@@ -1,0 +1,155 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: ./venv/bin/python -i test.py
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/mlegal/Documents/Project/ovh/prescience/api-client/python
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 135
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 25
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 1
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: window
+    title: prescience-client
+    style:
+      border: 0px black solid
+      #boxShadow: none
+      #margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 100
+    content: "Loading configuration file /Users/mlegal/.prescience/config.yaml\r\n"
+  - delay: 100
+    content: '>>> '
+  - delay: 100
+    content: prescience.dataset('my-dataset').schema().show()
+  - delay: 50000
+    content: "\r\n"
+  - delay: 100
+    content: "+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n|  \e[1m\e[0m  |      \e[1mname\e[0m      |   \e[1mtype\e[0m  | \e[1mnullable\e[0m | \e[1mn_cat\e[0m |        \e[1mratio\e[0m         | \e[1mn_pop\e[0m |  \e[1mmedian\e[0m  |        \e[1mmode\e[0m        | \e[1mpositive\e[0m |\r\n+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n| 0  |      \e[32mage\e[0m       | integer |   True   |   60  | 0.12024048096192384  |  499  |   36.0   |         30         |   True   |\r\n| 1  |   \e[32mworkclass\e[0m    |  string |   True   |   6   | 0.012024048096192385 |  499  |   0.0    |      Private       |   True   |\r\n| 2  |     \e[32mfnlwgt\e[0m     | integer |   True   |  311  |  0.6232464929859719  |  499  | 182609.0 |       78374        |   True   |\r\n| 3  |   \e[32meducation\e[0m    |  string |   True   |   16  | 0.03206412825651302  |  499  |   0.0    |      HS-grad       |   True   |\r\n| 4  | \e[32meducation-num\e[0m  | integer |   True   |   16  | 0.03206412825651302  |  499  |   10.0   |         9          |   True   |\r\n| 5  | \e[32mmarital-status\e[0m |  string |   True   |   7   | 0.014028056112224449 |  499  |   0.0    | Married-civ-spouse |   True   |\r\n| 6  |   \e[32moccupation\e[0m   |  string |   True   |   13  | 0.026052104208416832 |  499  |   0.0    |    Craft-repair    |   True   |\r\n| 7  |  \e[32mrelationship\e[0m  |  string |   True   |   6   | 0.012024048096192385 |  499  |   0.0    |      Husband       |   True   |\r\n| 8  |      \e[32mrace\e[0m      |  string |   True   |   5   | 0.01002004008016032  |  499  |   0.0    |       White        |   True   |\r\n| 9  |      \e[32msex\e[0m       |  string |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |        Male        |   True   |\r\n| 10 |  \e[32mcapital-gain\e[0m  | integer |   True   |   20  | 0.04008016032064128  |  499  |   0.0    |         0          |   True   |\r\n| 11 |  \e[32mcapital-loss\e[0m  | integer |   True   |   20  | 0.04008016032064128  |  499  |   0.0    |         0          |   True   |\r\n| 12 | \e[32mhours-per-week\e[0m | integer |   True   |   46  | 0.09218436873747494  |  499  |   40.0   |         40         |   True   |\r\n| 13 | \e[32mnative-country\e[0m |  string |   True   |   25  | 0.050100200400801605 |  499  |   0.0    |   United-States    |   True   |\r\n| 14 |  \e[32mrandom-bool\e[0m   | boolean |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |        true        |   True   |\r\n| 15 |     \e[32mlabel\e[0m      |  string |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |       <=50K        |   True   |\r\n+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n<com.ovh.mls.prescience.core.bean.schema.Schema object at 0x102b502e8>\r\n>>> "
+  - delay: 100000
+    content: "\e[H\e[2J>>> "
+  - delay: 100
+    content: prescience.dataset('my-dataset').schema().show()
+  - delay: 100
+    content: "\b\b\b\b\b\b"
+  - delay: 100
+    content: "\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "\b\e[1Pdataset').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "_dataset').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "\e[C\e[C\e[C\e[C\e[C\e[C\e[C"
+  - delay: 100
+    content: "_').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "m').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "a').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "s').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 100
+    content: "k').schema().show()\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+  - delay: 50000
+    content: "\r\n"
+  - delay: 100
+    content: "+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n|  \e[1m\e[0m  |      \e[1mname\e[0m      |   \e[1mtype\e[0m  | \e[1mnullable\e[0m | \e[1mn_cat\e[0m |        \e[1mratio\e[0m         | \e[1mn_pop\e[0m |  \e[1mmedian\e[0m  |        \e[1mmode\e[0m        | \e[1mpositive\e[0m |\r\n+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n| 0  |      \e[31mage\e[0m       | integer |   True   |   60  | 0.12024048096192384  |  499  |   36.0   |         30         |   True   |\r\n| 1  |   \e[31mworkclass\e[0m    |  string |   True   |   6   | 0.012024048096192385 |  499  |   0.0    |      Private       |   True   |\r\n| 2  |     \e[31mfnlwgt\e[0m     | integer |   True   |  311  |  0.6232464929859719  |  499  | 182609.0 |       78374        |   True   |\r\n| 3  |   \e[31meducation\e[0m    |  string |   True   |   16  | 0.03206412825651302  |  499  |   0.0    |      HS-grad       |   True   |\r\n| 4  | \e[31meducation-num\e[0m  | integer |   True   |   16  | 0.03206412825651302  |  499  |   10.0   |         9          |   True   |\r\n| 5  | \e[31mmarital-status\e[0m |  string |   True   |   7   | 0.014028056112224449 |  499  |   0.0    | Married-civ-spouse |   True   |\r\n| 6  |   \e[31moccupation\e[0m   |  string |   True   |   13  | 0.026052104208416832 |  499  |   0.0    |    Craft-repair    |   True   |\r\n| 7  |  \e[31mrelationship\e[0m  |  string |   True   |   6   | 0.012024048096192385 |  499  |   0.0    |      Husband       |   True   |\r\n| 8  |      \e[31mrace\e[0m      |  string |   True   |   5   | 0.01002004008016032  |  499  |   0.0    |       White        |   True   |\r\n| 9  |      \e[31msex\e[0m       |  string |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |        Male        |   True   |\r\n| 10 |  \e[31mcapital-gain\e[0m  | integer |   True   |   20  | 0.04008016032064128  |  499  |   0.0    |         0          |   True   |\r\n| 11 |  \e[31mcapital-loss\e[0m  | integer |   True   |   20  | 0.04008016032064128  |  499  |   0.0    |         0          |   True   |\r\n| 12 | \e[32mhours-per-week\e[0m | integer |   True   |   46  | 0.09218436873747494  |  499  |   40.0   |         40         |   True   |\r\n| 13 | \e[32mnative-country\e[0m |  string |   True   |   25  | 0.050100200400801605 |  499  |   0.0    |   United-States    |   True   |\r\n| 14 |  \e[32mrandom-bool\e[0m   | boolean |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |        true        |   True   |\r\n| 15 |     \e[32mlabel\e[0m      |  string |   True   |   2   | 0.004008016032064128 |  499  |   0.0    |       <=50K        |   True   |\r\n+----+----------------+---------+----------+-------+----------------------+-------+----------+--------------------+----------+\r\n<com.ovh.mls.prescience.core.bean.schema.Schema object at 0x102bfd048>\r\n>>> "
+  - delay: 100000
+    content: "\r\n"

@@ -1,0 +1,9 @@
+pycurl
+websocket-client
+progress
+PTable
+termcolor
+asciitree
+pyyaml
+pytest
+pylint

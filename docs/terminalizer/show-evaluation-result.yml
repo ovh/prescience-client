@@ -1,0 +1,231 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: ./venv/bin/python -i test.py
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/mlegal/Documents/Project/ovh/prescience/api-client/python
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 160
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 25
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 1
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: window
+    title: prescience-client
+    style:
+      border: 0px black solid
+      #boxShadow: none
+      #margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 16
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 1290
+    content: "Loading configuration file /Users/mlegal/.prescience/config.yaml\r\n>>> "
+  - delay: 1246
+    content: p
+  - delay: 100
+    content: r
+  - delay: 100
+    content: e
+  - delay: 100
+    content: s
+  - delay: 100
+    content: cience
+  - delay: 100
+    content: .
+  - delay: 100
+    content: d
+  - delay: 100
+    content: a
+  - delay: 100
+    content: t
+  - delay: 100
+    content: a
+  - delay: 100
+    content: s
+  - delay: 100
+    content: e
+  - delay: 100
+    content: t
+  - delay: 100
+    content: (
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: m
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: '-'
+  - delay: 100
+    content: d
+  - delay: 100
+    content: a
+  - delay: 100
+    content: t
+  - delay: 100
+    content: a
+  - delay: 100
+    content: s
+  - delay: 100
+    content: e
+  - delay: 100
+    content: t
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: )
+  - delay: 100
+    content: .
+  - delay: 100
+    content: e
+  - delay: 100
+    content: v
+  - delay: 100
+    content: a
+  - delay: 100
+    content: l
+  - delay: 100
+    content: u
+  - delay: 100
+    content: a
+  - delay: 100
+    content: t
+  - delay: 100
+    content: i
+  - delay: 100
+    content: o
+  - delay: 100
+    content: 'n'
+  - delay: 100
+    content: _
+  - delay: 100
+    content: r
+  - delay: 100
+    content: e
+  - delay: 100
+    content: s
+  - delay: 100
+    content: u
+  - delay: 100
+    content: l
+  - delay: 100
+    content: t
+  - delay: 100
+    content: s
+  - delay: 100
+    content: (
+  - delay: 100
+    content: )
+  - delay: 100
+    content: .
+  - delay: 100
+    content: s
+  - delay: 100
+    content: h
+  - delay: 100
+    content: o
+  - delay: 100
+    content: w
+  - delay: 100
+    content: (
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n"
+  - delay: 1414
+    content: "+---------------------------------------------------------------------------------------------------------------------------------------------------------+\r\n|                                                                     \e[1m\e[33mEVALUATIONRESULT\e[0m                                                                    |\r\n+----+--------------------------------+--------+------------+--------+---------+--------------+---------------+------------------+------------------------+\r\n|  \e[1m\e[0m  |          \e[1mconfig_name\e[0m           | \e[1msteps\e[0m  | \e[1mspent_time\e[0m | \e[1mstatus\e[0m | \e[1mf1_cost\e[0m | \e[1mroc_auc_cost\e[0m | \e[1maccuracy_cost\e[0m | \e[1mcohen_kappa_cost\e[0m | \e[1maverage_precision_cost\e[0m |\r\n+----+--------------------------------+--------+------------+--------+---------+--------------+---------------+------------------+------------------------+\r\n| 0  |      skbaggingclassifier       | None/4 |    0.75    | BUILT  |  0.396  |    0.138     |     0.166     |       0.5        |         0.196          |\r\n| 1  |  skgradientboostingclassifier  | None/4 |    0.03    | BUILT  |   \e[31m1.0\e[0m   |     \e[31m0.5\e[0m      |     \e[31m0.226\e[0m     |       \e[31m1.0\e[0m        |          \e[31m0.5\e[0m           |\r\n| 2  |       skridgeclassifier        |  4/4   |    0.0     | BUILT  |  \e[32m0.346\e[0m  |    0.105     |     0.202     |      0.478       |         0.149          |\r\n| 3  |  skgradientboostingclassifier  |  4/4   |    0.17    | BUILT  |  0.469  |    0.171     |     0.195     |       0.59       |         0.262          |\r\n| 4  |       skridgeclassifier        |  4/4   |    0.0     | BUILT  |   \e[31m1.0\e[0m   |    \e[32m0.104\e[0m     |     \e[31m0.226\e[0m     |       \e[31m1.0\e[0m        |         \e[32m0.148\e[0m          |\r\n| 5  |  skgradientboostingclassifier  |  4/4   |    0.02    | BUILT  |   \e[31m1.0\e[0m   |     \e[31m0.5\e[0m      |     \e[31m0.226\e[0m     |       \e[31m1.0\e[0m        |          \e[31m0.5\e[0m           |\r\n| 6  |       xgboostclassifier        |  4/4   |    0.05    | BUILT  |  0.413  |    0.143     |     0.175     |      0.522       |          0.2           |\r\n| 7  |       skridgeclassifier        |  3/4   |    0.0     | BUILT  |  0.412  |    0.114     |      0.16     |      0.507       |         0.168          |\r\n| 8  |    skrandomforestclassifier    |  3/4   |    0.07    | BUILT  |  0.432  |    0.139     |     0.173     |      0.538       |          0.19          |\r\n| 9  | sklogisticregressionclassifier |  4/4   |    0.0     | BUILT  |  0.366  |     0.11     |     \e[32m0.153\e[0m     |      \e[32m0.462\e[0m       |         0.153          |\r\n| 10 |  skgradientboostingclassifier  |  4/4   |    0.06    | BUILT  |  0.452  |    0.157     |     0.191     |      0.572       |         0.233          |\r\n| 11 |      skbaggingclassifier       |  4/4   |    0.18    | BUILT  |  0.418  |    0.148     |     0.173     |      0.524       |         0.216          |\r\n+----+--------------------------------+--------+------------+--------+---------+--------------+---------------+------------------+------------------------+\r\n\e[33mpage 1/1\e[0m\r\n<com.ovh.mls.prescience.core.bean.page_result.PageResult object at 0x110dab828>\r\n>>> "
+  - delay: 12568
+    content: "\r\n"

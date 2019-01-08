@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+build/
+application.*.ini
+__pycache__
+.cache
+.coverage
+*.pyc
+pytesla/data/
+.DS_Store

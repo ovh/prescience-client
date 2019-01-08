@@ -1,0 +1,10 @@
+current_project: "project-1"
+projects:
+  project-1:
+    api_url: "https://prescience-api.ai.ovh.net"
+    token: "token-1"
+    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+  project-2:
+    api_url: "https://prescience-api-staging.ai.ovh.net"
+    token: "token-2"
+    websocket_url: "wss://prescience-websocket-staging.ai.ovh.net"

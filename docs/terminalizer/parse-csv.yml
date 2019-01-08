@@ -1,0 +1,249 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: ./venv/bin/python -i test.py
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/mlegal/Documents/Project/ovh/prescience/api-client/python
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 100
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 6
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 1
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: window
+    title: prescience-client
+    style:
+      border: 0px black solid
+      #boxShadow: none
+      #margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 1212
+    content: "Loading configuration file /Users/mlegal/.prescience/config.yaml\r\n"
+  - delay: 5
+    content: '>>> '
+  - delay: 443
+    content: d
+  - delay: 105
+    content: a
+  - delay: 126
+    content: t
+  - delay: 40
+    content: a
+  - delay: 492
+    content: ' '
+  - delay: 85
+    content: =
+  - delay: 58
+    content: ' '
+  - delay: 435
+    content: p
+  - delay: 60
+    content: r
+  - delay: 62
+    content: e
+  - delay: 162
+    content: s
+  - delay: 154
+    content: cience
+  - delay: 607
+    content: .
+  - delay: 233
+    content: c
+  - delay: 88
+    content: s
+  - delay: 193
+    content: v_local_file_input(
+  - delay: 819
+    content: ''''
+  - delay: 619
+    content: /tmp/data.csv
+  - delay: 294
+    content: ''''
+  - delay: 281
+    content: )
+  - delay: 289
+    content: "\r\n>>> "
+  - delay: 2084
+    content: t
+  - delay: 93
+    content: a
+  - delay: 106
+    content: s
+  - delay: 166
+    content: k
+  - delay: 426
+    content: ' '
+  - delay: 110
+    content: =
+  - delay: 46
+    content: ' '
+  - delay: 1102
+    content: d
+  - delay: 68
+    content: a
+  - delay: 291
+    content: t
+  - delay: 63
+    content: a
+  - delay: 518
+    content: .
+  - delay: 195
+    content: p
+  - delay: 69
+    content: a
+  - delay: 131
+    content: r
+  - delay: 213
+    content: s
+  - delay: 138
+    content: e
+  - delay: 912
+    content: (
+  - delay: 128
+    content: ''''
+  - delay: 930
+    content: m
+  - delay: 271
+    content: 'y'
+  - delay: 301
+    content: '-'
+  - delay: 402
+    content: s
+  - delay: 116
+    content: o
+  - delay: 84
+    content: u
+  - delay: 91
+    content: r
+  - delay: 184
+    content: c
+  - delay: 82
+    content: e
+  - delay: 1350
+    content: ''''
+  - delay: 113
+    content: )
+  - delay: 727
+    content: .
+  - delay: 1968
+    content: w
+  - delay: 238
+    content: a
+  - delay: 151
+    content: t
+  - delay: 87
+    content: c
+  - delay: 105
+    content: h
+  - delay: 653
+    content: (
+  - delay: 71
+    content: )
+  - delay: 577
+    content: "\r\n"
+  - delay: 1000
+    content: "\e[?25l\r\e[Kparse ∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙ 0%"
+  - delay: 1000
+    content: "\r\e[Kparse ██████████∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙ 33%"
+  - delay: 1000
+    content: "\r\e[KParsing CSV █████████████████████∙∙∙∙∙∙∙∙∙∙∙ 66%"
+  - delay: 1000
+    content: "\r\e[KComputing statistics ████████████████████████████████ 100%\r\n"
+  - delay: 22
+    content: "\e[?25h>>> "
+  - delay: 2224
+    content: "\r\n"
