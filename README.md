@@ -18,6 +18,10 @@ This documentation assumes you already have a prescience token allowing you to w
 
 You can request a token [here](https://survey.ovh.com/index.php/379341?lang=en)
 
+You have 2 ways of runing the client :
+* with docker
+* with python, in this case you will need at least `python 3.5`
+
 ## Build and run it with docker
 
 On the root directory of `python-client` there is a `Dockerfile`.
