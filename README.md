@@ -333,3 +333,51 @@ You can display the content of the page by calling the `show()` function on your
 ```python
 models_page_1.show()
 ```
+
+# Hacking
+ 
+## Get the sources
+ 
+```bash
+    git clone https://github.com/ovh/prescience-client.git
+    cd prescience-client
+
+    # If you want to build a docker image
+    make build_docker
+```
+ 
+You've developed a new cool feature ? Fixed an annoying bug ? We'd be happy
+to hear from you !
+ 
+Have a look in [CONTRIBUTING.md](https://github.com/ovh/prescience-client/blob/master/CONTRIBUTING.md)
+ 
+## Launch unit tests
+
+```bash
+# Launch locally
+make test_local
+
+# Launch on docker container
+make build_docker test_docker
+```
+
+## Launch integration tests
+
+The following command will need you to provide a prescience production token in order to run integrations tests.
+
+```bash
+# Locally
+make test_local
+
+# On docker container
+make build_docker test_integration_docker DEFAULT_TOKEN='<your-prescience-token>'
+```
+ 
+# Related links
+ 
+ * Contribute: https://github.com/ovh/prescience-client/blob/master/CONTRIBUTING.md
+ * Report bugs: https://github.com/ovh/prescience-client/issues
+ 
+# License
+ 
+See https://github.com/ovh/prescience-client/blob/master/LICENSE

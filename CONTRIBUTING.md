@@ -20,28 +20,6 @@ make lint_local
 # Lint in a docke container
 make build_docker lint_docker
 ```
-
-## Launch unit tests
-
-```bash
-# Launch locally
-make test_local
-
-# Launch on docker container
-make build_docker test_docker
-```
-
-## Launch integration tests
-
-The following command will need you to provide a prescience production token in order to run integrations tests.
-
-```bash
-# Locally
-make test_local
-
-# On docker container
-make build_docker test_integration_docker DEFAULT_TOKEN='<your-prescience-token>'
-```
  
 # Submitting Modifications
  
