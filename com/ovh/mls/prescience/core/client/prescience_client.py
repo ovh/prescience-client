@@ -24,7 +24,7 @@ from com.ovh.mls.prescience.core.enum.status import Status
 class PrescienceClient(object):
     def __init__(self,
                  prescience_config: PrescienceConfig,
-                 verbose: bool = False):
+                 verbose: bool = True):
         self.prescience_config = prescience_config
         self.verbose = verbose
 
@@ -44,12 +44,12 @@ class PrescienceClient(object):
 
         parse_input = {
             'source_id': source_id,
-            'input_type': str(input_type),
+            'type': str(input_type),
             'headers': headers
         }
 
         multipart = [
-            ('parse', (pycurl.FORM_CONTENTS, json.dumps(parse_input), pycurl.FORM_CONTENTTYPE, 'application/json')),
+            ('input', (pycurl.FORM_CONTENTS, json.dumps(parse_input), pycurl.FORM_CONTENTTYPE, 'application/json')),
             ('input-file', (pycurl.FORM_FILE, filepath))
         ]
         _, result, _ = self.post(path='/ml/upload/source', multipart=multipart)

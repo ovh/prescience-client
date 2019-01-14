@@ -292,13 +292,13 @@ class TestPrescienceClient(unittest.TestCase):
         self.assertIsInstance(task, ParseTask)
         self.assertEqual(Status.PENDING, task.status())
 
-        expected_parse_payload = {'source_id': 'my-source-id','input_type': 'csv', 'headers': True}
+        expected_parse_payload = {'source_id': 'my-source-id','type': 'CSV', 'headers': True}
         self.presience_client.call.assert_called_with(
             method='POST',
             path='/ml/upload/source',
             content_type='multipart/form-data',
             multipart=[
-                ('parse', (pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE, 'application/json')),
+                ('input', (pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE, 'application/json')),
                 ('input-file', (pycurl.FORM_FILE, csv_path))
             ],
             data=None,

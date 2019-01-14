@@ -11,7 +11,7 @@ class InputType(Enum):
 
     def __str__(self):
         switch = {
-            InputType.CSV: 'csv',
-            InputType.PARQUET: 'parquet'
+            InputType.CSV: 'CSV',
+            InputType.PARQUET: 'PARQUET'
         }
         return switch.get(self)

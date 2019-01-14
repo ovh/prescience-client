@@ -22,6 +22,21 @@ You have 2 ways of runing the client :
 * with docker
 * with python, in this case you will need at least `python 3.5`
 
+## Build and run with pip
+
+Install it :
+```bash
+pip install git+https://github.com/ovh/prescience-client.git
+```
+
+Run it inside a python cli (or python script)
+```python
+from prescience_client import prescience
+# Print the current configuration on standard output
+prescience.config().show()
+```
+
+
 ## Build and run it with docker
 
 On the root directory of `python-client` there is a `Dockerfile`.

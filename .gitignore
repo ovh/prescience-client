@@ -9,3 +9,6 @@ __pycache__
 *.pyc
 pytesla/data/
 .DS_Store
+venv/
+*.egg-info/
+dist/
