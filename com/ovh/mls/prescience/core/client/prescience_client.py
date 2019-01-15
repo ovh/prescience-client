@@ -22,6 +22,10 @@ from com.ovh.mls.prescience.core.enum.status import Status
 
 
 class PrescienceClient(object):
+    """
+    Prescience HTTP client allowing us to interact directly with prescience api.
+    Prescience API is describe here https://prescience-api.ai.ovh.net/
+    """
     def __init__(self,
                  prescience_config: PrescienceConfig,
                  verbose: bool = True):
@@ -29,10 +33,18 @@ class PrescienceClient(object):
         self.verbose = verbose
 
     def login(self):
-        _, _, cookie = self.get(path='/session/login')
+        """
+        Method used for login into prescience
+        :return: The cookie token used to connect to the web-socket
+        """
+        _, _, cookie = self.__get(path='/session/login')
         return cookie['token']
 
     def config(self) -> PrescienceConfig:
+        """
+        Getter of the prescience configuration object
+        :return: The prescience configuration object
+        """
         return self.prescience_config
 
     def upload_source(self,
@@ -41,6 +53,14 @@ class PrescienceClient(object):
                       headers: bool,
                       filepath: str
                       ) -> 'Task':
+        """
+        Upload a local input file on prescience and launch a Parse Task on it for creating a source.
+        :param source_id: The id that we want for the source
+        :param input_type: The input type of the given local input file
+        :param headers: Has the local input file headers ?
+        :param filepath: The path of the local input file
+        :return: The task object of the Parse Task
+        """
 
         parse_input = {
             'source_id': source_id,
@@ -52,19 +72,31 @@ class PrescienceClient(object):
             ('input', (pycurl.FORM_CONTENTS, json.dumps(parse_input), pycurl.FORM_CONTENTTYPE, 'application/json')),
             ('input-file', (pycurl.FORM_FILE, filepath))
         ]
-        _, result, _ = self.post(path='/ml/upload/source', multipart=multipart)
+        _, result, _ = self.__post(path='/ml/upload/source', multipart=multipart)
 
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
     def delete_source(self, source_id: str):
-        self.delete(path=f'/source/{source_id}')
+        """
+        Delete a source from its ID
+        :param source_id: The source ID
+        """
+        self.__delete(path=f'/source/{source_id}')
 
     def delete_dataset(self, dataset_id: str):
-        self.delete(path=f'/dataset/{dataset_id}')
+        """
+        Delete a dataset from its ID
+        :param dataset_id: The dataset ID
+        """
+        self.__delete(path=f'/dataset/{dataset_id}')
 
     def delete_model(self, model_id: str):
-        self.delete(path=f'/model/{model_id}')
+        """
+        Delete a model from its ID
+        :param model_id: The model ID
+        """
+        self.__delete(path=f'/model/{model_id}')
 
     def preprocess(
             self,
@@ -76,6 +108,14 @@ class PrescienceClient(object):
             time_column: str = None,
             fold_size: int = -1
     ):
+        """
+        Launch a Preprocess Task from a Source for creating a Dataset
+        :param source_id: The initial Source ID
+        :param dataset_id: The id that we want for the Dataset
+        :param label_id: The name of the Source column that we want to predict (the label)
+        :param problem_type: The type of machine learning problem that we want to solve
+        :return: The task object of the Preprocess Task
+        """
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
@@ -91,7 +131,7 @@ class PrescienceClient(object):
         if fold_size >= 0:
             body['fold_size'] = fold_size
 
-        _, result, _ = self.post(path=f'/ml/preprocess/{source_id}', data=body)
+        _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -103,6 +143,13 @@ class PrescienceClient(object):
                  optimization_method: str = None,
                  custom_parameter: dict = None
                  ) -> 'Task':
+        """
+        Launch an optimize task from a dataset object
+        :param dataset_id: The Id of the initial dataset
+        :param scoring_metric: The scoring metric that we want to optimize on
+        :param budget: The budget to consume before stopping the optimization
+        :return: The task object of the Optimize Task
+        """
 
         optimize_input = {
             'scoring_metric': str(scoring_metric),
@@ -112,7 +159,7 @@ class PrescienceClient(object):
             'custom_parameters': custom_parameter
         }
 
-        _, result, _ = self.post(
+        _, result, _ = self.__post(
             path=f'/ml/optimize/{dataset_id}',
             data={k: v for k, v in optimize_input.items() if v is not None}  # Delete None value in dict
         )
@@ -124,7 +171,13 @@ class PrescienceClient(object):
                       dataset_id: str,
                       config: Config
                       ) -> 'Task':
-        _, result, _ = self.post(path=f'/ml/custom-config/{dataset_id}', data=config.json_dict)
+        """
+        Launch the evaluation of a single custom configuration from a dataset
+        :param dataset_id: The initial dataset ID
+        :param config: The custom configuration that we want to evaluate
+        :return: The evaluation task
+        """
+        _, result, _ = self.__post(path=f'/ml/custom-config/{dataset_id}', data=config.json_dict)
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -134,13 +187,21 @@ class PrescienceClient(object):
               compute_shap_summary: bool = False,
               chain_metric_task: bool = True
               ) -> 'TrainTask':
+        """
+        Launch a train task from an evaluation result for creating a model
+        :param evaluation_uuid: The initial evaluation result uuid
+        :param model_id: The id that we want for the model
+        :param compute_shap_summary: should chain the train task with a compute shap summary task ? (default: false)
+        :param chain_metric_task: should chain the train task with a metric task ? (default: true)
+        :return: The Train Task object
+        """
         query_parameters = {
             'model_id': model_id,
             'evaluation_uuid': evaluation_uuid,
             'enable_shap_summary': compute_shap_summary,
             'chain_metric_task': chain_metric_task
         }
-        _, result, _ = self.post(path=f'/ml/train', query_parameters=query_parameters)
+        _, result, _ = self.__post(path=f'/ml/train', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -148,102 +209,184 @@ class PrescienceClient(object):
                 model_id: str,
                 chain_metric_task: bool = True
                 ) -> 'TrainTask':
+        """
+        Launch a Re-Train task on a model
+        :param model_id: The initial model ID
+        :param chain_metric_task: should chain the train task with a metric task ? (default: True)
+        :return:
+        """
         query_parameters = {
             'chain_metric_task': chain_metric_task
         }
-        _, result, _ = self.post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters)
+        _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
     def interrupt(self,
                   task_id: str):
-        _, _, _ = self.post(path=f'/task/{task_id}/interrupt')
+        """
+        Interrupt a task on prescience
+        :param task_id: The task ID to interrupt
+        """
+        _, _, _ = self.__post(path=f'/task/{task_id}/interrupt')
 
     def create_mask(self,
                     dataset_id: str,
                     mask_id: str,
                     selected_column: list) -> 'Dataset':
+        """
+        Create a Mask Dataset from a Dataset
+        :param dataset_id: The initial Dataset ID
+        :param mask_id: The new ID that we want to create for the Mask Dataset
+        :param selected_column: The subset of the initial Dataset that we want to keep for the Mask Dataset
+        :return: The new Mask Dataset
+        """
         query_parameters = {'mask_id': mask_id}
-        _, result, _ = self.post(path=f'/dataset/mask/{dataset_id}', data=selected_column,
-                                 query_parameters=query_parameters)
+        _, result, _ = self.__post(path=f'/dataset/mask/{dataset_id}', data=selected_column,
+                                   query_parameters=query_parameters)
 
         from com.ovh.mls.prescience.core.bean.dataset import Dataset
         return Dataset(json=result, prescience=self)
 
     def refresh_dataset(self,
                         dataset_id: str) -> 'Task':
-
-        _, result, _ = self.post(path=f'/ml/refresh/{dataset_id}')
+        """
+        Launch a refresh task on a dataset
+        :param dataset_id: The ID of the dataset we want to launch a refresh on
+        :return: The refresh task object
+        """
+        _, result, _ = self.__post(path=f'/ml/refresh/{dataset_id}')
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
     def get_project(self):
-        _, project, _ = self.get(path='/project')
+        """
+        Get the current prescience project we are working on
+        :return: the current prescience project we are working on
+        """
+        _, project, _ = self.__get(path='/project')
         return Project(project)
 
     def tasks(self, page: int = 1):
+        """
+        Get the paginated list of prescience tasks for the current project
+        :param page: The number of the page to get
+        :return: the page object containing prescience tasks
+        """
         query_parameters = {'page': page}
-        _, page, _ = self.get(path='/task', query_parameters=query_parameters)
+        _, page, _ = self.__get(path='/task', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.task import Task
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         return PageResult(json=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
 
     def sources(self, page: int = 1):
+        """
+        Get the paginated list of created prescience sources for the current project
+        :param page: The number of the page to get
+        :return: the page object containing prescience sources
+        """
         query_parameters = {'page': page}
-        _, page, _ = self.get(path='/source', query_parameters=query_parameters)
+        _, page, _ = self.__get(path='/source', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.source import Source
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         return PageResult(page, Source, prescience=self)
 
     def source(self, source_id: str):
+        """
+        Get a single source from its ID
+        :param source_id: The source ID
+        :return: The source object
+        """
         from com.ovh.mls.prescience.core.bean.source import Source
-        _, source, _ = self.get(path=f'/source/{source_id}')
+        _, source, _ = self.__get(path=f'/source/{source_id}')
         return Source(json_dict=source, prescience=self)
 
     def datasets(self, page: int = 1, source_id_filter: str = None):
+        """
+        Get the paginated list of prescience datasets for the current project
+        :param page: The number of the page to get
+        :param source_id_filter: The filter to use on source ID (default: None)
+        :return: the page object containing prescience datasets
+        """
         query_parameters = {'page': page}
         if source_id_filter is not None:
             query_parameters['source_id'] = source_id_filter
-        _, page, _ = self.get(path='/dataset', query_parameters=query_parameters)
+        _, page, _ = self.__get(path='/dataset', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         from com.ovh.mls.prescience.core.bean.dataset import Dataset
         return PageResult(page, Dataset, prescience=self)
 
     def dataset(self, dataset_id: str):
-        _, source, _ = self.get(path=f'/dataset/{dataset_id}')
+        """
+        Get a single dataset from its ID
+        :param dataset_id: The dataset ID
+        :return: The dataset object
+        """
+        _, source, _ = self.__get(path=f'/dataset/{dataset_id}')
         from com.ovh.mls.prescience.core.bean.dataset import Dataset
         return Dataset(json=source, prescience=self)
 
     def get_evaluation_results(self, dataset_id: str, page: int = 1) -> 'PageResult':
+        """
+        Get the paginated list of evaluation results
+        :param dataset_id: The dataset ID
+        :param page: The number of the page to get
+        :return: the page object containing the evaluation results
+        """
         query_parameters = {'dataset_id': dataset_id, 'page': page}
-        _, page, _ = self.get(path='/evaluation-result', query_parameters=query_parameters)
+        _, page, _ = self.__get(path='/evaluation-result', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         from com.ovh.mls.prescience.core.bean.evaluation_result import EvaluationResult
         return PageResult(page, EvaluationResult, prescience=self)
 
     def models(self, page: int = 1, dataset_id_filter: str = None):
+        """
+        Get the paginated list of models
+        :param page: The number of the page to get
+        :param dataset_id_filter: The filter to use on dataset ID (default: None)
+        :return: the page object containing the models
+        """
         query_parameters = {'page': page}
         if dataset_id_filter is not None:
             query_parameters['dataset_id'] = dataset_id_filter
-        _, page, _ = self.get(path='/model', query_parameters=query_parameters)
+        _, page, _ = self.__get(path='/model', query_parameters=query_parameters)
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         from com.ovh.mls.prescience.core.bean.model import Model
         return PageResult(page, Model, prescience=self)
 
     def model(self, model_id: str):
-        _, model, _ = self.get(path=f'/model/{model_id}')
+        """
+        Get a single model from its ID
+        :param model_id: The model ID
+        :return: The model object
+        """
+        _, model, _ = self.__get(path=f'/model/{model_id}')
         from com.ovh.mls.prescience.core.bean.model import Model
         return Model(json=model, prescience=self)
 
-    def get(self, path: str, query_parameters: dict = None):
+    def __get(self, path: str, query_parameters: dict = None):
+        """
+        Generic HTTP GET call
+        :param path: the http path to call
+        :param query_parameters: The dict of query parameters, None if any
+        :return: The tuple3 : (http response code, response content, cookie token)
+        """
         return self.call(method='GET', path=path, query_parameters=query_parameters)
 
-    def post(self,
-             path: str,
-             data=None,
-             multipart: list = None,
-             query_parameters: dict = None):
+    def __post(self,
+               path: str,
+               data=None,
+               multipart: list = None,
+               query_parameters: dict = None):
+        """
+        Generic HTTP POST call
+        :param path: the http path to call
+        :param data: The body json data to send (as dict). None if any
+        :param multipart: The list of multipart part to send. None of any
+        :param query_parameters: The dict of query parameters, None if any
+        :return: The tuple3 : (http response code, response content, cookie token)
+        """
 
         content_type = 'application/json'
         if multipart is not None:
@@ -257,7 +400,11 @@ class PrescienceClient(object):
             query_parameters=query_parameters
         )
 
-    def delete(self, path: str):
+    def __delete(self, path: str):
+        """
+        Generic HTTP DELETE call
+        :param path: The http path to call
+        """
         return self.call(
             method='DELETE',
             path=path,
@@ -275,6 +422,18 @@ class PrescienceClient(object):
             expect_json_response=True,
             timeout_seconds=20
     ):
+        """
+        Generic HTTP call wrapper for pyCurl
+        :param method: The HTTP method to call
+        :param path: The path to call
+        :param query_parameters: The dict of query parameters, None if any
+        :param data: The body json data to send (as dict). None if any
+        :param multipart: The list of multipart part to send. None of any
+        :param content_type: The content type header to use (default: application/json)
+        :param expect_json_response: Indicate if the answer is expected to be json. If true it will be deserialize
+        :param timeout_seconds: The timeout of the http request
+        :return: The tuple3 : (http response code, response content, cookie token)
+        """
 
         complete_url = f'{self.prescience_config.get_current_api_url()}{path}'
         if query_parameters is not None and len(query_parameters) != 0:
@@ -338,14 +497,20 @@ class PrescienceClient(object):
     ########### WEB-SOCKET METHODS #############
     ############################################
 
-    def init_ws_connection(self):
+    def __init_ws_connection(self):
+        """
+        Initialize the web-socket connection :
+        - Log into prescience with the configured Bearer token for getting the cookie token
+        - Create the web-socket connection with the previous cookie token
+        :return: The web-socket connection
+        """
         token = self.login()
         ws = create_connection(self.prescience_config.get_current_websocket_url(), cookie=f'token={token}')
         ws.send('')
         return ws
 
     # Wait for the next message related to the given task
-    def wait_for_task_message(self, ws, initial_task: 'Task'):
+    def __wait_for_task_message(self, ws, initial_task: 'Task'):
         """
         Wait until the next related task
         :param ws: The web socket connection
@@ -368,14 +533,14 @@ class PrescienceClient(object):
         :return: The last state of the Task
         """
         # Initialize web-socket connection
-        websocket = self.init_ws_connection()
+        websocket = self.__init_ws_connection()
         current_task = initial_task
         bar = ChargingBar(current_task.type(), max=current_task.total_step())
         bar.next(0)
         if current_task.current_step_description() is not None:
             bar.message = current_task.current_step_description()
         while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
-            current_task = self.wait_for_task_message(websocket, initial_task)
+            current_task = self.__wait_for_task_message(websocket, initial_task)
             bar.next()
             bar.message = current_task.current_step_description()
         bar.finish()
@@ -384,22 +549,15 @@ class PrescienceClient(object):
         return current_task
 
     ############################################
-    ############### SHOW METHODS ###############
-    ############################################
-
-    def show_sources(self, page: int = 1):
-        self.sources(page=page).show()
-
-    def show_datasets(self, page: int = 1):
-        self.datasets(page=page).show()
-
-    def show_tasks(self, page: int = 1):
-        self.tasks(page=page).show()
-
-    ############################################
     ############### FACTORY METHODS ############
     ############################################
 
     def csv_local_file_input(self, filepath: str, headers: bool = True) -> 'CsvLocalFileInput':
+        """
+        Create a csv local input file
+        :param filepath: The path of your csv
+        :param headers: Does the csv file has header ? (default: True)
+        :return: The CsvLocalFileInput object
+        """
         from com.ovh.mls.prescience.core.bean.entity.local_file_input import CsvLocalFileInput
         return CsvLocalFileInput(filepath=filepath, headers=headers, prescience=self)

@@ -15,11 +15,21 @@ from termcolor import colored
 
 
 class Source(TablePrintable, DictPrintable):
+    """
+    Prescience Source object
+    Inherit from TablePrintable so that it can be easily printed as list on stdout
+    Inherit from DictPrintable so that it can be easily printed as single dict object on stdout
+    """
 
     def __init__(
             self,
             json_dict: dict,
             prescience: PrescienceClient = None):
+        """
+        Constructor of prescience source object
+        :param json_dict: the source JSON dict received from prescience
+        :param prescience: the prescience client (default: None)
+        """
         self.json_dict = json_dict
         self.uuid = json_dict.get('uuid', None)
         self.created_at = json_dict.get('created_at', None)
@@ -34,6 +44,9 @@ class Source(TablePrintable, DictPrintable):
         self.prescience = prescience
 
     def set_selected(self):
+        """
+        Set the current source as selected (will be printed colored in stdout)
+        """
         self.selected = True
 
     def get_description_dict(self) -> dict:
@@ -42,6 +55,10 @@ class Source(TablePrintable, DictPrintable):
         return description_dict
 
     def schema(self):
+        """
+        Getter of the schema object
+        :return: the schema object
+        """
         schema_dict = self.json_dict.get('schema', None)
         if schema_dict is not None:
             return Schema(json.loads(schema_dict))
@@ -70,9 +87,16 @@ class Source(TablePrintable, DictPrintable):
         return f'{main_name}({colored(self.source_id, status.color())})'
 
     def status(self) -> Status:
+        """
+        Getter of the status object of the current source
+        :return: the status object
+        """
         return Status[self.json_dict['status']]
 
     def delete(self):
+        """
+        Delete the current source on prescience
+        """
         self.prescience.delete_source(self.source_id)
 
     def preprocess(self,
@@ -82,6 +106,13 @@ class Source(TablePrintable, DictPrintable):
                    selected_column: list = None,
                    time_column: str = None,
                    fold_size: int = -1):
+        """
+        Launch a Preprocess Task from the current Source for creating a Dataset
+        :param dataset_id: The id that we want for the Dataset
+        :param label: The name of the Source column that we want to predict (the label)
+        :param problem_type: The type of machine learning problem that we want to solve
+        :return: The task object of the Preprocess Task
+        """
         return self.prescience.preprocess(
             source_id=self.source_id,
             dataset_id=dataset_id,
@@ -93,4 +124,8 @@ class Source(TablePrintable, DictPrintable):
         )
 
     def tree(self) -> SourceTree:
+        """
+        Construct the SourceTree object of the current source (use for printing the tree structure on stdout)
+        :return: The SourceTree object
+        """
         return SourceTree(source_id=self.source_id, selected_source=self.source_id)

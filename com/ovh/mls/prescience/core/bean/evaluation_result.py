@@ -11,11 +11,21 @@ import copy
 
 
 class EvaluationResult(TablePrintable, DictPrintable):
+    """
+    Prescience EvaluationResult object
+    Inherit from TablePrintable so that it can be easily printed as list on stdout
+    Inherit from DictPrintable so that it can be easily printed as single dict object on stdout
+    """
 
     def __init__(self,
                  json_dict: dict,
                  prescience: PrescienceClient = None
                  ):
+        """
+        Constructor of prescience EvaluationResult object
+        :param json_dict: the source JSON dict received from prescience
+        :param prescience: the prescience client (default: None)
+        """
         self.json_dict = json_dict
         self.prescience = prescience
 
@@ -56,39 +66,87 @@ class EvaluationResult(TablePrintable, DictPrintable):
         return self.json_dict
 
     def uuid(self):
+        """
+        Getter of the uuid attribute
+        :return: the uuid attribute
+        """
         return self.json_dict.get('uuid', None)
 
     def status(self):
+        """
+        Getter of the status attribute
+        :return: the status attribute
+        """
         return self.json_dict.get('status', None)
 
     def created_at(self):
+        """
+        Getter of the created_at attribute
+        :return: the created_at attribute
+        """
         return self.json_dict.get('created_at', None)
 
     def last_update(self):
+        """
+        Getter of the last_update attribute
+        :return: the last_update attribute
+        """
         return self.json_dict.get('last_update', None)
 
     def current_step(self):
+        """
+        Getter of the current_step attribute
+        :return: the current_step attribute
+        """
         return self.json_dict.get('current_step', None)
 
     def current_step_description(self):
+        """
+        Getter of the current_step_description attribute
+        :return: the current_step_description attribute
+        """
         return self.json_dict.get('current_step_description', None)
 
     def total_step(self):
+        """
+        Getter of the total_step attribute
+        :return: the total_step attribute
+        """
         return self.json_dict.get('total_step', None)
 
     def dataset_uuid(self):
+        """
+        Getter of the dataset_uuid attribute
+        :return: the dataset_uuid attribute
+        """
         return self.json_dict.get('dataset_uuid', None)
 
     def spent_time(self):
+        """
+        Getter of the spent_time attribute
+        :return: the spent_time attribute
+        """
         return self.json_dict.get('spent_time', None)
 
     def costs(self):
+        """
+        Getter of the costs attribute
+        :return: the costs attribute
+        """
         return self.json_dict.get('costs', None)
 
     def costs_std(self):
+        """
+        Getter of the costs_std attribute
+        :return: the costs_std attribute
+        """
         return self.json_dict.get('costs_std', None)
 
     def config(self):
+        """
+        Getter of the config attribute
+        :return: the config attribute
+        """
         config_dict = self.json_dict.get('config', None)
         if config_dict is not None:
             return Config(config_dict)
@@ -100,6 +158,13 @@ class EvaluationResult(TablePrintable, DictPrintable):
               compute_shap_summary: bool = False,
               chain_metric_task: bool = True
               ):
+        """
+        Launch a train task from the current evaluation result for creating a model
+        :param model_id: The id that we want for the model
+        :param compute_shap_summary: should chain the train task with a compute shap summary task ? (default: false)
+        :param chain_metric_task: should chain the train task with a metric task ? (default: true)
+        :return: The Train Task object
+        """
         return self.prescience.train(
             evaluation_uuid=self.uuid(),
             model_id=model_id,

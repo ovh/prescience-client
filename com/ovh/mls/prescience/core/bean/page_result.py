@@ -8,12 +8,22 @@ from com.ovh.mls.prescience.core.utils.table_printable import TablePrinter
 from termcolor import colored
 
 class PageResult(object):
+    """
+    Prescience PageResult object
+    """
     def __init__(self,
                  json: dict,
                  clazz,
                  factory_method = None,
                  prescience: PrescienceClient = None
                  ):
+        """
+        Constructor of PageResult object
+        :param json: the source JSON dict received from prescience
+        :param clazz: the python class of object contained inside page
+        :param factory_method: the factory method for constructing inside object from their dict
+        :param prescience: the prescience client
+        """
         self.page_class = clazz
         if factory_method is not None:
             self.factory_method = factory_method
@@ -28,6 +38,9 @@ class PageResult(object):
         return f'PAGE[{self.metadata.page_number}]({string})'
 
     def show(self):
+        """
+        Show the current page on stdout
+        """
         table = TablePrinter.get_table(self.page_class, self.content)
         print(table.get_string(title=colored(self.metadata.elements_type.upper(), 'yellow', attrs=['bold'])))
         print(colored(f'page {self.metadata.page_number}/{self.metadata.total_pages}', 'yellow'))

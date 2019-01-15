@@ -5,6 +5,9 @@
 import json
 
 class MetadataPageResult(object):
+    """
+    Prescience MetadataPageResult object
+    """
     def __init__(self, json_dict: dict):
         self.page_number = json_dict['page_number']
         self.total_pages = json_dict['total_pages']
