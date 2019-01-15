@@ -5,8 +5,10 @@
 import io
 import os
 import yaml
-from com.ovh.mls.prescience.core.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, DEFAULT_WEBSOCKET_URL, \
-    DEFAULT_PRESCIENCE_CONFIG_FILE
+from com.ovh.mls.prescience.core.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, \
+    DEFAULT_WEBSOCKET_URL, \
+    DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE
+from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from com.ovh.mls.prescience.core.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
 
@@ -29,6 +31,7 @@ class PrescienceConfig(object):
         self.config_file: str = config_file
         self.projects = {}
         self.current_project = None
+        self.exception_handling = None
 
     def load(self) -> 'PrescienceConfig':
         """
@@ -43,6 +46,7 @@ class PrescienceConfig(object):
                 loaded_config = yaml.load(stream)
                 self.projects = loaded_config['projects']
                 self.current_project = loaded_config['current_project']
+                self.exception_handling = loaded_config.get('exception_handling', DEFAULT_EXCEPTION_HANDLING)
         else:
             print(f'No configuration file found yet')
 
@@ -59,7 +63,11 @@ class PrescienceConfig(object):
 
         with io.open(full_config_path, 'w', encoding='utf8') as outfile:
             yaml.dump(
-                data={'projects': self.projects, 'current_project': self.current_project},
+                data={
+                    'projects': self.projects,
+                    'current_project': self.current_project,
+                    'exception_handling': self.exception_handling
+                },
                 stream=outfile,
                 default_flow_style=False,
                 allow_unicode=True
@@ -97,6 +105,34 @@ class PrescienceConfig(object):
         )
 
         return self
+
+    def enable_print_exception_handling(self):
+        self.exception_handling = EXCEPTION_HANDLING_PRINT
+        self.save()
+
+    def enable_raise_exception_handling(self):
+        self.exception_handling = EXCEPTION_HANDLING_RAISE
+        self.save()
+
+    def handle_exception(self, prescience_exception: PrescienceException):
+        """
+        Handle the given PrescienceException with the configured strategy
+        - 'print' strategy will print the exception on the stdout
+        - 'raise' strategy will raise the exception
+        :param prescience_exception: The exception that we want to handle
+        """
+        if self.exception_handling == EXCEPTION_HANDLING_RAISE:
+            raise prescience_exception
+        else:
+            print(f'--------------[{colored("ERROR", "red")}]--------------')
+            if prescience_exception.message() is not None:
+                print('Message: ' + colored(prescience_exception.message(), 'red'))
+            else:
+                print('Exception: ' + str(prescience_exception))
+            if prescience_exception.resolution_hint() is not None:
+                print('Resolution hint: ' + colored(prescience_exception.resolution_hint(), 'red'))
+            print(f'-----------------------------------')
+            raise prescience_exception
 
 
     def set_project(self,

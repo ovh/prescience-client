@@ -19,6 +19,8 @@ from com.ovh.mls.prescience.core.enum.input_type import InputType
 from com.ovh.mls.prescience.core.enum.problem_type import ProblemType
 from com.ovh.mls.prescience.core.enum.scoring_metric import ScoringMetric
 from com.ovh.mls.prescience.core.enum.status import Status
+from com.ovh.mls.prescience.core.exception.prescience_client_exception import PyCurlExceptionFactory, \
+    HttpErrorExceptionFactory
 
 
 class PrescienceClient(object):
@@ -475,7 +477,11 @@ class PrescienceClient(object):
         # use closure to collect cookies sent from the server
         curl.setopt(pycurl.HEADERFUNCTION, _catch_cookie_token)
 
-        curl.perform()
+        try:
+            curl.perform()
+        except pycurl.error as error:
+            prescience_error = PyCurlExceptionFactory.construct(error)
+            self.config().handle_exception(prescience_error)
 
         status_code = curl.getinfo(pycurl.RESPONSE_CODE)
         response_content = buffer.getvalue().decode('UTF-8')
@@ -483,7 +489,8 @@ class PrescienceClient(object):
         curl.close()
 
         if status_code // 100 != 2:
-            raise RuntimeError(str(status_code) + response_content)
+            prescience_error =  HttpErrorExceptionFactory.construct(status_code, response_content)
+            self.config().handle_exception(prescience_error)
         else:
             if expect_json_response:
                 json_response = json.loads(response_content)

@@ -20,7 +20,7 @@ class TestBasicScenario(unittest.TestCase):
         prescience.config().set_project_from_env()
         prescience.config().show()
         try:
-            prescience.source('my-source-id').__delete()
+            prescience.source('my-source-id').delete()
         except RuntimeError:
             print(f'No pre-existing source to delete...')
 
