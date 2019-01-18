@@ -66,7 +66,7 @@ class NotFoundException(PrescienceServerException):
         super().__init__(code_error, body)
 
     def message(self):
-        result = f'The prescience server answered us with a \'BadRequest\' response.'
+        result = f'The prescience server answered us with a \'NotFound\' response.'
         try:
             if self.body is not None:
                 dict_error = json.loads(self.body)

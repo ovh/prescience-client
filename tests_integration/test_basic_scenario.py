@@ -4,6 +4,7 @@
 
 import unittest
 
+from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from prescience_client import prescience
 from tests.utils import get_resource_file_path
 
@@ -21,7 +22,7 @@ class TestBasicScenario(unittest.TestCase):
         prescience.config().show()
         try:
             prescience.source('my-source-id').delete()
-        except RuntimeError:
+        except PrescienceException:
             print(f'No pre-existing source to delete...')
 
     def test_scenario(self):
