@@ -21,8 +21,14 @@ RUN apk add --no-cache --virtual .build-deps build-base curl-dev \
 # Delete all __pycache__ files if any
 RUN find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
 
-ARG DEFAULT_TOKEN=token
+ARG DEFAULT_TOKEN=default_token
+ARG DEFAULT_PRESCIENCE_API=https://prescience-api.ai.ovh.net
+ARG DEFAULT_PRESCIENCE_WEBSOCKET=wss://prescience-websocket.ai.ovh.net
+ARG DEFAULT_PRESCIENCE_ADMIN_API_URL=''
 
 ENV PRESCIENCE_DEFAULT_TOKEN=${DEFAULT_TOKEN}
+ENV PRESCIENCE_DEFAULT_API_URL=${DEFAULT_PRESCIENCE_API}
+ENV PRESCIENCE_DEFAULT_WEBSOCKET_URL=${DEFAULT_PRESCIENCE_WEBSOCKET}
+ENV PRESCIENCE_DEFAULT_ADMIN_API_URL=${DEFAULT_PRESCIENCE_ADMIN_API_URL}
 
 ENTRYPOINT ["python",  "-i", "-c", "from prescience_client import prescience; prescience.config().set_project_from_env()"]

@@ -49,6 +49,24 @@ class PrescienceClient(object):
         """
         return self.prescience_config
 
+    def new_project_token(self):
+        current_config = self.config()
+
+        _, result, _ = self.__post(
+            path='/project',
+            admin_call=True,
+            data={'name': current_config.get_current_project()}
+        )
+        token = result['token']
+        print(f'New token for project {current_config.get_current_project()} : {token}')
+        self.config().set_project(
+            project_name=current_config.get_current_project(),
+            token=token,
+            api_url=current_config.get_current_api_url(),
+            admin_api_url=current_config.get_current_admin_api_url(),
+            websocket_url=current_config.get_current_websocket_url()
+        )
+
     def upload_source(self,
                       source_id: str,
                       input_type: InputType,
@@ -380,7 +398,8 @@ class PrescienceClient(object):
                path: str,
                data=None,
                multipart: list = None,
-               query_parameters: dict = None):
+               query_parameters: dict = None,
+               admin_call: bool = False):
         """
         Generic HTTP POST call
         :param path: the http path to call
@@ -399,7 +418,8 @@ class PrescienceClient(object):
             data=data,
             multipart=multipart,
             content_type=content_type,
-            query_parameters=query_parameters
+            query_parameters=query_parameters,
+            admin_call=admin_call
         )
 
     def __delete(self, path: str):
@@ -421,8 +441,9 @@ class PrescienceClient(object):
             data: dict = None,
             multipart: list = None,
             content_type='application/json',
-            expect_json_response=True,
-            timeout_seconds=20
+            expect_json_response: bool=True,
+            timeout_seconds: int=20,
+            admin_call: bool=False
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -434,10 +455,12 @@ class PrescienceClient(object):
         :param content_type: The content type header to use (default: application/json)
         :param expect_json_response: Indicate if the answer is expected to be json. If true it will be deserialize
         :param timeout_seconds: The timeout of the http request
+        :param admin_call: Is a call to admin api ?
         :return: The tuple3 : (http response code, response content, cookie token)
         """
-
         complete_url = f'{self.prescience_config.get_current_api_url()}{path}'
+        if admin_call:
+            complete_url= f'{self.prescience_config.get_current_admin_api_url()}{path}'
         if query_parameters is not None and len(query_parameters) != 0:
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'

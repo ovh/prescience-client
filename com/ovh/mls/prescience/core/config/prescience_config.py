@@ -79,6 +79,7 @@ class PrescienceConfig(object):
                              env_default_project_name: str = 'PRESCIENCE_DEFAULT_PROJECT',
                              env_default_token: str = 'PRESCIENCE_DEFAULT_TOKEN',
                              env_default_api_url: str = 'PRESCIENCE_DEFAULT_API_URL',
+                             env_default_admin_api_url: str = 'PRESCIENCE_DEFAULT_ADMIN_API_URL',
                              env_default_websocket_url = 'PRESCIENCE_DEFAULT_WEBSOCKET_URL') -> 'PrescienceConfig':
         """
         Automatically set an entry in the configuration file for default values.
@@ -86,12 +87,14 @@ class PrescienceConfig(object):
         :param env_default_project_name: The environment variable name for project name
         :param env_default_token: The environment variable name for token
         :param env_default_api_url: The environment variable name for api url
+        :param env_default_admin_api_url: The environment variable name for admin api url
         :param env_default_websocket_url: The environment variable name for websocket url
         :return: self
         """
         default_project_name = os.getenv(env_default_project_name, 'default')
         default_token = os.getenv(env_default_token, None)
         default_api_url = os.getenv(env_default_api_url, DEFAULT_PRESCIENCE_API_URL)
+        default_api_admin_url = os.getenv(env_default_admin_api_url, None)
         default_websocket_url = os.getenv(env_default_websocket_url, DEFAULT_WEBSOCKET_URL)
 
         if default_token is None:
@@ -101,6 +104,7 @@ class PrescienceConfig(object):
             project_name=default_project_name,
             token=default_token,
             api_url=default_api_url,
+            admin_api_url=default_api_admin_url,
             websocket_url=default_websocket_url
         )
 
@@ -139,6 +143,7 @@ class PrescienceConfig(object):
                     project_name: str,
                     token: str,
                     api_url: str = DEFAULT_PRESCIENCE_API_URL,
+                    admin_api_url: str = None,
                     websocket_url: str = DEFAULT_WEBSOCKET_URL
                     ) -> 'PrescienceConfig':
         """
@@ -146,6 +151,7 @@ class PrescienceConfig(object):
         :param project_name: The project name to add or to update
         :param token: The related token for this project name
         :param api_url: The related api url for this project name
+        :param admin_api_url: The related admin api url for this project name (default: None)
         :param websocket_url: The related websocket url for this project name
         :return: self
         """
@@ -154,6 +160,11 @@ class PrescienceConfig(object):
             'api_url': api_url,
             'websocket_url': websocket_url
         }
+
+        # Setting admin url only if it exists
+        if admin_api_url is not None:
+            self.projects[project_name]['admin_api_url'] = admin_api_url
+
         self.current_project = project_name
         return self.save()
 
@@ -194,6 +205,13 @@ class PrescienceConfig(object):
         :return: the websocket url of the current working project
         """
         return self.projects[self.get_current_project()]['websocket_url']
+
+    def get_current_admin_api_url(self) -> str:
+        """
+        Access the admin api url of the current working project
+        :return: the api url of the current working project
+        """
+        return self.projects[self.get_current_project()].get('admin_api_url', None)
 
     def show(self):
         """

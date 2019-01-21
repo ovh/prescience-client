@@ -302,7 +302,8 @@ class TestPrescienceClient(unittest.TestCase):
                 ('input-file', (pycurl.FORM_FILE, csv_path))
             ],
             data=None,
-            query_parameters=None
+            query_parameters=None,
+            admin_call=False
         )
 
     def test_preprocess(self):
@@ -332,6 +333,7 @@ class TestPrescienceClient(unittest.TestCase):
             data={'dataset_id': 'my-dataset-id', 'label_id': 'my-label', 'problem_type': 'regression'},
             multipart=None,
             query_parameters=None,
+            admin_call=False
         )
 
     def test_optimize(self):
@@ -356,6 +358,7 @@ class TestPrescienceClient(unittest.TestCase):
             data={'scoring_metric': 'accuracy', 'budget': 10},
             multipart=None,
             query_parameters=None,
+            admin_call=False
         )
 
     def test_train(self):
@@ -384,7 +387,8 @@ class TestPrescienceClient(unittest.TestCase):
             },
             content_type='application/json',
             data=None,
-            multipart=None
+            multipart=None,
+            admin_call=False
         )
 
     def test_create_dataset_mask(self):
@@ -401,5 +405,6 @@ class TestPrescienceClient(unittest.TestCase):
             query_parameters={'mask_id': 'dataset-mask'},
             content_type='application/json',
             data=['col1', 'col2', 'label'],
-            multipart=None
+            multipart=None,
+            admin_call=False
         )

@@ -19,6 +19,12 @@ class TestBasicScenario(unittest.TestCase):
 
     def clean(self):
         prescience.config().set_project_from_env()
+
+        # If token is not defined correctly, try to create a new project token
+        current_token = prescience.config().get_current_token()
+        if current_token is None or len(current_token) < 20:
+            prescience.new_project_token()
+
         prescience.config().show()
         try:
             prescience.source('my-source-id').delete()
