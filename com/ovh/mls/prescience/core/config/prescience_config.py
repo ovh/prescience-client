@@ -138,6 +138,17 @@ class PrescienceConfig(object):
             print(f'-----------------------------------')
             raise prescience_exception
 
+    def set_token(self, project_name: str, token: str) -> 'PrescienceConfig':
+        """
+        Set a new token to a project
+        :param project_name: The name of the project we want to set the new token on
+        :param token: The new token for the project
+        :return: The current configuration
+        """
+        self.projects[project_name]['token'] = token
+        self.save()
+        return self
+
 
     def set_project(self,
                     project_name: str,

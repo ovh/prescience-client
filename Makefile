@@ -2,7 +2,7 @@ IMAGE_NAME=prescience-client
 
 DEFAULT_TOKEN=default_token
 DEFAULT_PRESCIENCE_API=https://prescience-api.ai.ovh.net
-DEFAULT_PRESCIENCE_ADMIN_API=''
+DEFAULT_PRESCIENCE_ADMIN_API=$(DEFAULT_PRESCIENCE_API)
 DEFAULT_PRESCIENCE_WEBSOCKET=wss://prescience-websocket.ai.ovh.net
 
 DOCKER_OPT=-it
@@ -39,3 +39,12 @@ lint_local:
 
 lint_docker:
 	docker run --rm $(DOCKER_OPT) --entrypoint=sh prescience-client -c "make lint_local"
+
+run_local:
+	python -i -c "from prescience_client import prescience"
+
+run_docker:
+	docker run --rm $(DOCKER_OPT) prescience-client
+
+install_local:
+	pip install -e .

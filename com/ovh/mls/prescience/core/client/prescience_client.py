@@ -49,7 +49,13 @@ class PrescienceClient(object):
         """
         return self.prescience_config
 
-    def new_project_token(self):
+    def new_project_token(self) -> dict:
+        """
+        ADMIN ONLY METHOD
+        This method needs admin right to be authorized on prescience server
+        It allow you to create a new prescience project and give you back the bearer token for this project
+        :return:
+        """
         current_config = self.config()
 
         _, result, _ = self.__post(
@@ -57,15 +63,7 @@ class PrescienceClient(object):
             admin_call=True,
             data={'name': current_config.get_current_project()}
         )
-        token = result['token']
-        print(f'New token for project {current_config.get_current_project()} : {token}')
-        self.config().set_project(
-            project_name=current_config.get_current_project(),
-            token=token,
-            api_url=current_config.get_current_api_url(),
-            admin_api_url=current_config.get_current_admin_api_url(),
-            websocket_url=current_config.get_current_websocket_url()
-        )
+        return result
 
     def upload_source(self,
                       source_id: str,

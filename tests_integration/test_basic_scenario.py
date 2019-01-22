@@ -3,6 +3,7 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import unittest
+import os
 
 from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from prescience_client import prescience
@@ -10,22 +11,38 @@ from tests.utils import get_resource_file_path
 
 
 class TestBasicScenario(unittest.TestCase):
+    """
+    For launching this integration test you need to set the following environment variables :
+    PRESCIENCE_DEFAULT_API_URL : The prescience URL to test on
+    PRESCIENCE_DEFAULT_WEBSOCKET_URL : The prescience websocket to test on
+    PRESCIENCE_DEFAULT_TOKEN (optional) : The prescience token to test on
+    PRESCIENCE_DEFAULT_ADMIN_API_URL (optional) : The the token is not set or fake, it will request a token from this given admin url
+    """
 
     def setUp(self):
+        os.environ['PRESCIENCE_DEFAULT_PROJECT'] = 'it-TestBasicScenario'
+        prescience.config().set_project_from_env()
+
+        # If token is not defined correctly, try to create a new project token
+        current_token = prescience.config().get_current_token()
+        if current_token is None or len(current_token) < 20:
+            payload = prescience.new_project_token()
+            token = payload['token']
+            current_config = prescience.config()
+            print(f'New token for project {current_config.get_current_project()} : {token}')
+            current_config.set_token(
+                project_name=current_config.get_current_project(),
+                token=token
+            )
+
+        prescience.config().show()
+        # Clean any previous existing sources
         self.clean()
 
     def tearDown(self):
         self.clean()
 
     def clean(self):
-        prescience.config().set_project_from_env()
-
-        # If token is not defined correctly, try to create a new project token
-        current_token = prescience.config().get_current_token()
-        if current_token is None or len(current_token) < 20:
-            prescience.new_project_token()
-
-        prescience.config().show()
         try:
             prescience.source('my-source-id').delete()
         except PrescienceException:

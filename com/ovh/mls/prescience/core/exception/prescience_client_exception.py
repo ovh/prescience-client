@@ -37,6 +37,7 @@ class PyCurlExceptionFactory:
 E_UNAUTORIZED = 401
 E_BAD_REQUEST = 400
 E_NOT_FOUND = 404
+E_METHOD_NOT_ALLOWED = 405
 E_INTERNAL_SERVER_ERROR = 500
 
 class PrescienceServerException(PrescienceException):
@@ -60,6 +61,13 @@ class UnauthorizedException(PrescienceServerException):
             '- You can get the currently used token by typing prescience.config().get_current_token()\n' \
             '- You can change the currently used token by typing prescience.config().set_project(<current-project-name>, <your-token>)\n'\
             'If you want a prescience token, you can request one here : https://survey.ovh.com/index.php/379341?lang=en'
+
+class MethodNotAllowedException(PrescienceServerException):
+    def __init__(self, code_error: int, body: str = None):
+        super().__init__(code_error, body)
+
+    def message(self):
+        return f'The prescience server answered us with an \'MethodNotAllowed\' response. You are probably requesting a method that need specific rights to be executed.'
 
 class NotFoundException(PrescienceServerException):
     def __init__(self, code_error: int, body: str = None):
@@ -87,7 +95,8 @@ class HttpErrorExceptionFactory:
     def construct(code_error: int, body: str = None) -> PrescienceServerException:
         switch = {
             E_UNAUTORIZED: UnauthorizedException,
-            E_NOT_FOUND: NotFoundException
+            E_NOT_FOUND: NotFoundException,
+            E_METHOD_NOT_ALLOWED: MethodNotAllowedException
         }
         constructor = switch.get(code_error, PrescienceServerException)
         return constructor(code_error, body)
