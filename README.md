@@ -82,24 +82,26 @@ The content of this file will look like this :
 
 ```yaml
 current_project: "project-1"
+environments:
+  default:
+    api_url: "https://prescience-api.ai.ovh.net"
+    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+    serving_url: "https://prescience-serving.ai.ovh.net"
 projects:
   project-1:
-    api_url: "https://prescience-api.ai.ovh.net"
     token: "<token-for-project1>"
-    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+    environment: "default"
   project-2:
-    api_url: "https://prescience-api.ai.ovh.net"
     token: "<token-for-project2>"
-    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+    environment: "default"
 ```
 
 You can register here as many projects as you want. The `key` of each configuration part inside `projects` will be your chosen name for each project.
 
-| Parameter 	    | Description                                           | Default value 	                        |
-|-----------	    |------------------------------------------------------	|-------------------                        |
-| `api_url`    	    | The URL api for prescience.                        	| `https://prescience-api.ai.ovh.net`       |
-| `websocket_url`   | The URL websocket for prescience.                  	| `wss://prescience-websocket.ai.ovh.net`   |
-| `token`           | The token to use for this project                     |                                           |
+| Parameter 	    | Description                                             | Default value 	                          |
+|-----------	    |------------------------------------------------------	  |-------------------                        |
+| `environment`     | The name of the prescience environment for this project | `wss://prescience-websocket.ai.ovh.net`   |
+| `token`           | The token to use for this project                       |                                           |
 
 `current_project` indicates your currently selected project (this is the one you're currently working on)
 

@@ -31,4 +31,4 @@ ENV PRESCIENCE_DEFAULT_API_URL=${DEFAULT_PRESCIENCE_API}
 ENV PRESCIENCE_DEFAULT_WEBSOCKET_URL=${DEFAULT_PRESCIENCE_WEBSOCKET}
 ENV PRESCIENCE_DEFAULT_ADMIN_API_URL=${DEFAULT_PRESCIENCE_ADMIN_API_URL}
 
-ENTRYPOINT ["python",  "-i", "-c", "from prescience_client import prescience; prescience.config().set_project_from_env()"]
+ENTRYPOINT ["python",  "-i", "-c", "from prescience_client import prescience; prescience.config().set_default_project_from_env()"]

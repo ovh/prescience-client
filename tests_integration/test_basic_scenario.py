@@ -21,7 +21,7 @@ class TestBasicScenario(unittest.TestCase):
 
     def setUp(self):
         os.environ['PRESCIENCE_DEFAULT_PROJECT'] = 'it-TestBasicScenario'
-        prescience.config().set_project_from_env()
+        prescience.config().set_default_project_from_env()
 
         # If token is not defined correctly, try to create a new project token
         current_token = prescience.config().get_current_token()
@@ -29,9 +29,9 @@ class TestBasicScenario(unittest.TestCase):
             payload = prescience.new_project_token()
             token = payload['token']
             current_config = prescience.config()
-            print(f'New token for project {current_config.get_current_project()} : {token}')
+            print(f'New token for project {current_config.get_current_project_name()} : {token}')
             current_config.set_token(
-                project_name=current_config.get_current_project(),
+                project_name=current_config.get_current_project_name(),
                 token=token
             )
 

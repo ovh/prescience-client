@@ -61,7 +61,7 @@ class PrescienceClient(object):
         _, result, _ = self.__post(
             path='/project',
             admin_call=True,
-            data={'name': current_config.get_current_project()}
+            data={'name': current_config.get_current_project_name()}
         )
         return result
 
