@@ -6,8 +6,11 @@ import copy
 
 from com.ovh.mls.prescience.core.bean.config import Config
 from com.ovh.mls.prescience.core.bean.dataset import Dataset
+from com.ovh.mls.prescience.core.bean.serving.evaluator import Evaluator
+from com.ovh.mls.prescience.core.bean.serving.serving_payload import ServingPayload
 from com.ovh.mls.prescience.core.bean.source import Source
 from com.ovh.mls.prescience.core.client.prescience_client import PrescienceClient
+from com.ovh.mls.prescience.core.enum.flow_type import FlowType
 from com.ovh.mls.prescience.core.enum.status import Status
 from com.ovh.mls.prescience.core.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
@@ -214,3 +217,84 @@ class Model(TablePrintable, DictPrintable):
         Delete the current model
         """
         self.prescience.delete_model(self.model_id())
+
+    def get_evaluation_payload(self,
+                               flow_type: FlowType,
+                               evaluation_id: str = None,
+                               arguments: dict = None
+                               ) -> ServingPayload:
+        """
+        Create a serving payload for requesting the current model
+        :param flow_type: The type of the needed evaluation
+        :param evaluation_id: The wanted id for the needed evaluation
+        :param arguments: The arguments to fill in the payload
+        :return: A new serving payload for the current model
+        """
+        evaluator = self.get_model_evaluator()
+        return ServingPayload.new(
+            model_id=self.model_id(),
+            flow_type=flow_type,
+            payload_id=evaluation_id,
+            arguments=arguments,
+            model_evaluator=evaluator,
+            prescience=self.prescience
+        )
+
+    def get_model_evaluation_payload(self,
+                                     evaluation_id: str = None,
+                                     arguments: dict = None
+                                     ) -> ServingPayload:
+        """
+        Create a serving payload for evaluate the current model with the flow type 'TRANSFORM_MODEL'
+        (Chain the transformation evaluation and model evaluation)
+        :param evaluation_id: The wanted id for the needed evaluation
+        :param arguments: The arguments to fill in the payload
+        :return: A new serving payload for the current model
+        """
+        return self.get_evaluation_payload(
+            flow_type=FlowType.TRANSFORM_MODEL,
+            evaluation_id=evaluation_id,
+            arguments=arguments
+        )
+
+    def get_transformation_evaluation_payload(self,
+                                              evaluation_id: str = None,
+                                              arguments: dict = None
+                                              ) -> ServingPayload:
+        """
+        Create a serving payload for evaluate the current model with the flow type 'TRANSFORM'
+        (Execute the transformation evaluation only and not the model evaluation)
+        :param evaluation_id: The wanted id for the needed evaluation
+        :param arguments: The arguments to fill in the payload
+        :return: A new serving payload for the current model
+        """
+        return self.get_evaluation_payload(
+            flow_type=FlowType.TRANSFORM,
+            evaluation_id=evaluation_id,
+            arguments=arguments
+        )
+
+    def get_model_only_evaluation_payload(self,
+                                          evaluation_id: str = None,
+                                          arguments: dict = None
+                                          ) -> ServingPayload:
+        """
+        Create a serving payload for evaluate the current model with the flow type 'MODEL'
+        (Execute the model evaluation only and not the transform evaluation)
+        :param evaluation_id: The wanted id for the needed evaluation
+        :param arguments: The arguments to fill in the payload
+        :return: A new serving payload for the current model
+        """
+        return self.get_evaluation_payload(
+            flow_type=FlowType.MODEL,
+            evaluation_id=evaluation_id,
+            arguments=arguments
+        )
+
+    def get_model_evaluator(self) -> Evaluator:
+        """
+        Find prescience evaluators for the current model
+        :return: the prescience evaluator for the current model
+        """
+        json_dict = self.prescience.serving_model_evaluator(model_id=self.model_id())
+        return Evaluator(json_dict=json_dict, prescience=self.prescience)

@@ -20,7 +20,7 @@ You can request a token [here](https://survey.ovh.com/index.php/379341?lang=en)
 
 You have 2 ways of runing the client :
 * with docker
-* with python, in this case you will need at least `python 3.5`
+* with python, in this case you will need at least `python 3.6`
 
 ## Build and run with pip
 
@@ -354,6 +354,50 @@ You can display the content of the page by calling the `show()` function on your
 ```python
 models_page_1.show()
 ```
+
+## Model evaluation and predictions
+
+Once your model has been train and deployed on prescience, you can request it for making predictions.
+
+First you need to create and fill the input payload that will contain all the parameters you need by doing so :
+
+```python
+# Get your model
+my_model = prescience.model('my-model')
+payload = my_model.get_model_evaluation_payload()
+```
+
+You can display the content of your payload thank's to the `show` method. It will display all the parameters you can set and it will show you if your filled values are correct.
+
+```python
+payload.show()
+```
+
+You can fill arguments on your payload by doing so :
+
+```python
+# Fill one arguments on the payload
+payload.add_payload_argument('feature_1', 'value_1')
+
+## Fill several arguments on the payload
+payload.add_payload_arguments({'feature_1': 'value_1', 'feature_2': 'value_2'})
+```
+
+Once you have filled all your wanted arguments, you can ask prescience to make a prediction by calling the `evaluate` method :
+
+```python
+# Ask prescience to make a prediction accordingly to your filled arguments
+result = payload.evaluate()
+# Display the prediction result on standard output
+result.show()
+# Access the label of the results
+prediction_label = result.get_result_label()
+# Access the probabilities (only available on specific models)
+label_probabilities = result.get_result_probabilities()
+```
+
+#### Example
+![prescience-serving-payload](img/prescience-serving-payload.gif)
 
 # Hacking
  

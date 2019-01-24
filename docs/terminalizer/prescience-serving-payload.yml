@@ -1,0 +1,417 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: ./venv/bin/python -i test.py
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/mlegal/Documents/Project/ovh/prescience/api-client/python
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 135
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 28
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: window
+    title: prescience-client
+    style:
+      border: 0px black solid
+      #boxShadow: none
+      #margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 1699
+    content: "Loading configuration file /Users/mlegal/.prescience/config.yaml\r\n"
+  - delay: 7
+    content: '>>> '
+  - delay: 100
+    content: m
+  - delay: 100
+    content: o
+  - delay: 100
+    content: d
+  - delay: 100
+    content: e
+  - delay: 100
+    content: l
+  - delay: 100
+    content: ' '
+  - delay: 100
+    content: =
+  - delay: 100
+    content: ' '
+  - delay: 100
+    content: p
+  - delay: 100
+    content: r
+  - delay: 100
+    content: e
+  - delay: 100
+    content: s
+  - delay: 100
+    content: cience
+  - delay: 100
+    content: .
+  - delay: 100
+    content: m
+  - delay: 100
+    content: o
+  - delay: 100
+    content: d
+  - delay: 100
+    content: "\ael"
+  - delay: 100
+    content: (
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: m
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: '-'
+  - delay: 100
+    content: m
+  - delay: 100
+    content: o
+  - delay: 100
+    content: d
+  - delay: 100
+    content: e
+  - delay: 100
+    content: l
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\b\e[K"
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n"
+  - delay: 100
+    content: '>>> '
+  - delay: 100
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: l
+  - delay: 100
+    content: o
+  - delay: 100
+    content: a
+  - delay: 100
+    content: d
+  - delay: 100
+    content: ' '
+  - delay: 100
+    content: =
+  - delay: 100
+    content: ' '
+  - delay: 100
+    content: m
+  - delay: 100
+    content: o
+  - delay: 100
+    content: del
+  - delay: 100
+    content: .
+  - delay: 100
+    content: g
+  - delay: 100
+    content: e
+  - delay: 100
+    content: t
+  - delay: 100
+    content: _
+  - delay: 100
+    content: m
+  - delay: 100
+    content: o
+  - delay: 100
+    content: "\adel_"
+  - delay: 100
+    content: e
+  - delay: 100
+    content: "\avaluat"
+  - delay: 100
+    content: i
+  - delay: 100
+    content: on_payload(
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n"
+  - delay: 100
+    content: '>>> '
+  - delay: 100
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: load
+  - delay: 100
+    content: .
+  - delay: 100
+    content: s
+  - delay: 100
+    content: h
+  - delay: 100
+    content: "\aow"
+  - delay: 100
+    content: (
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n+----------------------------------------------------------------+\r\n|        ARGUMENTS (5650f260-cfb8-4ad6-a399-ecf17bca18b7)        |\r\n+----+----------------+---------+-------+------------------------+\r\n|  \e[1m\e[0m  |   \e[1mattribute\e[0m    |   \e[1mtype\e[0m  | \e[1mvalue\e[0m |         \e[1mvalid\e[0m          |\r\n+----+----------------+---------+-------+------------------------+\r\n| 0  | hours-per-week | integer |  None | WARN: Value is not set |\r\n| 1  |  capital-gain  | integer |  None | WARN: Value is not set |\r\n| 2  | education-num  | integer |  None | WARN: Value is not set |\r\n| 3  |  random-bool   | boolean |  None | WARN: Value is not set |\r\n| 4  | marital-status |  string |  None | WARN: Value is not set |\r\n| 5  |      age       | integer |  None | WARN: Value is not set |\r\n| 6  |      sex       |  string |  None | WARN: Value is not set |\r\n| 7  |  relationship  |  string |  None | WARN: Value is not set |\r\n| 8  |   education    |  string |  None | WARN: Value is not set |\r\n| 9  |      race      |  string |  None | WARN: Value is not set |\r\n| 10 | native-country |  string |  None | WARN: Value is not set |\r\n| 11 |     fnlwgt     | integer |  None | WARN: Value is not set |\r\n| 12 |   workclass    |  string |  None | WARN: Value is not set |\r\n| 13 |  capital-loss  | integer |  None | WARN: Value is not set |\r\n| 14 |   occupation   |  string |  None | WARN: Value is not set |\r\n+----+----------------+---------+-------+------------------------+\r\n>>> "
+  - delay: 5000
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: load
+  - delay: 100
+    content: .
+  - delay: 100
+    content: a
+  - delay: 100
+    content: d
+  - delay: 100
+    content: d
+  - delay: 100
+    content: "\a_payload_argument"
+  - delay: 100
+    content: (
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: s
+  - delay: 100
+    content: e
+  - delay: 100
+    content: x
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: ','
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: M
+  - delay: 100
+    content: a
+  - delay: 100
+    content: l
+  - delay: 100
+    content: e
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n"
+  - delay: 100
+    content: '>>> '
+  - delay: 100
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: load
+  - delay: 100
+    content: .
+  - delay: 100
+    content: a
+  - delay: 100
+    content: d
+  - delay: 100
+    content: d
+  - delay: 100
+    content: "\a_payload_argument"
+  - delay: 100
+    content: (
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: a
+  - delay: 100
+    content: g
+  - delay: 100
+    content: e
+  - delay: 100
+    content: ''''
+  - delay: 100
+    content: ','
+  - delay: 100
+    content: '3'
+  - delay: 100
+    content: '2'
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n"
+  - delay: 100
+    content: '>>> '
+  - delay: 100
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: load
+  - delay: 100
+    content: .
+  - delay: 100
+    content: s
+  - delay: 100
+    content: h
+  - delay: 100
+    content: "\aow"
+  - delay: 100
+    content: (
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n+----------------------------------------------------------------+\r\n|        ARGUMENTS (5650f260-cfb8-4ad6-a399-ecf17bca18b7)        |\r\n+----+----------------+---------+-------+------------------------+\r\n|  \e[1m\e[0m  |   \e[1mattribute\e[0m    |   \e[1mtype\e[0m  | \e[1mvalue\e[0m |         \e[1mvalid\e[0m          |\r\n+----+----------------+---------+-------+------------------------+\r\n| 0  | hours-per-week | integer |  None | WARN: Value is not set |\r\n| 1  |  capital-gain  | integer |  None | WARN: Value is not set |\r\n| 2  | education-num  | integer |  None | WARN: Value is not set |\r\n| 3  |  random-bool   | boolean |  None | WARN: Value is not set |\r\n| 4  | marital-status |  string |  None | WARN: Value is not set |\r\n| 5  |      age       | integer |   \e[32m32\e[0m  |           \e[32mOK\e[0m           |\r\n| 6  |      sex       |  string |  \e[32mMale\e[0m |           \e[32mOK\e[0m           |\r\n| 7  |  relationship  |  string |  None | WARN: Value is not set |\r\n| 8  |   education    |  string |  None | WARN: Value is not set |\r\n| 9  |      race      |  string |  None | WARN: Value is not set |\r\n| 10 | native-country |  string |  None | WARN: Value is not set |\r\n| 11 |     fnlwgt     | integer |  None | WARN: Value is not set |\r\n| 12 |   workclass    |  string |  None | WARN: Value is not set |\r\n| 13 |  capital-loss  | integer |  None | WARN: Value is not set |\r\n| 14 |   occupation   |  string |  None | WARN: Value is not set |\r\n+----+----------------+---------+-------+------------------------+\r\n>>> "
+  - delay: 5000
+    content: p
+  - delay: 100
+    content: a
+  - delay: 100
+    content: 'y'
+  - delay: 100
+    content: load
+  - delay: 100
+    content: .
+  - delay: 100
+    content: e
+  - delay: 100
+    content: v
+  - delay: 100
+    content: aluate(
+  - delay: 100
+    content: )
+  - delay: 100
+    content: .
+  - delay: 100
+    content: s
+  - delay: 100
+    content: h
+  - delay: 100
+    content: "\a"
+  - delay: 100
+    content: o
+  - delay: 100
+    content: w
+  - delay: 100
+    content: (
+  - delay: 100
+    content: )
+  - delay: 100
+    content: "\r\n\r\n"
+  - delay: 100
+    content: "PREDICTIONS RESULTS FROM 'my-model'\r\n\r\n\r\n5650f260-cfb8-4ad6-a399-ecf17bca18b7: '<=50K': \e[91m▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇\e[0m 98.85 %\r\n                                               \e[94m▇\e[0m 1.15  %\r\n\r\n\e[91m▇ probability(<=50K)  \e[0m\e[94m▇ probability(>50K)  \e[0m\r\n\r\n"
+  - delay: 10000
+    content: "\r\n\e[0m"
