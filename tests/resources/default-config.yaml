@@ -1,10 +1,17 @@
 current_project: "project-1"
+environments:
+  production:
+    api_url: "https://prescience-api.ai.ovh.net"
+    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+    serving_url: "https://prescience-serving.ai.ovh.net"
+  staging:
+    api_url: "https://prescience-api-staging.ai.ovh.net"
+    websocket_url: "wss://prescience-websocket-staging.ai.ovh.net"
+    serving_url: "https://prescience-serving-staging.ai.ovh.net"
 projects:
   project-1:
-    api_url: "https://prescience-api.ai.ovh.net"
     token: "token-1"
-    websocket_url: "wss://prescience-websocket.ai.ovh.net"
+    environment: "production"
   project-2:
-    api_url: "https://prescience-api-staging.ai.ovh.net"
     token: "token-2"
-    websocket_url: "wss://prescience-websocket-staging.ai.ovh.net"
+    environment: "staging"
