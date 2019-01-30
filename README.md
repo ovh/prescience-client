@@ -36,6 +36,14 @@ from prescience_client import prescience
 prescience.config().show()
 ```
 
+Run it in a bash console
+```bash
+# Display all the command and help information
+prescience --help
+```
+
+For this running mode you'll find a `cheat sheet` at the end of this README.
+
 
 ## Build and run it with docker
 
@@ -398,6 +406,74 @@ label_probabilities = result.get_result_probabilities()
 
 #### Example
 ![prescience-serving-payload](img/prescience-serving-payload.gif)
+
+# Console mode cheat sheet
+
+```bash
+# Show prescience-client config
+prescience config get
+# Switch current working project to <project-name>
+prescience config switch <project-name>
+
+# Show all sources
+prescience get sources
+# Show all datasets
+prescience get datasets
+# Show all models
+prescience get models
+# Show single source
+prescience get source '<source-id>'
+# Show single dataset
+prescience get dataset '<dataset-id>'
+# Show the schema of a dataset
+prescience get dataset '<dataset-id>' --schema
+# Show the evaluation results of a dataset
+prescience get dataset '<dataset-id>' --eval
+# Show single model
+prescience get model '<model-id>'
+
+# Delete a source
+prescience delete source '<source-id>'
+# Delete a source
+prescience delete dataset '<dataset-id>'
+# Delete a source
+prescience delete model '<model-id>'
+
+# Start a parse task and watch for it
+prescience start parse <input-file> <source-id> --watch
+# Start a preprocess task and watch for it
+prescience start preprocess <source-id>  <dataset-id> --watch
+# Start a optimize task and watch for it
+prescience start optimize <dataset-id> <budget> --watch
+# Start a train task and watch for it
+prescience start train <evaluation-result-uuid> <model-id> --watch
+
+# Validate your prediction request
+prescience predict <model-id> --json '<json-arguments>' --validate
+# Make on prediction from a model
+prescience predict <model-id> --json '<json-arguments>'
+```
+For more information about any command in the console mode, you can request for help by typing `--help` or `-h`
+
+Example :
+
+```
+prescience get source --help
+
+usage: prescience get [-h] {source,dataset,model,sources,datasets,models} ...
+
+positional arguments:
+  {source,dataset,model,sources,datasets,models}
+    source              Show information about a single source
+    dataset             Show information about a single dataset
+    model               Show information about a single model
+    sources             Show all source objects on the current project
+    datasets            Show all dataset objects on the current project
+    models              Show all model objects on the current project
+
+optional arguments:
+  -h, --help            show this help message and exit
+```
 
 # Hacking
  

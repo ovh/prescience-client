@@ -49,7 +49,21 @@ class PrescienceConfig(object):
         self.environments = {}
         self.current_project_name = None
         self.exception_handling = None
+        self.verbose = False
 
+    def is_verbose_activated(self) -> bool:
+        """
+        Getter of the verbose attribute
+        :return: the verbose attribute
+        """
+        return self.verbose
+
+    def set_verbose(self, verbose: bool):
+        """
+        Setter of the verbose mode
+        :param verbose: verbose attribute value
+        """
+        self.verbose = verbose
 
     def load(self) -> 'PrescienceConfig':
         """
@@ -59,7 +73,8 @@ class PrescienceConfig(object):
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
         full_config_path = f'{self.config_path}/{self.config_file}'
         if os.path.isfile(full_config_path):
-            print(f'Loading configuration file {full_config_path}')
+            if self.is_verbose_activated():
+                print(f'Loading configuration file {full_config_path}')
             with io.open(full_config_path, 'r') as stream:
                 loaded_config = yaml.load(stream)
                 self.projects = loaded_config.get(KEY_PROJECTS, self.default_projects_dict())
@@ -67,7 +82,8 @@ class PrescienceConfig(object):
                 self.exception_handling = loaded_config.get(KEY_EXCEPTION_HANDLING, DEFAULT_EXCEPTION_HANDLING)
                 self.environments = loaded_config.get(KEY_ENVIRONMENTS, self.default_environments_dict())
         else:
-            print(f'No configuration file found yet. Loading default one')
+            if self.is_verbose_activated():
+                print(f'No configuration file found yet. Loading default one')
             self.projects = self.default_projects_dict()
             self.current_project_name = VALUE_DEFAULT
             self.exception_handling = DEFAULT_EXCEPTION_HANDLING
@@ -82,7 +98,8 @@ class PrescienceConfig(object):
         """
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
         full_config_path = f'{self.config_path}/{self.config_file}'
-        print(f'Saving configuration file {full_config_path}')
+        if self.is_verbose_activated():
+            print(f'Saving configuration file {full_config_path}')
 
         with io.open(full_config_path, 'w', encoding='utf8') as outfile:
             yaml.dump(
@@ -223,14 +240,7 @@ class PrescienceConfig(object):
         if self.exception_handling == EXCEPTION_HANDLING_RAISE:
             raise prescience_exception
         else:
-            print(f'--------------[{colored("ERROR", "red")}]--------------')
-            if prescience_exception.message() is not None:
-                print('Message: ' + colored(prescience_exception.message(), 'red'))
-            else:
-                print('Exception: ' + str(prescience_exception))
-            if prescience_exception.resolution_hint() is not None:
-                print('Resolution hint: ' + colored(prescience_exception.resolution_hint(), 'red'))
-            print(f'-----------------------------------')
+            prescience_exception.print()
             raise prescience_exception
 
     def set_token(self, project_name: str, token: str) -> 'PrescienceConfig':
@@ -304,6 +314,7 @@ class PrescienceConfig(object):
         Add or update an entry in the configuration file corresponding to the given parameters
         :param project_name: The project name to add or to update
         :param token: The related token for this project name
+        :param environment_name: The environment to use on this project
         :return: self
         """
         self.projects[project_name] = self.project_dict(token=token, environment_name=environment_name)

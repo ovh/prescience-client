@@ -31,7 +31,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
     @classmethod
     def table_header(cls) -> list:
-        return ['config_name', 'steps', 'spent_time', 'status', 'f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost']
+        return ['uuid', 'config_name', 'f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost']
 
     @classmethod
     def table_formatter(cls, table: list) -> list:
@@ -51,10 +51,8 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
     def table_row(self) -> dict:
         return {
+            'uuid': self.uuid(),
             'config_name': self.config().name(),
-            'steps': f'{self.current_step()}/{self.total_step()}',
-            'spent_time': self.spent_time(),
-            'status': self.status(),
             'f1_cost': round(self.costs().get('f1', None), 3),
             'roc_auc_cost': round(self.costs().get('roc_auc', None), 3),
             'accuracy_cost': round(self.costs().get('accuracy', None), 3),

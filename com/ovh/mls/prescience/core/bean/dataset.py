@@ -103,6 +103,13 @@ class Dataset(TablePrintable, DictPrintable):
         """
         return self.json_dict.get('dataset_id', None)
 
+    def source_id(self):
+        """
+        Getter of the source ID attribute
+        :return: the source ID
+        """
+        return self.json_dict.get('source_id', None)
+
     def dataset_url(self):
         """
         Getter of the dataset_url attribute
@@ -175,7 +182,7 @@ class Dataset(TablePrintable, DictPrintable):
         return {
             'dataset_id': self.dataset_id(),
             'status': self.status(),
-            'source_id': self.source().source_id,
+            'source_id': self.source_id(),
             'problem_type': self.problem_type()
         }
 
