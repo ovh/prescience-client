@@ -245,7 +245,7 @@ class Model(TablePrintable, DictPrintable):
                                      arguments: dict = None
                                      ) -> ServingPayload:
         """
-        Create a serving payload for evaluate the current model with the flow type 'TRANSFORM_MODEL'
+        Create a serving payload to evaluate the current model with the flow type 'TRANSFORM_MODEL'
         (Chain the transformation evaluation and model evaluation)
         :param evaluation_id: The wanted id for the needed evaluation
         :param arguments: The arguments to fill in the payload

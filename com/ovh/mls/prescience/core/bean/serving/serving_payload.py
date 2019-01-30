@@ -26,8 +26,8 @@ class ServingPayload(object):
         Construct a serving payload from attributes
         :param model_id: The requested model id
         :param flow_type: The flow type of the request
-        :param payload_id: The id to give to the payload
-        :param arguments: The arguments of the model to fill on payload
+        :param payload_id: The id to give to the payload (optional)
+        :param arguments: The arguments of the model to fill on payload (optional)
         :param model_evaluator: The current evaluator for model
         :param prescience: The prescience client
         :return: The serving payload object
@@ -174,7 +174,7 @@ class ServingPayload(object):
 
     def show_arguments(self) -> 'ServingPayload':
         """
-        Display the filled argument whith there validations inputs on std out
+        Display the filled argument with there validations inputs on std out
         :return: The current serving payload
         """
         evaluator_inputs = self.current_inputs_evaluators()
