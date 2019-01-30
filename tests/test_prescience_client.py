@@ -20,6 +20,7 @@ from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfi
 from com.ovh.mls.prescience.core.enum.problem_type import ProblemType
 from com.ovh.mls.prescience.core.enum.scoring_metric import ScoringMetric
 from com.ovh.mls.prescience.core.enum.status import Status
+from com.ovh.mls.prescience.core.enum.web_service import PrescienceWebService
 from tests.utils import get_resource_file_path
 from unittest.mock import MagicMock
 
@@ -303,7 +304,7 @@ class TestPrescienceClient(unittest.TestCase):
             ],
             data=None,
             query_parameters=None,
-            admin_call=False
+            call_type=PrescienceWebService.API
         )
 
     def test_preprocess(self):
@@ -333,7 +334,7 @@ class TestPrescienceClient(unittest.TestCase):
             data={'dataset_id': 'my-dataset-id', 'label_id': 'my-label', 'problem_type': 'regression'},
             multipart=None,
             query_parameters=None,
-            admin_call=False
+            call_type=PrescienceWebService.API
         )
 
     def test_optimize(self):
@@ -358,7 +359,7 @@ class TestPrescienceClient(unittest.TestCase):
             data={'scoring_metric': 'accuracy', 'budget': 10},
             multipart=None,
             query_parameters=None,
-            admin_call=False
+            call_type=PrescienceWebService.API
         )
 
     def test_train(self):
@@ -388,7 +389,7 @@ class TestPrescienceClient(unittest.TestCase):
             content_type='application/json',
             data=None,
             multipart=None,
-            admin_call=False
+            call_type=PrescienceWebService.API
         )
 
     def test_create_dataset_mask(self):
@@ -406,5 +407,62 @@ class TestPrescienceClient(unittest.TestCase):
             content_type='application/json',
             data=['col1', 'col2', 'label'],
             multipart=None,
-            admin_call=False
+            call_type=PrescienceWebService.API
+        )
+
+    def test_model_evaluation(self):
+        """
+        Test the requesting of a model
+        """
+        # Init
+        self.presience_client.call = MagicMock(return_value=(200, {}, {}))
+        model = Model(json={'model_id': 'my-model-id'}, prescience=self.presience_client)
+        evaluation_payload = model.get_model_evaluation_payload(
+            evaluation_id='my-evaluation-1',
+            arguments={'feature1': 1, 'feature2': 'toto'}
+        )
+        evaluation_payload.evaluate()
+        self.presience_client.call.assert_called_with(
+            method='POST',
+            path=f'/eval/my-model-id/transform-model',
+            data={'arguments': {'feature1': 1, 'feature2': 'toto'}, 'id': 'my-evaluation-1'},
+            call_type=PrescienceWebService.SERVING
+        )
+
+    def test_model_only_evaluation(self):
+        """
+        Test the requesting of a model
+        """
+        # Init
+        self.presience_client.call = MagicMock(return_value=(200, {}, {}))
+        model = Model(json={'model_id': 'my-model-id'}, prescience=self.presience_client)
+        evaluation_payload = model.get_model_only_evaluation_payload(
+            evaluation_id='my-evaluation-1',
+            arguments={'feature1': 1, 'feature2': 'toto'}
+        )
+        evaluation_payload.evaluate()
+        self.presience_client.call.assert_called_with(
+            method='POST',
+            path=f'/eval/my-model-id/model',
+            data={'arguments': {'feature1': 1, 'feature2': 'toto'}, 'id': 'my-evaluation-1'},
+            call_type=PrescienceWebService.SERVING
+        )
+
+    def test_transformation_evaluation(self):
+        """
+        Test the requesting of a model
+        """
+        # Init
+        self.presience_client.call = MagicMock(return_value=(200, {}, {}))
+        model = Model(json={'model_id': 'my-model-id'}, prescience=self.presience_client)
+        evaluation_payload = model.get_transformation_evaluation_payload(
+            evaluation_id='my-evaluation-1',
+            arguments={'feature1': 1, 'feature2': 'toto'}
+        )
+        evaluation_payload.evaluate()
+        self.presience_client.call.assert_called_with(
+            method='POST',
+            path=f'/eval/my-model-id/transform',
+            data={'arguments': {'feature1': 1, 'feature2': 'toto'}, 'id': 'my-evaluation-1'},
+            call_type=PrescienceWebService.SERVING
         )

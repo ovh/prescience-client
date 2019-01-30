@@ -53,10 +53,10 @@ class TestBasicScenario(unittest.TestCase):
         input_path = get_resource_file_path('test.csv')
         input_file = prescience.csv_local_file_input(filepath=input_path, headers=True)
         print('02 - Launching parse task...')
-        parse_task = input_file.parse(source_id='my-source-id').watch()
+        input_file.parse(source_id='my-source-id').watch()
         print('03 - Showing sources...')
         prescience.sources().show()
-        source = parse_task.source()
+        source = prescience.source('my-source-id')
         print('04 - Showing source schema...')
         source.schema().show()
         print('05 - Launching preprocess task...')
@@ -75,3 +75,38 @@ class TestBasicScenario(unittest.TestCase):
         print('10 - Launching train task...')
         single_eval_result.train('my-model').watch()
         prescience.models().show()
+
+        print('10 - Evaluate model...')
+        evaluation_payload_input = prescience.model('my-model').get_model_evaluation_payload(
+            evaluation_id='my-evaluation',
+            arguments={
+                'hours-per-week': 40,
+                'capital-gain': 2174,
+                'education-num': 13,
+                'random-bool': 'True',
+                'marital-status': 'Never-married',
+                'age': 39,
+                'sex': 'Male',
+                'relationship': 'Not-in-family',
+                'education': 'Bachelors',
+                'race': 'White',
+                'native-country': 'United-States',
+                'fnlwgt': 77516,
+                'workclass': 'State-gov',
+                'capital-loss': 0,
+                'occupation': 'Adm-clerical'
+            }
+        )
+        evaluation_payload_input.show()
+        validation_result, _ = evaluation_payload_input.validate()
+        self.assertEqual(False, validation_result)
+
+        evaluation_payload_input.add_payload_argument('random-bool', True)
+        evaluation_payload_input.show()
+        validation_result, _ = evaluation_payload_input.validate()
+        self.assertEqual(True, validation_result)
+
+        evaluation_payload_output = evaluation_payload_input.evaluate()
+        evaluation_payload_output.show()
+        final_label = evaluation_payload_output.get_result_label()
+        self.assertEqual('<=50K', final_label)

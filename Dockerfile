@@ -10,13 +10,18 @@ ENV PYCURL_SSL_LIBRARY=openssl
 RUN mkdir /prescience-client
 WORKDIR /prescience-client
 
-ADD . /prescience-client
+RUN apk add --no-cache --virtual .build-deps build-base curl-dev
+
+ADD setup.py /prescience-client
+ADD setup.cfg /prescience-client
+
 
 # Install packages only needed for building, install and clean on a single layer
-RUN apk add --no-cache --virtual .build-deps build-base curl-dev \
-    && pip install -e . \
+RUN pip install -e . \
     && apk del --no-cache --purge .build-deps \
     && rm -rf /var/cache/apk/*
+
+ADD . /prescience-client
 
 # Delete all __pycache__ files if any
 RUN find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf

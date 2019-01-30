@@ -15,10 +15,12 @@ from com.ovh.mls.prescience.core.bean.config import Config
 from com.ovh.mls.prescience.core.bean.project import Project
 from com.ovh.mls.prescience.core.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfig
+from com.ovh.mls.prescience.core.enum.flow_type import FlowType
 from com.ovh.mls.prescience.core.enum.input_type import InputType
 from com.ovh.mls.prescience.core.enum.problem_type import ProblemType
 from com.ovh.mls.prescience.core.enum.scoring_metric import ScoringMetric
 from com.ovh.mls.prescience.core.enum.status import Status
+from com.ovh.mls.prescience.core.enum.web_service import PrescienceWebService
 from com.ovh.mls.prescience.core.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory
 
@@ -60,7 +62,7 @@ class PrescienceClient(object):
 
         _, result, _ = self.__post(
             path='/project',
-            admin_call=True,
+            call_type = PrescienceWebService.ADMIN_API,
             data={'name': current_config.get_current_project_name()}
         )
         return result
@@ -397,13 +399,14 @@ class PrescienceClient(object):
                data=None,
                multipart: list = None,
                query_parameters: dict = None,
-               admin_call: bool = False):
+               call_type: PrescienceWebService = PrescienceWebService.API):
         """
         Generic HTTP POST call
         :param path: the http path to call
         :param data: The body json data to send (as dict). None if any
         :param multipart: The list of multipart part to send. None of any
         :param query_parameters: The dict of query parameters, None if any
+        :param call_type: The prescience web service called
         :return: The tuple3 : (http response code, response content, cookie token)
         """
 
@@ -417,7 +420,7 @@ class PrescienceClient(object):
             multipart=multipart,
             content_type=content_type,
             query_parameters=query_parameters,
-            admin_call=admin_call
+            call_type=call_type
         )
 
     def __delete(self, path: str):
@@ -440,8 +443,8 @@ class PrescienceClient(object):
             multipart: list = None,
             content_type='application/json',
             expect_json_response: bool=True,
-            timeout_seconds: int=20,
-            admin_call: bool=False
+            timeout_seconds: int=5,
+            call_type: PrescienceWebService=PrescienceWebService.API
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -453,12 +456,16 @@ class PrescienceClient(object):
         :param content_type: The content type header to use (default: application/json)
         :param expect_json_response: Indicate if the answer is expected to be json. If true it will be deserialize
         :param timeout_seconds: The timeout of the http request
-        :param admin_call: Is a call to admin api ?
+        :param call_type: The prescience web service called
         :return: The tuple3 : (http response code, response content, cookie token)
         """
-        complete_url = f'{self.prescience_config.get_current_api_url()}{path}'
-        if admin_call:
-            complete_url= f'{self.prescience_config.get_current_admin_api_url()}{path}'
+        switch = {
+            PrescienceWebService.API:  f'{self.prescience_config.get_current_api_url()}{path}',
+            PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
+            PrescienceWebService.SERVING: f'{self.prescience_config.get_current_serving_url()}{path}'
+        }
+        complete_url = switch.get(call_type)
+
         if query_parameters is not None and len(query_parameters) != 0:
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'
@@ -520,6 +527,46 @@ class PrescienceClient(object):
                 return status_code, json_response, dict(cookie_token)
             else:
                 return status_code, response_content, dict(cookie_token)
+
+    ############################################
+    ############### SERVING METHODS ############
+    ############################################
+
+    def serving_model_evaluator(self, model_id: str):
+        """
+        Access the evaluator of a model on prescience-serving api
+        :param model_id: The id of the model
+        :return: The answered json dictionary for the evaluator
+        """
+        _, result, _ = self.call(
+            method='GET',
+            path=f'/evaluator/{model_id}',
+            call_type=PrescienceWebService.SERVING
+        )
+        return result
+
+    def serving_model_evaluate(self,
+                               model_id: str,
+                               flow_type: FlowType,
+                               request_data):
+        """
+        Evaluate a model from a single request
+        :param model_id: The id of the model to evaluate
+        :param flow_type: The flow type of the evaluation
+        :param request_data: The json dictionary or list of dictionary containing evaluation parameters
+        :return: The json dictionary of the answer
+        """
+        path = f'/eval/{model_id}/{str(flow_type)}'
+        if isinstance(request_data, list):
+            path = f'/eval/{model_id}/{str(flow_type)}/batch/json'
+
+        _, result, _ = self.call(
+            method='POST',
+            path=path,
+            call_type=PrescienceWebService.SERVING,
+            data=request_data
+        )
+        return result
 
     ############################################
     ########### WEB-SOCKET METHODS #############
