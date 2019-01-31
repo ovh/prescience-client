@@ -10,7 +10,7 @@ ENV PYCURL_SSL_LIBRARY=openssl
 RUN mkdir /prescience-client
 WORKDIR /prescience-client
 
-RUN apk add --no-cache --virtual .build-deps build-base curl-dev
+RUN apk add --no-cache --virtual .build-deps build-base curl-dev curl
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
@@ -36,5 +36,7 @@ ENV PRESCIENCE_DEFAULT_TOKEN=${DEFAULT_TOKEN}
 ENV PRESCIENCE_DEFAULT_API_URL=${DEFAULT_PRESCIENCE_API}
 ENV PRESCIENCE_DEFAULT_WEBSOCKET_URL=${DEFAULT_PRESCIENCE_WEBSOCKET}
 ENV PRESCIENCE_DEFAULT_ADMIN_API_URL=${DEFAULT_PRESCIENCE_ADMIN_API_URL}
+
+ADD
 
 ENTRYPOINT ["sh"]
