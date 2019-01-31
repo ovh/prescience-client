@@ -44,12 +44,14 @@ def init_args():
     source_parser.add_argument('id', type=str, default=None)
     source_parser.set_defaults(schema=False)
     source_parser.add_argument('--schema', action='store_true', help='Display the schema of the source')
+    source_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this source')
     ## get dataset
     dataset_parser.add_argument('id', type=str, default=None)
     dataset_parser.set_defaults(schema=False)
     dataset_parser.set_defaults(eval=False)
     dataset_parser.add_argument('--schema', action='store_true', help='Display the schema of the dataset')
     dataset_parser.add_argument('--eval', action='store_true', help='Display the evaluation results of the dataset')
+    dataset_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this dataset')
     # get model
     model_parser.add_argument('id', type=str, default=None)
 
@@ -144,11 +146,14 @@ def get_dataset(args: dict):
     display_eval = args['eval']
     display_schema = args['schema']
     dataset_id = args['id']
+    download_directory = args['download']
     dataset = prescience.dataset(dataset_id)
     if display_eval:
         dataset.evaluation_results().show()
     elif display_schema:
         dataset.schema().show()
+    elif download_directory is not None:
+        prescience.download_dataset(dataset_id=dataset_id, output_directory=download_directory)
     else:
         dataset.show()
 
@@ -165,8 +170,11 @@ def get_source(args: dict):
     """
     source_id = args['id']
     source = prescience.source(source_id)
+    download_directory = args['download']
     if args['schema']:
         source.schema().show()
+    elif download_directory is not None:
+        prescience.download_source(source_id=source_id, output_directory=download_directory)
     else:
         source.show()
 

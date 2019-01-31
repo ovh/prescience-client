@@ -70,7 +70,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_sources = self.presience_client.sources()
-        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters= {'page': 1})
+        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters= {'page': 1}, accept='application/json')
         self.assertEqual(2, all_sources.metadata.page_number)
         self.assertEqual(2, all_sources.metadata.total_pages)
         self.assertEqual(1, all_sources.metadata.elements_on_page)
@@ -81,7 +81,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.sources(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters={'page': 2})
+        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters={'page': 2}, accept='application/json')
 
 
     def test_get_datasets(self):
@@ -105,7 +105,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_datasets = self.presience_client.datasets()
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters= {'page': 1})
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters= {'page': 1}, accept='application/json')
         self.assertEqual(2, all_datasets.metadata.page_number)
         self.assertEqual(2, all_datasets.metadata.total_pages)
         self.assertEqual(1, all_datasets.metadata.elements_on_page)
@@ -116,7 +116,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.datasets(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters={'page': 2})
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters={'page': 2}, accept='application/json')
 
     def test_get_models(self):
         """
@@ -139,7 +139,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_models = self.presience_client.models()
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 1})
+        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 1}, accept='application/json')
         self.assertEqual(2, all_models.metadata.page_number)
         self.assertEqual(2, all_models.metadata.total_pages)
         self.assertEqual(1, all_models.metadata.elements_on_page)
@@ -150,11 +150,11 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.models(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2})
+        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2}, accept='application/json')
 
         # Test 3
         self.presience_client.models(page=2, dataset_id_filter='my-dataset-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2, 'dataset_id': 'my-dataset-id'})
+        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2, 'dataset_id': 'my-dataset-id'}, accept='application/json')
 
     def test_get_evaluation_results(self):
         """
@@ -179,7 +179,8 @@ class TestPrescienceClient(unittest.TestCase):
         self.presience_client.call.assert_called_with(
             method='GET',
             path='/evaluation-result',
-            query_parameters={'dataset_id': 'my-dataset-id', 'page': 2}
+            query_parameters={'dataset_id': 'my-dataset-id', 'page': 2},
+            accept='application/json'
         )
 
     def test_get_tasks(self):
@@ -204,7 +205,8 @@ class TestPrescienceClient(unittest.TestCase):
         self.presience_client.call.assert_called_with(
             method='GET',
             path='/task',
-            query_parameters={'page': 2}
+            query_parameters={'page': 2},
+            accept='application/json'
         )
 
     def test_get_single_source(self):
@@ -216,7 +218,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_source = self.presience_client.source('my-source-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/source/my-source-id', query_parameters=None)
+        self.presience_client.call.assert_called_with(method='GET', path='/source/my-source-id', query_parameters=None, accept='application/json')
         self.assertEqual('my-source-id', my_source.source_id)
 
     def test_delete_single_source(self):
@@ -228,7 +230,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         source.delete()
-        self.presience_client.call.assert_called_with(method='DELETE', path='/source/my-source-id', expect_json_response=False)
+        self.presience_client.call.assert_called_with(method='DELETE', path='/source/my-source-id', accept='')
 
     def test_get_single_dataset(self):
         """
@@ -239,7 +241,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_dataset = self.presience_client.dataset('my-dataset-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset/my-dataset-id', query_parameters=None)
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset/my-dataset-id', query_parameters=None, accept='application/json')
         self.assertEqual('my-dataset-id', my_dataset.dataset_id())
 
     def test_delete_single_dataset(self):
@@ -251,7 +253,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         dataset.delete()
-        self.presience_client.call.assert_called_with(method='DELETE', path='/dataset/my-dataset-id', expect_json_response=False)
+        self.presience_client.call.assert_called_with(method='DELETE', path='/dataset/my-dataset-id', accept='')
 
     def test_get_single_model(self):
         """
@@ -262,7 +264,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_model = self.presience_client.model('my-model-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/model/my-model-id', query_parameters=None)
+        self.presience_client.call.assert_called_with(method='GET', path='/model/my-model-id', query_parameters=None, accept='application/json')
         self.assertEqual('my-model-id', my_model.model_id())
 
     def test_delete_single_model(self):
@@ -274,7 +276,7 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         model.delete()
-        self.presience_client.call.assert_called_with(method='DELETE', path='/model/my-model-id', expect_json_response=False)
+        self.presience_client.call.assert_called_with(method='DELETE', path='/model/my-model-id', accept='')
 
     def test_parse(self):
         """
