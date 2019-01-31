@@ -14,6 +14,7 @@ RUN apk add --no-cache --virtual .build-deps build-base curl-dev
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
+ADD prescience /prescience-client
 
 
 # Install packages only needed for building, install and clean on a single layer
