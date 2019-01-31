@@ -58,8 +58,8 @@ class Model(TablePrintable, DictPrintable):
             'model_id': self.model_id(),
             'status': self.status(),
             'config_name': self.config().name(),
-            'dataset_id': self.dataset().dataset_id(),
-            'source_id': self.source().source_id
+            'dataset_id': self.dataset_id(),
+            'source_id': self.source_id()
         }
 
     def get_description_dict(self) -> dict:
@@ -144,6 +144,20 @@ class Model(TablePrintable, DictPrintable):
         :return: the model_id
         """
         return self.json_dict.get('model_id', None)
+
+    def dataset_id(self):
+        """
+        Getter of the dataset_id attribute
+        :return: the dataset_id
+        """
+        return self.json_dict.get('dataset_id', None)
+
+    def source_id(self):
+        """
+        Getter of the source_id attribute
+        :return: the source_id
+        """
+        return self.json_dict.get('source_id', None)
 
     def config(self) -> Config:
         """

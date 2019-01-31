@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+import json
+
+from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
+from prescience_client import prescience
+
+def init_args():
+    """Parse and return the arguments."""
+    parser = argparse.ArgumentParser(description='Python client for OVH Prescience project')
+    # CMD
+    subparsers = parser.add_subparsers(dest='cmd')
+
+    # config
+    cmd_config_parser = subparsers.add_parser('config', help='Manage your prescience-client configuration')
+    config_subparser = cmd_config_parser.add_subparsers(dest='config_cmd')
+
+    # config get
+    config_get_parser = config_subparser.add_parser('get', help='Show information about specifics prescience objects')
+
+    # config switch
+    config_switch_parser = config_subparser.add_parser('switch', help='Change the currently selected prescience project')
+    config_switch_parser.add_argument('project', type=str, default='default',  help='The project name you want to switch on')
+
+    # get
+    cmd_get_parser = subparsers.add_parser('get', help='Show information about specific prescience objects')
+    get_subparser = cmd_get_parser.add_subparsers(dest='subject')
+    source_parser = get_subparser.add_parser('source', help='Show information about a single source')
+    dataset_parser = get_subparser.add_parser('dataset', help='Show information about a single dataset')
+    model_parser = get_subparser.add_parser('model', help='Show information about a single model')
+    sources_parser = get_subparser.add_parser('sources', help='Show all source objects on the current project')
+    datasets_parser = get_subparser.add_parser('datasets', help='Show all dataset objects on the current project')
+    models_parser = get_subparser.add_parser('models', help='Show all model objects on the current project')
+
+    ## get sources
+    sources_parser.add_argument('--page', type=int, default=1)
+    ## get datasets
+    datasets_parser.add_argument('--page', type=int, default=1)
+    ## get models
+    models_parser.add_argument('--page', type=int, default=1)
+    ## get source
+    source_parser.add_argument('id', type=str, default=None)
+    source_parser.set_defaults(schema=False)
+    source_parser.add_argument('--schema', action='store_true', help='Display the schema of the source')
+    ## get dataset
+    dataset_parser.add_argument('id', type=str, default=None)
+    dataset_parser.set_defaults(schema=False)
+    dataset_parser.set_defaults(eval=False)
+    dataset_parser.add_argument('--schema', action='store_true', help='Display the schema of the dataset')
+    dataset_parser.add_argument('--eval', action='store_true', help='Display the evaluation results of the dataset')
+    # get model
+    model_parser.add_argument('id', type=str, default=None)
+
+    # start
+    cmd_start_parser = subparsers.add_parser('start', help='Start a task on prescience')
+    start_subparser = cmd_start_parser.add_subparsers(dest='subject')
+    ## start parse
+    parse_parser = start_subparser.add_parser('parse', help='Launch a parse task on prescience')
+    parse_parser.add_argument('--no-headers', dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
+    parse_parser.set_defaults(headers=True)
+    parse_parser.set_defaults(watch=False)
+    parse_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    parse_parser.add_argument('input-filepath', type=str, help='Local input file to send and parse on prescience')
+    parse_parser.add_argument('source-id', type=str, help='Identifier of your future source object')
+    ## start preprocess
+    preprocess_parser = start_subparser.add_parser('preprocess', help='Launch a preprocess task on prescience')
+    preprocess_parser.add_argument('source-id', type=str, help='Identifier of the source object to use for preprocessing')
+    preprocess_parser.add_argument('dataset-id', type=str, help='Identifier of your future dataset object')
+    preprocess_parser.set_defaults(watch=False)
+    preprocess_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    ## start optimize
+    optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
+    optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
+    optimize_parser.add_argument('budget', type=int, help='Budget to allow on optimization')
+    optimize_parser.set_defaults(watch=False)
+    optimize_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    ## start train
+    train_parser = start_subparser.add_parser('train', help='Launch a train task on prescience')
+    train_parser.add_argument('uuid', type=str, help='Chosen evaluation result uuid to train on')
+    train_parser.add_argument('model-id', type=str, help='Identifier of your future model object')
+    train_parser.set_defaults(watch=False)
+    train_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+
+    # predict
+    cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
+    cmd_predict_parser.add_argument('model-id', type=str, help='Identifier if the source object to delete')
+    cmd_predict_parser.add_argument('--json', type=str, default='{}', help='All arguments to send as input of prescience model (in json format)')
+    cmd_predict_parser.set_defaults(validate=False)
+    cmd_predict_parser.add_argument('--validate', action='store_true', help='Validate the prediction request and don\'t send it')
+
+    # delete
+    cmd_delete_parser = subparsers.add_parser('delete', help='Delete a prescience object')
+    delete_subparser = cmd_delete_parser.add_subparsers(dest='subject')
+    ## delete source
+    delete_source_parser = delete_subparser.add_parser('source', help='Delete a prescience source object')
+    delete_source_parser.add_argument('id', type=str, help='Identifier if the source object to delete')
+
+    ## delete dataset
+    delete_dataset_parser = delete_subparser.add_parser('dataset', help='Delete a prescience dataset object')
+    delete_dataset_parser.add_argument('id', type=str, help='Identifier if the dataset object to delete')
+
+    ## delete model
+    delete_model_parser = delete_subparser.add_parser('model', help='Delete a prescience model object')
+    delete_model_parser.add_argument('id', type=str, help='Identifier if the model object to delete')
+
+
+    if len(sys.argv) == 1:
+        if sys.stdin.isatty():
+            parser.print_usage()
+            sys.exit(2)
+
+    args = vars(parser.parse_args())
+    return args
+
+def get_models(args: dict):
+    """
+    Show model list
+    """
+    page = args['page']
+    prescience.models(page=page).show()
+
+def get_model(args: dict):
+    """
+    Show single model
+    """
+    model_id = args['id']
+    model = prescience.model(model_id)
+    model.show()
+
+
+def get_datasets(args: dict):
+    """
+    Show datasets list
+    """
+    page = args['page']
+    prescience.datasets(page=page).show()
+
+def get_dataset(args: dict):
+    """
+    Show single dataset
+    """
+    display_eval = args['eval']
+    display_schema = args['schema']
+    dataset_id = args['id']
+    dataset = prescience.dataset(dataset_id)
+    if display_eval:
+        dataset.evaluation_results().show()
+    elif display_schema:
+        dataset.schema().show()
+    else:
+        dataset.show()
+
+def get_sources(args: dict):
+    """
+    Show sources list
+    """
+    page = args['page']
+    prescience.sources(page=page).show()
+
+def get_source(args: dict):
+    """
+    Show single source
+    """
+    source_id = args['id']
+    source = prescience.source(source_id)
+    if args['schema']:
+        source.schema().show()
+    else:
+        source.show()
+
+
+def get_cmd(args: dict):
+    """
+    Execute 'get' command
+    """
+    subject = args['subject']
+    switch = {
+        'source': get_source,
+        'sources': get_sources,
+        'dataset': get_dataset,
+        'datasets': get_datasets,
+        'model': get_model,
+        'models': get_models
+    }
+    switch[subject](args)
+
+def config_get(args: dict):
+    """
+    Execute 'config get' command
+    """
+    prescience.config().show()
+
+def config_switch(args: dict):
+    """
+    Execute 'config switch' command
+    """
+    prescience.config().set_current_project(project_name=args['project'])
+
+def start_parse(args: dict):
+    """
+    Execute 'start parse' command
+    """
+    filepath = args['input-filepath']
+    has_headers = args['headers']
+    watch = args['watch']
+    source_id = args['source-id']
+    input_local_file = prescience.csv_local_file_input(filepath=filepath, headers=has_headers)
+    parse_task = input_local_file.parse(source_id=source_id)
+    if watch:
+        parse_task.watch()
+
+def start_preprocess(args: dict):
+    """
+    Execute 'start preprocess' command
+    """
+    source_id = args['source-id']
+    watch = args['watch']
+    dataset_id = args['dataset-id']
+    source = prescience.source(source_id=source_id)
+    task = source.preprocess(
+        dataset_id=dataset_id
+    )
+    if watch:
+        task.watch()
+
+def start_optimize(args: dict):
+    """
+    Execute 'start optimize' command
+    """
+    dataset_id = args['dataset-id']
+    budget = args['budget']
+    watch = args['watch']
+    dataset = prescience.dataset(dataset_id=dataset_id)
+    task = dataset.optimize(budget=budget)
+    if watch:
+        task.watch()
+
+def start_train(args: dict):
+    """
+    Execute 'start train' command
+    """
+    evaluation_result_uuid = args['uuid']
+    model_id = args['model-id']
+    watch = args['watch']
+    task = prescience.train(evaluation_uuid=evaluation_result_uuid, model_id=model_id)
+    if watch:
+        task.watch()
+
+def start_cmd(args: dict):
+    """
+    Execute 'start' command
+    """
+    subject = args['subject']
+    switch = {
+        'parse': start_parse,
+        'preprocess': start_preprocess,
+        'optimize': start_optimize,
+        'train': start_train
+    }
+    switch[subject](args)
+
+def config_cmd(args: dict):
+    """
+    Execute 'config' command
+    """
+    command = args['config_cmd']
+    switch = {
+        'get': config_get,
+        'switch': config_switch
+    }
+    switch[command](args)
+
+def delete_cmd(args: dict):
+    """
+    Execute 'delete' command
+    """
+    subject = args['subject']
+    switch = {
+        'source': delete_source,
+        'dataset': delete_dataset,
+        'model': delete_model
+    }
+    switch[subject](args)
+
+def delete_source(args: dict):
+    """
+    Execute 'delete source' command
+    """
+    source_id = args['id']
+    prescience.delete_source(source_id=source_id)
+
+def delete_dataset(args: dict):
+    """
+    Execute 'delete dataset' command
+    """
+    dataset_id = args['id']
+    prescience.delete_dataset(dataset_id=dataset_id)
+
+def delete_model(args: dict):
+    """
+    Execute 'delete model' command
+    """
+    model_id = args['id']
+    prescience.delete_model(model_id=model_id)
+
+def predict_cmd(args: dict):
+    """
+    Execute 'predict' command
+    """
+    model_id = args['model-id']
+    validate = args['validate']
+    payload_json = args['json']
+    payload_dict = json.loads(payload_json)
+    model = prescience.model(model_id=model_id)
+    payload = model.get_model_evaluation_payload(arguments=payload_dict)
+    if validate:
+        is_valid, _ = payload.validate()
+        payload.show()
+    else:
+        result = payload.evaluate()
+        result.show()
+
+def main():
+    """
+    Main class, finding user filled values and launch wanted command
+    """
+    try:
+        args = init_args()
+        cmd = args['cmd']
+        switch = {
+            'get': get_cmd,
+            'start': start_cmd,
+            'config': config_cmd,
+            'delete': delete_cmd,
+            'predict': predict_cmd
+        }
+        switch[cmd](args)
+        exit(0)
+
+    except PrescienceException as exception:
+        exception.print()
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()
