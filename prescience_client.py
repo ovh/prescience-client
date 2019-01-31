@@ -6,4 +6,4 @@ from com.ovh.mls.prescience.core.client.prescience_client import PrescienceClien
 from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfig
 
 config = PrescienceConfig().load()
-prescience: PrescienceClient = PrescienceClient(config, verbose=False)
+prescience: PrescienceClient = PrescienceClient(config, verbose=True)
