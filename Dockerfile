@@ -1,8 +1,7 @@
 FROM python:3.7.2-alpine
 
 # Install packages
-RUN apk add --no-cache libcurl
-RUN apk add --no-cache make
+RUN apk add --no-cache libcurl curl make
 
 # Needed for pycurl
 ENV PYCURL_SSL_LIBRARY=openssl
@@ -10,7 +9,7 @@ ENV PYCURL_SSL_LIBRARY=openssl
 RUN mkdir /prescience-client
 WORKDIR /prescience-client
 
-RUN apk add --no-cache --virtual .build-deps build-base curl-dev curl
+RUN apk add --no-cache --virtual .build-deps build-base curl-dev
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
@@ -37,4 +36,5 @@ ENV PRESCIENCE_DEFAULT_API_URL=${DEFAULT_PRESCIENCE_API}
 ENV PRESCIENCE_DEFAULT_WEBSOCKET_URL=${DEFAULT_PRESCIENCE_WEBSOCKET}
 ENV PRESCIENCE_DEFAULT_ADMIN_API_URL=${DEFAULT_PRESCIENCE_ADMIN_API_URL}
 
-ENTRYPOINT ["sh"]
+ENTRYPOINT []
+CMD "/bin/sh"
