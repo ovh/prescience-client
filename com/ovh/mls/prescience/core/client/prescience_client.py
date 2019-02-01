@@ -227,18 +227,30 @@ class PrescienceClient(object):
 
     def retrain(self,
                 model_id: str,
-                chain_metric_task: bool = True
+                filepath: str = None,
+                chain_metric_task: bool = True,
                 ) -> 'TrainTask':
         """
         Launch a Re-Train task on a model
         :param model_id: The initial model ID
+        :param filepath: The path of the local input file
         :param chain_metric_task: should chain the train task with a metric task ? (default: True)
         :return:
         """
         query_parameters = {
             'chain_metric_task': chain_metric_task
         }
-        _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters)
+
+        if filepath:
+            multipart = [
+                ('input-file', (pycurl.FORM_FILE, filepath))
+            ]
+        else:
+            multipart: None
+
+        _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters,
+                                   multipart=multipart)
+
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 

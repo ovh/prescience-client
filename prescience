@@ -88,6 +88,12 @@ def init_args():
     train_parser.set_defaults(watch=False)
     train_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
 
+    ## start retrain
+    retrain_parser = start_subparser.add_parser('retrain', help='Launch a retrain task on prescience')
+    retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    retrain_parser.add_argument('model-id', type=str, help='Model to retrain')
+    retrain_parser.add_argument('input-filepath', type=str, help='Local input file to send in order to retrain the model on prescience')
+
     # predict
     cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
     cmd_predict_parser.add_argument('model-id', type=str, help='Identifier if the source object to delete')
@@ -259,6 +265,17 @@ def start_train(args: dict):
     if watch:
         task.watch()
 
+def start_retrain(args: dict):
+    """
+    Execute 'start train' command
+    """
+    file = args['input-filepath']
+    model_id = args['model-id']
+    watch = args['watch']
+    task = prescience.retrain(model_id=model_id, filepath=file)
+    if watch:
+        task.watch()
+
 def start_cmd(args: dict):
     """
     Execute 'start' command
@@ -268,7 +285,8 @@ def start_cmd(args: dict):
         'parse': start_parse,
         'preprocess': start_preprocess,
         'optimize': start_optimize,
-        'train': start_train
+        'train': start_train,
+        'retrain': start_retrain
     }
     switch[subject](args)
 
