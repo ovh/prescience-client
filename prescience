@@ -321,7 +321,8 @@ def predict_cmd(args: dict):
     validate = args['validate']
     payload_json = args['json']
     payload_dict = json.loads(payload_json)
-    model = prescience.model(model_id=model_id)
+    from com.ovh.mls.prescience.core.bean.model import Model
+    model = Model.new(model_id=model_id, prescience=prescience)
     payload = model.get_model_evaluation_payload(arguments=payload_dict)
     if validate:
         is_valid, _ = payload.validate()

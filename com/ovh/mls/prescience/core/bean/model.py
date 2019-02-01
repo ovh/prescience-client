@@ -25,6 +25,15 @@ class Model(TablePrintable, DictPrintable):
     Inherit from DictPrintable so that it can be easily printed as single dict object on stdout
     """
 
+    @classmethod
+    def new(cls, model_id, prescience: PrescienceClient = None):
+        """
+        Construct a simple Model from a model_id
+        :param model_id: 'The model_id'
+        :param prescience: The prescience client
+        """
+        return Model(json={'model_id': model_id}, prescience=prescience)
+
     def __init__(self,
                  json: dict,
                 prescience: PrescienceClient = None):
@@ -36,6 +45,7 @@ class Model(TablePrintable, DictPrintable):
         self.json_dict = json
         self.selected = False
         self.prescience = prescience
+        self.model_evaluator = None
 
     def set_selected(self):
         """
@@ -310,5 +320,8 @@ class Model(TablePrintable, DictPrintable):
         Find prescience evaluators for the current model
         :return: the prescience evaluator for the current model
         """
-        json_dict = self.prescience.serving_model_evaluator(model_id=self.model_id())
-        return Evaluator(json_dict=json_dict, prescience=self.prescience)
+        if self.model_evaluator is None:
+            json_dict = self.prescience.serving_model_evaluator(model_id=self.model_id())
+            self.model_evaluator = Evaluator(json_dict=json_dict, prescience=self.prescience)
+
+        return self.model_evaluator

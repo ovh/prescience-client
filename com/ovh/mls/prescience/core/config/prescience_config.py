@@ -16,6 +16,7 @@ KEY_PROJECTS = 'projects'
 KEY_ENVIRONMENTS = 'environments'
 KEY_CURRENT_PROJECT = 'current_project'
 KEY_EXCEPTION_HANDLING = 'exception_handling'
+KEY_VERBOSE = 'verbose'
 
 # Keys for projects
 KEY_TOKEN = 'token'
@@ -81,6 +82,7 @@ class PrescienceConfig(object):
                 self.current_project_name = loaded_config.get(KEY_CURRENT_PROJECT, VALUE_DEFAULT)
                 self.exception_handling = loaded_config.get(KEY_EXCEPTION_HANDLING, DEFAULT_EXCEPTION_HANDLING)
                 self.environments = loaded_config.get(KEY_ENVIRONMENTS, self.default_environments_dict())
+                self.set_verbose(verbose=loaded_config.get(KEY_VERBOSE, False))
         else:
             if self.is_verbose_activated():
                 print(f'No configuration file found yet. Loading default one')
@@ -107,7 +109,8 @@ class PrescienceConfig(object):
                     KEY_ENVIRONMENTS: self.environments,
                     KEY_PROJECTS: self.projects,
                     KEY_CURRENT_PROJECT: self.current_project_name,
-                    KEY_EXCEPTION_HANDLING: self.exception_handling
+                    KEY_EXCEPTION_HANDLING: self.exception_handling,
+                    KEY_VERBOSE: self.is_verbose_activated()
                 },
                 stream=outfile,
                 default_flow_style=False,

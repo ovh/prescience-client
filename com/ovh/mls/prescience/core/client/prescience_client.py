@@ -32,10 +32,8 @@ class PrescienceClient(object):
     Prescience API is describe here https://prescience-api.ai.ovh.net/
     """
     def __init__(self,
-                 prescience_config: PrescienceConfig,
-                 verbose: bool = True):
+                 prescience_config: PrescienceConfig):
         self.prescience_config = prescience_config
-        self.verbose = verbose
 
     def login(self):
         """
@@ -536,7 +534,7 @@ class PrescienceClient(object):
         curl.setopt(pycurl.HTTPHEADER, http_headers)
         curl.setopt(pycurl.CUSTOMREQUEST, method)
 
-        if self.verbose:
+        if self.config().is_verbose_activated():
             curl.setopt(pycurl.VERBOSE, 1)
 
         if data is not None:
@@ -578,7 +576,7 @@ class PrescienceClient(object):
         else:
             if accept == 'application/json':
                 json_response = json.loads(response_content)
-                if self.verbose:
+                if self.config().is_verbose_activated():
                     print(f'[{status_code}] {json_response}')
                 return status_code, json_response, dict(cookie_token)
             else:
