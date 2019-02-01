@@ -9,7 +9,7 @@ from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfi
 class Singletons:
     config = PrescienceConfig().load()
 
-    prescience: PrescienceClient = PrescienceClient(config, verbose=False)
+    prescience: PrescienceClient = PrescienceClient(config)
 
 
 prescience: PrescienceClient = Singletons.prescience
