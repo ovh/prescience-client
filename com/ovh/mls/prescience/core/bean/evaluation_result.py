@@ -4,6 +4,7 @@
 
 from com.ovh.mls.prescience.core.bean.config import Config
 from com.ovh.mls.prescience.core.client.prescience_client import PrescienceClient
+from com.ovh.mls.prescience.core.utils.monad import Option, List
 from com.ovh.mls.prescience.core.utils.table_printable import DictPrintable, TablePrintable
 
 from termcolor import colored
@@ -31,14 +32,22 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
     @classmethod
     def table_header(cls) -> list:
-        return ['uuid', 'config_name', 'f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost']
+        return []
 
     @classmethod
-    def table_formatter(cls, table: list) -> list:
+    def table_formatter(cls, table: list) -> (list, list):
+        # Find headers that will be displayed
+        analyzed_columns = ['f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost', 'r2_cost', 'mae_cost', 'mse_cost']
+        row_from_column_key = lambda column_key: List(table).map(lambda x: x.get(column_key, None))
+        tuple_from_key = lambda column_key: (column_key, row_from_column_key(column_key).count(lambda x: x is None))
+        number_of_none = List(analyzed_columns).map(tuple_from_key).filter(lambda d: d[1] != len(table)).to_dict()
+        final_header = list(number_of_none.keys())
+
+        # Reformat row with red and green
         formatted_table = []
         for x in table:
             x_copy = copy.copy(x)
-            for column_name in ['f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost']:
+            for column_name in final_header:
                 max_column = max([x[column_name] for x in table])
                 min_column = min([x[column_name] for x in table])
                 if x[column_name] == max_column:
@@ -47,17 +56,22 @@ class EvaluationResult(TablePrintable, DictPrintable):
                     x_copy[column_name] = colored(min_column, 'green')
             formatted_table.append(x_copy)
 
-        return formatted_table
+        return ['uuid', 'config_name'] + final_header, formatted_table
 
     def table_row(self) -> dict:
+        round_3 = lambda x: round(x, 3)
+        cost_get_safe = lambda key: Option(self.costs().get(key, None)).map(func=round_3).get_or_else(None)
         return {
             'uuid': self.uuid(),
             'config_name': self.config().name(),
-            'f1_cost': round(self.costs().get('f1', None), 3),
-            'roc_auc_cost': round(self.costs().get('roc_auc', None), 3),
-            'accuracy_cost': round(self.costs().get('accuracy', None), 3),
-            'cohen_kappa_cost': round(self.costs().get('cohen_kappa', None), 3),
-            'average_precision_cost': round(self.costs().get('average_precision', None), 3)
+            'f1_cost': cost_get_safe('f1'),
+            'roc_auc_cost': cost_get_safe('roc_auc'),
+            'accuracy_cost': cost_get_safe('accuracy'),
+            'cohen_kappa_cost': cost_get_safe('cohen_kappa'),
+            'average_precision_cost': cost_get_safe('average_precision'),
+            'r2_cost': cost_get_safe('r2'),
+            'mae_cost': cost_get_safe('mae'),
+            'mse_cost': cost_get_safe('mse'),
         }
 
     def get_description_dict(self) -> dict:

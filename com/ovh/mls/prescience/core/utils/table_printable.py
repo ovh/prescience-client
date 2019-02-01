@@ -13,13 +13,13 @@ class TablePrintable(ABC):
     """
 
     @classmethod
-    def table_formatter(cls, table: list) -> list:
+    def table_formatter(cls, table: list) -> (list, list):
         """
         Default method which format the given table before printing it
         :param table: The table we want to format
-        :return: The table with specific format applied
+        :return: The tuple2 of (final table header, table with specific format applied)
         """
-        return table
+        return cls.table_header(), table
 
     @classmethod
     @abstractmethod
@@ -80,12 +80,11 @@ class TablePrinter(object):
         if not issubclass(clazz, TablePrintable):
             raise TypeError(f'Classe {clazz} is not a sub-class of TablePrintable')
         table = PrettyTable()
-        headers = clazz.table_header()
-        headers.insert(0, '')
-        table.field_names = [colored(x, attrs=['bold']) for x in headers]
         all_row_dict = [x.table_row() for x in table_printable_objects]
-        all_row_dict_formatted = clazz.table_formatter(all_row_dict)
-        all_row = [[x[y] for y in clazz.table_header()] for x in all_row_dict_formatted]
+        header, all_row_dict_formatted = clazz.table_formatter(all_row_dict)
+        final_header = [''] + list(header)
+        all_row = [[x[y] for y in header] for x in all_row_dict_formatted]
+        table.field_names = [colored(x, attrs=['bold']) for x in final_header]
         for i in range(len(all_row)):
             row = all_row[i]
             row.insert(0, i)

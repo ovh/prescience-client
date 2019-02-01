@@ -503,7 +503,6 @@ class PrescienceClient(object):
         :param data: The body json data to send (as dict). None if any
         :param multipart: The list of multipart part to send. None of any
         :param content_type: The content type header to use (default: application/json)
-        :param expect_json_response: Indicate if the answer is expected to be json. If true it will be deserialize
         :param timeout_seconds: The timeout of the http request
         :param call_type: The prescience web service called
         :param accept: accept header
@@ -524,7 +523,8 @@ class PrescienceClient(object):
 
         http_headers = [
             f'Authorization: Bearer {self.prescience_config.get_current_token()}',
-            f'Content-Type: {content_type}'
+            f'Content-Type: {content_type}',
+            f'User-Agent: OVH-Prescience-Python-Client'
         ]
 
         if accept != '':
