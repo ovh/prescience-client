@@ -7,6 +7,7 @@ import pycurl
 import re
 import urllib.parse
 from io import BytesIO
+import os
 
 from progress.bar import ChargingBar
 from websocket import create_connection
@@ -385,14 +386,62 @@ class PrescienceClient(object):
         from com.ovh.mls.prescience.core.bean.model import Model
         return Model(json=model, prescience=self)
 
-    def __get(self, path: str, query_parameters: dict = None):
+    def download_source(self, source_id:str, output_directory: str):
+        """
+        Download all source related files into the given directory
+        :param source_id: The source id to download
+        :param output_directory: The output directory (will be created if it doesn't exist)
+        """
+        _, response, _ = self.__get(path=f'/download/source/{source_id}')
+
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        for output in response:
+            _, file, _ = self.__get(path=f'/download/source/{source_id}/{output}', accept='application/octet-stream')
+            full_output_path = os.path.join(output_directory, output)
+            with open(full_output_path, 'wb') as stream:
+                stream.write(file)
+                stream.close()
+
+    def download_dataset(self, dataset_id:str, output_directory: str):
+        """
+        Download all dataset related files into the given directory
+        :param dataset_id: The dataset id to download
+        :param output_directory: The output directory (will be created if it doesn't exist)
+        """
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        # Download train files
+        _, all_train_files, _ = self.__get(path=f'/download/dataset/{dataset_id}/train')
+        for output in all_train_files:
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/train/{output}', accept='application/octet-stream')
+            full_output_path = os.path.join(output_directory, f'train-{output}')
+            with open(full_output_path, 'wb') as stream:
+                stream.write(file)
+                stream.close()
+
+        # Download test files
+        _, all_test_files, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
+        for output in all_test_files:
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/test/{output}', accept='application/octet-stream')
+            full_output_path = os.path.join(output_directory, f'test-{output}')
+            with open(full_output_path, 'wb') as stream:
+                stream.write(file)
+                stream.close()
+
+
+
+    def __get(self, path: str, query_parameters: dict = None, accept: str='application/json'):
         """
         Generic HTTP GET call
         :param path: the http path to call
         :param query_parameters: The dict of query parameters, None if any
+        :param accept: accept header
         :return: The tuple3 : (http response code, response content, cookie token)
         """
-        return self.call(method='GET', path=path, query_parameters=query_parameters)
+        return self.call(method='GET', path=path, query_parameters=query_parameters, accept=accept)
 
     def __post(self,
                path: str,
@@ -431,7 +480,7 @@ class PrescienceClient(object):
         return self.call(
             method='DELETE',
             path=path,
-            expect_json_response=False
+            accept=''
         )
 
     def call(
@@ -441,10 +490,10 @@ class PrescienceClient(object):
             query_parameters: dict = None,
             data: dict = None,
             multipart: list = None,
-            content_type='application/json',
-            expect_json_response: bool=True,
+            content_type: str='application/json',
             timeout_seconds: int=5,
-            call_type: PrescienceWebService=PrescienceWebService.API
+            call_type: PrescienceWebService=PrescienceWebService.API,
+            accept: str='application/json'
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -457,6 +506,7 @@ class PrescienceClient(object):
         :param expect_json_response: Indicate if the answer is expected to be json. If true it will be deserialize
         :param timeout_seconds: The timeout of the http request
         :param call_type: The prescience web service called
+        :param accept: accept header
         :return: The tuple3 : (http response code, response content, cookie token)
         """
         switch = {
@@ -472,14 +522,18 @@ class PrescienceClient(object):
 
         buffer = BytesIO()
 
+        http_headers = [
+            f'Authorization: Bearer {self.prescience_config.get_current_token()}',
+            f'Content-Type: {content_type}'
+        ]
+
+        if accept != '':
+            http_headers.append(f'accept: {accept}')
+
         curl = pycurl.Curl()
         curl.setopt(pycurl.TIMEOUT, timeout_seconds)
         curl.setopt(pycurl.URL, complete_url)
-        curl.setopt(pycurl.HTTPHEADER, [
-            f'Authorization: Bearer {self.prescience_config.get_current_token()}',
-            f'Content-Type: {content_type}',
-            'accept: application/json'
-        ])
+        curl.setopt(pycurl.HTTPHEADER, http_headers)
         curl.setopt(pycurl.CUSTOMREQUEST, method)
 
         if self.verbose:
@@ -512,7 +566,9 @@ class PrescienceClient(object):
             self.config().handle_exception(prescience_error)
 
         status_code = curl.getinfo(pycurl.RESPONSE_CODE)
-        response_content = buffer.getvalue().decode('UTF-8')
+        response_content = buffer.getvalue()
+        if accept != 'application/octet-stream':
+            response_content = response_content.decode('UTF-8')
 
         curl.close()
 
@@ -520,7 +576,7 @@ class PrescienceClient(object):
             prescience_error =  HttpErrorExceptionFactory.construct(status_code, response_content)
             self.config().handle_exception(prescience_error)
         else:
-            if expect_json_response:
+            if accept == 'application/json':
                 json_response = json.loads(response_content)
                 if self.verbose:
                     print(f'[{status_code}] {json_response}')
