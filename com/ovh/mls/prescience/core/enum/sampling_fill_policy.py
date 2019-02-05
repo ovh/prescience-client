@@ -5,15 +5,15 @@
 from enum import Enum, unique, auto
 
 @unique
-class InputType(Enum):
-    CSV = auto()
-    PARQUET = auto()
-    TIME_SERIE = auto()
+class SamplingFillPolicy(Enum):
+    FILLPREVIOUS = auto()
+    FILLNEXT = auto()
+    INTERPOLATE = auto()
 
     def __str__(self):
         switch = {
-            InputType.CSV: 'CSV',
-            InputType.PARQUET: 'PARQUET',
-            InputType.TIME_SERIE: 'TIME_SERIE'
+            SamplingFillPolicy.FILLPREVIOUS: 'FILLPREVIOUS',
+            SamplingFillPolicy.FILLNEXT: 'FILLNEXT',
+            SamplingFillPolicy.INTERPOLATE: 'INTERPOLATE',
         }
         return switch.get(self)

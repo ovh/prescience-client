@@ -72,7 +72,7 @@ class PrescienceConfig(object):
         :return: self
         """
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
-        full_config_path = f'{self.config_path}/{self.config_file}'
+        full_config_path = self.get_full_config_file_path()
         if os.path.isfile(full_config_path):
             if self.is_verbose_activated():
                 print(f'Loading configuration file {full_config_path}')
@@ -99,7 +99,7 @@ class PrescienceConfig(object):
         :return: self
         """
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
-        full_config_path = f'{self.config_path}/{self.config_file}'
+        full_config_path = self.get_full_config_file_path()
         if self.is_verbose_activated():
             print(f'Saving configuration file {full_config_path}')
 
@@ -323,6 +323,47 @@ class PrescienceConfig(object):
         self.projects[project_name] = self.project_dict(token=token, environment_name=environment_name)
         self.current_project_name = project_name
         return self.save()
+
+    def get_or_create_config_directory(self):
+        """
+        Access or create the prescience-client configuration directory
+        :return: the prescience-client configuration directory
+        """
+        return self.create_config_path_if_not_exist(self.config_path)
+
+    def get_or_create_config_cache_directory(self):
+        """
+        Access or create the prescience-client cache directory
+        :return: the prescience-client cache directory
+        """
+        cache_directory = os.path.join(self.config_path, 'cache')
+        return self.create_config_path_if_not_exist(cache_directory)
+
+    def get_or_create_cache_sources_directory(self):
+        """
+        Access or create the prescience-client cache sources directory
+        :return: the prescience-client cache sources directory
+        """
+        cache_directory = self.get_or_create_config_cache_directory()
+        cache_sources = os.path.join(cache_directory, 'sources')
+        return self.create_config_path_if_not_exist(cache_sources)
+
+    def get_or_create_cache_datasets_directory(self):
+        """
+        Access or create the prescience-client cache datasets directory
+        :return: the prescience-client cache datasets directory
+        """
+        cache_directory = self.get_or_create_config_cache_directory()
+        cache_datasets = os.path.join(cache_directory, 'datasets')
+        return self.create_config_path_if_not_exist(cache_datasets)
+
+    def get_full_config_file_path(self):
+        """
+        Access the full path of the prescience-client configuration file
+        :return: the full path of the prescience-client configuration file
+        """
+        config_directory = self.get_or_create_config_directory()
+        return os.path.join(config_directory, self.config_file)
 
     def set_current_project(self, project_name: str) -> 'PrescienceConfig':
         """

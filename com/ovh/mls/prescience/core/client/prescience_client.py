@@ -8,11 +8,15 @@ import re
 import urllib.parse
 from io import BytesIO
 import os
+import shutil
+import pandas
+import matplotlib
 
 from progress.bar import ChargingBar
 from websocket import create_connection
 
 from com.ovh.mls.prescience.core.bean.config import Config
+from com.ovh.mls.prescience.core.bean.entity.w10_ts_input import Warp10TimeSerieInput
 from com.ovh.mls.prescience.core.bean.project import Project
 from com.ovh.mls.prescience.core.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfig
@@ -93,6 +97,16 @@ class PrescienceClient(object):
         ]
         _, result, _ = self.__post(path='/ml/upload/source', multipart=multipart)
 
+        from com.ovh.mls.prescience.core.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
+
+    def parse_w10_time_serie(self, w10_ts_input: Warp10TimeSerieInput) -> 'Task':
+        """
+        Launch a parse task on a w10 time series
+        :param w10_ts_input: Input Payload containing all w10 TS information
+        :return: The created parse task
+        """
+        _, result, _ = self.__post(path='/ml/parse/ts', data=w10_ts_input.to_dict())
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -384,52 +398,75 @@ class PrescienceClient(object):
         from com.ovh.mls.prescience.core.bean.model import Model
         return Model(json=model, prescience=self)
 
+    def get_list_source_files(self, source_id: str) -> list:
+        """
+        Get the list of all files of a given source data
+        :param source_id: The wanted source id
+        :return: the list of all files of a given source data
+        """
+        _, response, _ = self.__get(path=f'/download/source/{source_id}')
+        return response
+
+    def get_list_dataset_train_files(self, dataset_id: str) -> list:
+        """
+        Get the list of all files of a given dataset train data
+        :param dataset_id: The wanted dataset id
+        :return: the list of all files of a given dataset train data
+        """
+        _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/train')
+        return response
+
+    def get_list_dataset_test_files(self, dataset_id: str) -> list:
+        """
+        Get the list of all files of a given dataset test data
+        :param dataset_id: The wanted dataset id
+        :return: the list of all files of a given dataset test data
+        """
+        _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
+        return response
+
     def download_source(self, source_id:str, output_directory: str):
         """
         Download all source related files into the given directory
         :param source_id: The source id to download
         :param output_directory: The output directory (will be created if it doesn't exist)
         """
-        _, response, _ = self.__get(path=f'/download/source/{source_id}')
+        source_files = self.get_list_source_files(source_id=source_id)
 
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
 
-        for output in response:
+        for output in source_files:
             _, file, _ = self.__get(path=f'/download/source/{source_id}/{output}', accept='application/octet-stream')
             full_output_path = os.path.join(output_directory, output)
             with open(full_output_path, 'wb') as stream:
                 stream.write(file)
                 stream.close()
 
-    def download_dataset(self, dataset_id:str, output_directory: str):
+    def download_dataset(self, dataset_id:str, output_directory: str, test_part: bool):
         """
         Download all dataset related files into the given directory
         :param dataset_id: The dataset id to download
         :param output_directory: The output directory (will be created if it doesn't exist)
+        :param test_part: Download only the dataset 'test' part and not the default 'train' part
         """
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
 
         # Download train files
-        _, all_train_files, _ = self.__get(path=f'/download/dataset/{dataset_id}/train')
-        for output in all_train_files:
-            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/train/{output}', accept='application/octet-stream')
-            full_output_path = os.path.join(output_directory, f'train-{output}')
+        if test_part:
+            all_files = self.get_list_dataset_test_files(dataset_id=dataset_id)
+            path_part = 'test'
+        else:
+            all_files = self.get_list_dataset_train_files(dataset_id=dataset_id)
+            path_part = 'train'
+
+        for output in all_files:
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}', accept='application/octet-stream')
+            full_output_path = os.path.join(output_directory, output)
             with open(full_output_path, 'wb') as stream:
                 stream.write(file)
                 stream.close()
-
-        # Download test files
-        _, all_test_files, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
-        for output in all_test_files:
-            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/test/{output}', accept='application/octet-stream')
-            full_output_path = os.path.join(output_directory, f'test-{output}')
-            with open(full_output_path, 'wb') as stream:
-                stream.write(file)
-                stream.close()
-
-
 
     def __get(self, path: str, query_parameters: dict = None, accept: str='application/json'):
         """
@@ -690,3 +727,157 @@ class PrescienceClient(object):
         """
         from com.ovh.mls.prescience.core.bean.entity.local_file_input import CsvLocalFileInput
         return CsvLocalFileInput(filepath=filepath, headers=headers, prescience=self)
+
+    ############################################
+    #### LOCAL CACHE MANAGEMENT METHODS ########
+    ############################################
+
+    def cache_source_get_full_path(self, source_id: str) -> str:
+        """
+        Get the full path of the local cache for the given source
+        :param source_id: the wanted source id
+        :return: the full path of the local cache for the given source
+        """
+        cache_source_directory = self.config().get_or_create_cache_sources_directory()
+        return os.path.join(cache_source_directory, source_id)
+
+    def cache_dataset_get_full_path(self, dataset_id: str, test_part: bool) -> str:
+        """
+        Get the full path of the local cache for the given dataset
+        :param dataset_id: the wanted dataset id
+        :param test_part: cache only the test part of the dataset instead of the default train part
+        :return: the full path of the local cache for the given dataset
+        """
+        cache_dataset_directory = self.config().get_or_create_cache_datasets_directory()
+        if test_part:
+            test_path = os.path.join(cache_dataset_directory, dataset_id, 'test')
+            return self.config().create_config_path_if_not_exist(test_path)
+        else:
+            train_path = os.path.join(cache_dataset_directory, dataset_id, 'train')
+            return self.config().create_config_path_if_not_exist(train_path)
+
+    def cache_clean_dataset(self, dataset_id: str, test_part: bool):
+        """
+        Clean the local cache data of the given dataset
+        :param dataset_id: the dataset id
+        :param test_part: clean only the test part and not the default train part
+        """
+        datasetid_path = self.cache_dataset_get_full_path(dataset_id=dataset_id, test_part=test_part)
+        if os.path.exists(datasetid_path):
+            shutil.rmtree(datasetid_path)
+
+    def cache_clean_source(self, source_id: str):
+        """
+        Clean the local cache data of the given source
+        :param source_id: the source id
+        """
+        sourceid_path = self.cache_source_get_full_path(source_id=source_id)
+        if os.path.exists(sourceid_path):
+            shutil.rmtree(sourceid_path)
+
+    def update_cache_dataset(self, dataset_id, test_part: bool) -> str:
+        """
+        Request for locally caching the data of the wanted dataset.
+        If the local dataset data are already up to date, it will do nothing.
+        :param dataset_id: The wanted dataset id
+        :param test_part: select only the test part of the dataset instead of the default train part
+        :return: Return the directory in which dataset data are locally saved
+        """
+        datasetid_path = self.cache_dataset_get_full_path(dataset_id=dataset_id, test_part=test_part)
+
+        if test_part:
+            expected_files = self.get_list_dataset_test_files(dataset_id=dataset_id)
+        else:
+            expected_files = self.get_list_dataset_train_files(dataset_id=dataset_id)
+
+        if os.path.exists(datasetid_path) and set(os.listdir(datasetid_path)) == set(expected_files):
+            print(f'Cache for dataset \'{dataset_id}\' is allready up to date on {datasetid_path}')
+        else:
+            self.cache_clean_dataset(dataset_id=dataset_id, test_part=test_part)
+            print(f'Updating cache for source \'{dataset_id}\' : {datasetid_path}')
+            self.download_dataset(dataset_id=dataset_id, output_directory=datasetid_path, test_part=test_part)
+
+        return datasetid_path
+
+
+    def update_cache_source(self, source_id) -> str:
+        """
+        Request for locally caching the data of the wanted source.
+        If the local source data are already up to date, it will do nothing.
+        :param source_id: The wanted source id
+        :return: Return the directory in which source data are locally saved
+        """
+        sourceid_path = self.cache_source_get_full_path(source_id=source_id)
+
+        expected_files = self.get_list_source_files(source_id=source_id)
+
+        if os.path.exists(sourceid_path) and set(os.listdir(sourceid_path)) == set(expected_files):
+            print(f'Cache for source \'{source_id}\' is allready up to date on {sourceid_path}')
+        else:
+            self.cache_clean_source(source_id=source_id)
+            print(f'Updating cache for source \'{source_id}\' : {sourceid_path}')
+            self.download_source(source_id=source_id, output_directory=sourceid_path)
+
+        return sourceid_path
+
+    def source_dataframe(self, source_id):
+        """
+        Update source local cache for the given source and return the pandas dataframe for this source
+        :param source_id: the wanted source
+        :return:
+        """
+        source_data_path = self.update_cache_source(source_id=source_id)
+        return pandas.read_parquet(path=source_data_path)
+
+    def dataset_dataframe(self, dataset_id: str, test_part: bool):
+        """
+        Update dataset local cache for the given dataset and return the pandas dataframe for this dataset
+        :param dataset_id: the wanted dataset
+        :param test_part: select only the test part of the dataset instead of the default train part
+        :return:
+        """
+        dataset_data_path = self.update_cache_dataset(dataset_id=dataset_id, test_part=test_part)
+        if test_part:
+            # Concatenate all csv test files and create a single dataframe
+            only_csv = [x for x in os.listdir(dataset_data_path) if x.endswith('.csv')]
+            all_csv_path = [os.path.join(dataset_data_path, x) for x in only_csv]
+            all_csv_dataframe = [pandas.read_csv(x) for x in all_csv_path]
+            return pandas.concat(all_csv_dataframe)
+        else:
+            return pandas.read_parquet(path=dataset_data_path)
+
+    def plot_source(self, source_id: str, x: str, kind: str, block=False):
+        """
+        Plot a wanted source data
+        :param source_id: the wanted source id
+        :param x: the name of the column to use as x
+        :param kind: the kind of the plot
+        :param block: should block until user close the window
+        """
+        dataframe = self.source_dataframe(source_id=source_id)
+        if x is not None:
+            dataframe.plot(x=x, kind=kind)
+        else:
+            dataframe.plot(kind=kind)
+        matplotlib.pyplot.show(block=block)
+
+    def plot_dataset(self,
+                     dataset_id: str,
+                     x: str,
+                     kind: str,
+                     plot_test: bool = False,
+                     block=False):
+        """
+        Plot a wanted dataset data
+        :param dataset_id: the wanted dataset id
+        :param x: the name of the column to use as x
+        :param kind: the kind of the plot
+        :param plot_test: should plot the 'test' part instead of the 'train' part which is the default
+        :param block: should block until user close the window
+        """
+        dataframe = self.dataset_dataframe(dataset_id=dataset_id, test_part=plot_test)
+        if x is not None:
+            dataframe.plot(x=x, kind=kind)
+        else:
+            dataframe.plot(kind=kind)
+        matplotlib.pyplot.show(block=block)
