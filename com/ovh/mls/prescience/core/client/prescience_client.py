@@ -526,7 +526,6 @@ class PrescienceClient(object):
             data: dict = None,
             multipart: list = None,
             content_type: str='application/json',
-            timeout_seconds: int=5,
             call_type: PrescienceWebService=PrescienceWebService.API,
             accept: str='application/json'
     ):
@@ -566,7 +565,7 @@ class PrescienceClient(object):
             http_headers.append(f'accept: {accept}')
 
         curl = pycurl.Curl()
-        curl.setopt(pycurl.TIMEOUT, timeout_seconds)
+        curl.setopt(pycurl.TIMEOUT, self.config().get_timeout())
         curl.setopt(pycurl.URL, complete_url)
         curl.setopt(pycurl.HTTPHEADER, http_headers)
         curl.setopt(pycurl.CUSTOMREQUEST, method)

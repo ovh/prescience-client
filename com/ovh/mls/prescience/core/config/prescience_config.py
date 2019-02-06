@@ -7,7 +7,8 @@ import os
 import yaml
 from com.ovh.mls.prescience.core.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, \
     DEFAULT_WEBSOCKET_URL, DEFAULT_SERVING_URL, \
-    DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE
+    DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE, \
+    DEFAULT_TIMEOUT_SECOND, DEFAULT_VERBOSE
 from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from com.ovh.mls.prescience.core.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
@@ -17,6 +18,7 @@ KEY_ENVIRONMENTS = 'environments'
 KEY_CURRENT_PROJECT = 'current_project'
 KEY_EXCEPTION_HANDLING = 'exception_handling'
 KEY_VERBOSE = 'verbose'
+KEY_TIMEOUT = 'timeout'
 
 # Keys for projects
 KEY_TOKEN = 'token'
@@ -50,7 +52,8 @@ class PrescienceConfig(object):
         self.environments = {}
         self.current_project_name = None
         self.exception_handling = None
-        self.verbose = False
+        self.verbose = DEFAULT_VERBOSE
+        self.timeout = DEFAULT_TIMEOUT_SECOND
 
     def is_verbose_activated(self) -> bool:
         """
@@ -65,6 +68,20 @@ class PrescienceConfig(object):
         :param verbose: verbose attribute value
         """
         self.verbose = verbose
+
+    def get_timeout(self) -> int:
+        """
+        Getter of the timeout
+        :return: the timeout in second
+        """
+        return self.timeout
+
+    def set_timeout(self, timeout: int):
+        """
+        Setter of the timeout
+        :param timeout: The new timeout to use
+        """
+        self.timeout = timeout
 
     def load(self) -> 'PrescienceConfig':
         """
@@ -82,7 +99,8 @@ class PrescienceConfig(object):
                 self.current_project_name = loaded_config.get(KEY_CURRENT_PROJECT, VALUE_DEFAULT)
                 self.exception_handling = loaded_config.get(KEY_EXCEPTION_HANDLING, DEFAULT_EXCEPTION_HANDLING)
                 self.environments = loaded_config.get(KEY_ENVIRONMENTS, self.default_environments_dict())
-                self.set_verbose(verbose=loaded_config.get(KEY_VERBOSE, False))
+                self.set_verbose(verbose=loaded_config.get(KEY_VERBOSE, DEFAULT_VERBOSE))
+                self.set_timeout(timeout=loaded_config.get(KEY_TIMEOUT, DEFAULT_TIMEOUT_SECOND))
         else:
             if self.is_verbose_activated():
                 print(f'No configuration file found yet. Loading default one')
@@ -90,6 +108,8 @@ class PrescienceConfig(object):
             self.current_project_name = VALUE_DEFAULT
             self.exception_handling = DEFAULT_EXCEPTION_HANDLING
             self.environments = self.default_environments_dict()
+            self.set_verbose(verbose=DEFAULT_VERBOSE)
+            self.set_timeout(timeout=DEFAULT_TIMEOUT_SECOND)
 
         return self
 
@@ -110,7 +130,8 @@ class PrescienceConfig(object):
                     KEY_PROJECTS: self.projects,
                     KEY_CURRENT_PROJECT: self.current_project_name,
                     KEY_EXCEPTION_HANDLING: self.exception_handling,
-                    KEY_VERBOSE: self.is_verbose_activated()
+                    KEY_VERBOSE: self.is_verbose_activated(),
+                    KEY_TIMEOUT: self.get_timeout()
                 },
                 stream=outfile,
                 default_flow_style=False,
