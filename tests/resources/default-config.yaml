@@ -15,3 +15,5 @@ projects:
   project-2:
     token: "token-2"
     environment: "staging"
+timeout: 10
+verbose: true
