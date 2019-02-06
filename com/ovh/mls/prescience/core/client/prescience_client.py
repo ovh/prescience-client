@@ -313,6 +313,11 @@ class PrescienceClient(object):
         from com.ovh.mls.prescience.core.bean.page_result import PageResult
         return PageResult(json=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
 
+    def task(self, task_uuid: str) -> 'Task':
+        _, result, _ = self.__get(path=f'/task/{task_uuid}')
+        from com.ovh.mls.prescience.core.bean.task import TaskFactory
+        return TaskFactory.construct(task_dict=result, prescience=self)
+
     def sources(self, page: int = 1):
         """
         Get the paginated list of created prescience sources for the current project
@@ -691,7 +696,7 @@ class PrescienceClient(object):
 
         return task_message
 
-    def wait_for_task_done_or_error(self, initial_task: 'Task'):
+    def wait_for_task_done_or_error(self, initial_task: 'Task') -> 'Task':
         """
         Wait until the given task is DONE or ERROR
         :param initial_task:
@@ -701,13 +706,15 @@ class PrescienceClient(object):
         websocket = self.__init_ws_connection()
         current_task = initial_task
         bar = ChargingBar(current_task.type(), max=current_task.total_step())
-        bar.next(0)
         if current_task.current_step_description() is not None:
-            bar.message = current_task.current_step_description()
+            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
+        bar.next(0)
         while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
             current_task = self.__wait_for_task_message(websocket, initial_task)
+            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
             bar.next()
-            bar.message = current_task.current_step_description()
+        bar.message = f'{current_task.type()} - {current_task.status()}'
+        bar.next()
         bar.finish()
         # Closing web-socket
         websocket.close()
