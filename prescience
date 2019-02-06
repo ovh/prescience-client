@@ -3,7 +3,10 @@
 import argparse
 import sys
 import json
+from typing import List
 
+from com.ovh.mls.prescience.core.config.constants import DEFAULT_PROBLEM_TYPE
+from com.ovh.mls.prescience.core.enum.problem_type import ProblemType
 from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from prescience_client import prescience
 
@@ -73,8 +76,12 @@ def init_args():
     preprocess_parser = start_subparser.add_parser('preprocess', help='Launch a preprocess task on prescience')
     preprocess_parser.add_argument('source-id', type=str, help='Identifier of the source object to use for preprocessing')
     preprocess_parser.add_argument('dataset-id', type=str, help='Identifier of your future dataset object')
-    preprocess_parser.set_defaults(watch=False)
+    preprocess_parser.add_argument('label', type=str, help='Identifier of the column to predict')
+    preprocess_parser.add_argument('--columns', type=List[str], help='Subset of columns to include in the dataset. (default: all)')
+    preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
+    preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
     preprocess_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None)
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
@@ -93,6 +100,12 @@ def init_args():
     retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     retrain_parser.add_argument('model-id', type=str, help='Model to retrain')
     retrain_parser.add_argument('input-filepath', type=str, help='Local input file to send in order to retrain the model on prescience')
+
+    ## start refresh dataset
+    retrain_parser = start_subparser.add_parser('refresh', help='Launch a refresh dataset task on prescience')
+    retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    retrain_parser.add_argument('dataset-id', type=str, help='Dataset to refresh')
+    retrain_parser.add_argument('input-filepath', type=str, help='Local input file/directory to send in order to refresh the dataset on prescience')
 
     # predict
     cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
@@ -235,9 +248,17 @@ def start_preprocess(args: dict):
     source_id = args['source-id']
     watch = args['watch']
     dataset_id = args['dataset-id']
+    label = args['label']
+    selected_columns = args['columns']
+    time_column = args['time_column']
+    problem_type = args['problem_type']
     source = prescience.source(source_id=source_id)
     task = source.preprocess(
-        dataset_id=dataset_id
+        dataset_id=dataset_id,
+        label=label,
+        problem_type=problem_type,
+        selected_columns=selected_columns,
+        time_column=time_column
     )
     if watch:
         task.watch()
@@ -276,6 +297,17 @@ def start_retrain(args: dict):
     if watch:
         task.watch()
 
+def start_refresh(args: dict):
+    """
+    Execute 'start refresh dataset' command
+    """
+    file = args['input-filepath']
+    dataset_id = args['dataset-id']
+    watch = args['watch']
+    task = prescience.refresh_dataset(dataset_id=dataset_id, filepath=file)
+    if watch:
+        task.watch()
+
 def start_cmd(args: dict):
     """
     Execute 'start' command
@@ -286,7 +318,8 @@ def start_cmd(args: dict):
         'preprocess': start_preprocess,
         'optimize': start_optimize,
         'train': start_train,
-        'retrain': start_retrain
+        'retrain': start_retrain,
+        'refresh': start_refresh
     }
     switch[subject](args)
 

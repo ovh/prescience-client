@@ -4,14 +4,11 @@
 
 from enum import Enum, unique, auto
 
+
 @unique
 class ProblemType(Enum):
-    CLASSIFICATION = auto()
-    REGRESSION = auto()
+    CLASSIFICATION = 'classification'
+    REGRESSION = 'regression'
 
     def __str__(self):
-        switch = {
-            ProblemType.CLASSIFICATION: 'classification',
-            ProblemType.REGRESSION: 'regression'
-        }
-        return switch.get(self)
+        return self.value
