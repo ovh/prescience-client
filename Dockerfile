@@ -1,8 +1,4 @@
-FROM python:3.7.2-alpine
-
-# Install packages
-RUN apk add --no-cache libcurl
-RUN apk add --no-cache make
+FROM python:3.7.2-slim
 
 # Needed for pycurl
 ENV PYCURL_SSL_LIBRARY=openssl
@@ -10,17 +6,15 @@ ENV PYCURL_SSL_LIBRARY=openssl
 RUN mkdir /prescience-client
 WORKDIR /prescience-client
 
-RUN apk add --no-cache --virtual .build-deps build-base curl-dev
+RUN apt-get update
+RUN apt-get install -y libcurl4-openssl-dev libssl-dev gcc build-essential
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
 ADD prescience /prescience-client
 
-
 # Install packages only needed for building, install and clean on a single layer
-RUN pip install -e . \
-    && apk del --no-cache --purge .build-deps \
-    && rm -rf /var/cache/apk/*
+RUN pip install -e .
 
 ADD . /prescience-client
 

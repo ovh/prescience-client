@@ -7,7 +7,8 @@ import os
 import yaml
 from com.ovh.mls.prescience.core.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, \
     DEFAULT_WEBSOCKET_URL, DEFAULT_SERVING_URL, \
-    DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE
+    DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE, \
+    DEFAULT_TIMEOUT_SECOND, DEFAULT_VERBOSE
 from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
 from com.ovh.mls.prescience.core.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
@@ -17,6 +18,7 @@ KEY_ENVIRONMENTS = 'environments'
 KEY_CURRENT_PROJECT = 'current_project'
 KEY_EXCEPTION_HANDLING = 'exception_handling'
 KEY_VERBOSE = 'verbose'
+KEY_TIMEOUT = 'timeout'
 
 # Keys for projects
 KEY_TOKEN = 'token'
@@ -50,7 +52,8 @@ class PrescienceConfig(object):
         self.environments = {}
         self.current_project_name = None
         self.exception_handling = None
-        self.verbose = False
+        self.verbose = DEFAULT_VERBOSE
+        self.timeout = DEFAULT_TIMEOUT_SECOND
 
     def is_verbose_activated(self) -> bool:
         """
@@ -66,13 +69,27 @@ class PrescienceConfig(object):
         """
         self.verbose = verbose
 
+    def get_timeout(self) -> int:
+        """
+        Getter of the timeout
+        :return: the timeout in second
+        """
+        return self.timeout
+
+    def set_timeout(self, timeout: int):
+        """
+        Setter of the timeout
+        :param timeout: The new timeout to use
+        """
+        self.timeout = timeout
+
     def load(self) -> 'PrescienceConfig':
         """
         Load the configuration depending on what's inside configuration file
         :return: self
         """
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
-        full_config_path = f'{self.config_path}/{self.config_file}'
+        full_config_path = self.get_full_config_file_path()
         if os.path.isfile(full_config_path):
             if self.is_verbose_activated():
                 print(f'Loading configuration file {full_config_path}')
@@ -82,7 +99,8 @@ class PrescienceConfig(object):
                 self.current_project_name = loaded_config.get(KEY_CURRENT_PROJECT, VALUE_DEFAULT)
                 self.exception_handling = loaded_config.get(KEY_EXCEPTION_HANDLING, DEFAULT_EXCEPTION_HANDLING)
                 self.environments = loaded_config.get(KEY_ENVIRONMENTS, self.default_environments_dict())
-                self.set_verbose(verbose=loaded_config.get(KEY_VERBOSE, False))
+                self.set_verbose(verbose=loaded_config.get(KEY_VERBOSE, DEFAULT_VERBOSE))
+                self.set_timeout(timeout=loaded_config.get(KEY_TIMEOUT, DEFAULT_TIMEOUT_SECOND))
         else:
             if self.is_verbose_activated():
                 print(f'No configuration file found yet. Loading default one')
@@ -90,6 +108,8 @@ class PrescienceConfig(object):
             self.current_project_name = VALUE_DEFAULT
             self.exception_handling = DEFAULT_EXCEPTION_HANDLING
             self.environments = self.default_environments_dict()
+            self.set_verbose(verbose=DEFAULT_VERBOSE)
+            self.set_timeout(timeout=DEFAULT_TIMEOUT_SECOND)
 
         return self
 
@@ -99,7 +119,7 @@ class PrescienceConfig(object):
         :return: self
         """
         PrescienceConfig.create_config_path_if_not_exist(config_path=self.config_path)
-        full_config_path = f'{self.config_path}/{self.config_file}'
+        full_config_path = self.get_full_config_file_path()
         if self.is_verbose_activated():
             print(f'Saving configuration file {full_config_path}')
 
@@ -110,7 +130,8 @@ class PrescienceConfig(object):
                     KEY_PROJECTS: self.projects,
                     KEY_CURRENT_PROJECT: self.current_project_name,
                     KEY_EXCEPTION_HANDLING: self.exception_handling,
-                    KEY_VERBOSE: self.is_verbose_activated()
+                    KEY_VERBOSE: self.is_verbose_activated(),
+                    KEY_TIMEOUT: self.get_timeout()
                 },
                 stream=outfile,
                 default_flow_style=False,
@@ -323,6 +344,47 @@ class PrescienceConfig(object):
         self.projects[project_name] = self.project_dict(token=token, environment_name=environment_name)
         self.current_project_name = project_name
         return self.save()
+
+    def get_or_create_config_directory(self):
+        """
+        Access or create the prescience-client configuration directory
+        :return: the prescience-client configuration directory
+        """
+        return self.create_config_path_if_not_exist(self.config_path)
+
+    def get_or_create_config_cache_directory(self):
+        """
+        Access or create the prescience-client cache directory
+        :return: the prescience-client cache directory
+        """
+        cache_directory = os.path.join(self.config_path, 'cache')
+        return self.create_config_path_if_not_exist(cache_directory)
+
+    def get_or_create_cache_sources_directory(self):
+        """
+        Access or create the prescience-client cache sources directory
+        :return: the prescience-client cache sources directory
+        """
+        cache_directory = self.get_or_create_config_cache_directory()
+        cache_sources = os.path.join(cache_directory, 'sources')
+        return self.create_config_path_if_not_exist(cache_sources)
+
+    def get_or_create_cache_datasets_directory(self):
+        """
+        Access or create the prescience-client cache datasets directory
+        :return: the prescience-client cache datasets directory
+        """
+        cache_directory = self.get_or_create_config_cache_directory()
+        cache_datasets = os.path.join(cache_directory, 'datasets')
+        return self.create_config_path_if_not_exist(cache_datasets)
+
+    def get_full_config_file_path(self):
+        """
+        Access the full path of the prescience-client configuration file
+        :return: the full path of the prescience-client configuration file
+        """
+        config_directory = self.get_or_create_config_directory()
+        return os.path.join(config_directory, self.config_file)
 
     def set_current_project(self, project_name: str) -> 'PrescienceConfig':
         """
