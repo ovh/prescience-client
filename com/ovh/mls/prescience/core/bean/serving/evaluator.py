@@ -75,7 +75,7 @@ class Input(TablePrintable):
     ):
         """
         Constructor of an evaluator's input
-        :param json_dict: The JSON dictionary sent bu prescience
+        :param json_dict: The JSON dictionary sent by prescience
         :param place_holder: The user given value for that input
         """
         self.json_dict = json_dict
@@ -98,7 +98,7 @@ class Input(TablePrintable):
     def get_value(self):
         """
         Access the values of the input
-        :return: the type of the input
+        :return: the values of the input
         """
         return self.json_dict.get('values', None)
 
@@ -120,7 +120,7 @@ class Input(TablePrintable):
 
     def is_valid(self):
         """
-        Test in the current input value is valid accordingly to the input's type
+        Test if the current input value is valid accordingly to the input's type
         :return: The tuple2 (Valid enum, Explanation message)
         """
         if self.get_placeholder() is None:
@@ -149,7 +149,7 @@ class Input(TablePrintable):
     @staticmethod
     def is_correct_type(expected_type: str, value)-> bool:
         """
-        Compared the type with the given value
+        Compare the type with the given value
         :param expected_type: The expected type
         :param value: The compared value
         :return: True if the value's type is correct with the expected one, false otherwise

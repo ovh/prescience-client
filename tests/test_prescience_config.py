@@ -96,7 +96,11 @@ class TestPrescienceConfig(unittest.TestCase):
         self.prescience_config.set_default_project_from_env()
         self.assertEqual('https://default-serving.ai.ovh.net', self.prescience_config.get_current_serving_url(), 'project-default serving url')
 
+    def test_get_verbose(self):
+        self.assertEqual(True, self.prescience_config.is_verbose_activated(), 'access verbose mode')
 
+    def test_get_timeout(self):
+        self.assertEqual(10, self.prescience_config.get_timeout(), 'access timeout')
 
 
 if __name__ == '__main__':

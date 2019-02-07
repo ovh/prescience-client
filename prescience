@@ -52,12 +52,19 @@ def init_args():
     source_parser.add_argument('id', type=str, default=None)
     source_parser.set_defaults(schema=False)
     source_parser.add_argument('--schema', action='store_true', help='Display the schema of the source')
+    source_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this source')
+    source_parser.set_defaults(cache=False)
+    source_parser.add_argument('--cache', action='store_true', help='Cache the source data inside local cache directory')
     ## get dataset
     dataset_parser.add_argument('id', type=str, default=None)
     dataset_parser.set_defaults(schema=False)
     dataset_parser.set_defaults(eval=False)
     dataset_parser.add_argument('--schema', action='store_true', help='Display the schema of the dataset')
     dataset_parser.add_argument('--eval', action='store_true', help='Display the evaluation results of the dataset')
+    dataset_parser.add_argument('--download-train', dest='download_train', type=str, default=None, help='Directory in which to download data files for this train dataset')
+    dataset_parser.add_argument('--download-test', dest='download_test', type=str, default=None, help='Directory in which to download data files for this test dataset')
+    dataset_parser.set_defaults(cache=False)
+    dataset_parser.add_argument('--cache', action='store_true', help='Cache the dataset data inside local cache directory')
     # get model
     model_parser.add_argument('id', type=str, default=None)
 
@@ -119,15 +126,33 @@ def init_args():
     delete_subparser = cmd_delete_parser.add_subparsers(dest='subject')
     ## delete source
     delete_source_parser = delete_subparser.add_parser('source', help='Delete a prescience source object')
-    delete_source_parser.add_argument('id', type=str, help='Identifier if the source object to delete')
+    delete_source_parser.add_argument('id', type=str, help='Identifier of the source object to delete')
 
     ## delete dataset
     delete_dataset_parser = delete_subparser.add_parser('dataset', help='Delete a prescience dataset object')
-    delete_dataset_parser.add_argument('id', type=str, help='Identifier if the dataset object to delete')
+    delete_dataset_parser.add_argument('id', type=str, help='Identifier of the dataset object to delete')
 
     ## delete model
     delete_model_parser = delete_subparser.add_parser('model', help='Delete a prescience model object')
-    delete_model_parser.add_argument('id', type=str, help='Identifier if the model object to delete')
+    delete_model_parser.add_argument('id', type=str, help='Identifier of the model object to delete')
+
+    # plot
+    cmd_plot_parser = subparsers.add_parser('plot', help='Plot a prescience object')
+    plot_subparser = cmd_plot_parser.add_subparsers(dest='subject')
+
+    ## plot source
+    plot_source_parser = plot_subparser.add_parser('source', help='Plot a source data object')
+    plot_source_parser.add_argument('id', type=str, help='Identifier of the source object')
+    plot_source_parser.add_argument('--x', type=str, default=None, help='Plot the current source')
+    plot_source_parser.add_argument('--kind', type=str, default='line', help='Kind of the plot figure. Default: line')
+
+    ## plot dataset
+    plot_dataset_parser = plot_subparser.add_parser('dataset', help='Plot a dataset data object')
+    plot_dataset_parser.add_argument('id', type=str, help='Identifier of the source object')
+    plot_dataset_parser.add_argument('--x', type=str, default=None, help='Plot the current source')
+    plot_dataset_parser.add_argument('--kind', type=str, default='line', help='Kind of the plot figure. Default: line')
+    plot_dataset_parser.set_defaults(test=False)
+    plot_dataset_parser.add_argument('--test', action='store_true', help='Plot only the "test" part of the dataset and not the default "train" part')
 
 
     if len(sys.argv) == 1:
@@ -168,11 +193,17 @@ def get_dataset(args: dict):
     display_eval = args['eval']
     display_schema = args['schema']
     dataset_id = args['id']
+    download_train_directory = args['download_train']
+    download_test_directory = args['download_test']
     dataset = prescience.dataset(dataset_id)
     if display_eval:
         dataset.evaluation_results().show()
     elif display_schema:
         dataset.schema().show()
+    elif download_train_directory is not None:
+        prescience.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory, test_part=False)
+    elif download_test_directory is not None:
+        prescience.download_dataset(dataset_id=dataset_id, output_directory=download_test_directory, test_part=True)
     else:
         dataset.show()
 
@@ -189,8 +220,14 @@ def get_source(args: dict):
     """
     source_id = args['id']
     source = prescience.source(source_id)
+    download_directory = args['download']
+    cache = args['cache']
     if args['schema']:
         source.schema().show()
+    elif download_directory is not None:
+        prescience.download_source(source_id=source_id, output_directory=download_directory)
+    elif cache:
+        prescience.update_cache_source(source_id)
     else:
         source.show()
 
@@ -376,7 +413,8 @@ def predict_cmd(args: dict):
     validate = args['validate']
     payload_json = args['json']
     payload_dict = json.loads(payload_json)
-    model = prescience.model(model_id=model_id)
+    from com.ovh.mls.prescience.core.bean.model import Model
+    model = Model.new(model_id=model_id, prescience=prescience)
     payload = model.get_model_evaluation_payload(arguments=payload_dict)
     if validate:
         is_valid, _ = payload.validate()
@@ -384,6 +422,34 @@ def predict_cmd(args: dict):
     else:
         result = payload.evaluate()
         result.show()
+
+
+def plot_source(args: dict):
+    source_id = args['id']
+    kind = args['kind']
+    x = args['x']
+    prescience.plot_source(source_id=source_id, x=x, block=True, kind=kind)
+
+
+def plot_dataset(args: dict):
+    dataset_id = args['id']
+    kind = args['kind']
+    x = args['x']
+    test = args['test']
+    prescience.plot_dataset(dataset_id=dataset_id, x=x, block=True, kind=kind, plot_test=test)
+
+
+def plot_cmd(args: dict):
+    """
+    Execute 'plot' command
+    """
+    subject = args['subject']
+    switch = {
+        'source': plot_source,
+        'dataset': plot_dataset
+    }
+    switch[subject](args)
+
 
 def main():
     """
@@ -397,7 +463,8 @@ def main():
             'start': start_cmd,
             'config': config_cmd,
             'delete': delete_cmd,
-            'predict': predict_cmd
+            'predict': predict_cmd,
+            'plot': plot_cmd
         }
         switch[cmd](args)
         exit(0)
