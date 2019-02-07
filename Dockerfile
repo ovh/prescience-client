@@ -7,7 +7,7 @@ RUN mkdir /prescience-client
 WORKDIR /prescience-client
 
 RUN apt-get update
-RUN apt-get install -y libcurl4-openssl-dev libssl-dev gcc build-essential
+RUN apt-get install -y libcurl4-openssl-dev libssl-dev gcc build-essential curl
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
@@ -31,4 +31,5 @@ ENV PRESCIENCE_DEFAULT_API_URL=${DEFAULT_PRESCIENCE_API}
 ENV PRESCIENCE_DEFAULT_WEBSOCKET_URL=${DEFAULT_PRESCIENCE_WEBSOCKET}
 ENV PRESCIENCE_DEFAULT_ADMIN_API_URL=${DEFAULT_PRESCIENCE_ADMIN_API_URL}
 
-ENTRYPOINT ["python",  "-i", "-c", "from prescience_client import prescience; prescience.config().set_default_project_from_env()"]
+ENTRYPOINT []
+CMD "/bin/sh"

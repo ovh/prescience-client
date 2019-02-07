@@ -103,7 +103,7 @@ class Source(TablePrintable, DictPrintable):
                    dataset_id: str,
                    label: str = DEFAULT_LABEL_NAME,
                    problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
-                   selected_column: list = None,
+                   selected_columns: list = None,
                    time_column: str = None,
                    fold_size: int = -1):
         """
@@ -118,7 +118,7 @@ class Source(TablePrintable, DictPrintable):
             dataset_id=dataset_id,
             label_id=label,
             problem_type=problem_type,
-            selected_column=selected_column,
+            selected_column=selected_columns,
             time_column=time_column,
             fold_size=fold_size
         )

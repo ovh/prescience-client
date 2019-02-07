@@ -3,7 +3,6 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import json
-import pycurl
 import re
 import urllib.parse
 from io import BytesIO
@@ -12,6 +11,7 @@ import shutil
 import pandas
 import matplotlib
 
+import pycurl
 from progress.bar import ChargingBar
 from websocket import create_connection
 
@@ -35,6 +35,7 @@ class PrescienceClient(object):
     Prescience HTTP client allowing us to interact directly with prescience api.
     Prescience API is describe here https://prescience-api.ai.ovh.net/
     """
+
     def __init__(self,
                  prescience_config: PrescienceConfig):
         self.prescience_config = prescience_config
@@ -65,7 +66,7 @@ class PrescienceClient(object):
 
         _, result, _ = self.__post(
             path='/project',
-            call_type = PrescienceWebService.ADMIN_API,
+            call_type=PrescienceWebService.ADMIN_API,
             data={'name': current_config.get_current_project_name()}
         )
         return result
@@ -81,7 +82,7 @@ class PrescienceClient(object):
         :param source_id: The id that we want for the source
         :param input_type: The input type of the given local input file
         :param headers: Has the local input file headers ?
-        :param filepath: The path of the local input file
+        :param filepath: The path of the local input file/directory
         :return: The task object of the Parse Task
         """
 
@@ -91,10 +92,23 @@ class PrescienceClient(object):
             'headers': headers
         }
 
+        if os.path.isdir(filepath):
+            multipart = [
+                (
+                    'input-file',
+                    (pycurl.FORM_FILE, os.path.join(filepath, filename))
+                ) for filename in os.listdir(filepath)
+            ]
+        else:
+            multipart = [
+                ('input-file', (pycurl.FORM_FILE, filepath))
+            ]
+
         multipart = [
-            ('input', (pycurl.FORM_CONTENTS, json.dumps(parse_input), pycurl.FORM_CONTENTTYPE, 'application/json')),
-            ('input-file', (pycurl.FORM_FILE, filepath))
-        ]
+                        ('input',
+                         (pycurl.FORM_CONTENTS, json.dumps(parse_input), pycurl.FORM_CONTENTTYPE, 'application/json'))
+                    ] + multipart
+
         _, result, _ = self.__post(path='/ml/upload/source', multipart=multipart)
 
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
@@ -240,18 +254,38 @@ class PrescienceClient(object):
 
     def retrain(self,
                 model_id: str,
-                chain_metric_task: bool = True
+                filepath: str = None,
+                chain_metric_task: bool = True,
                 ) -> 'TrainTask':
         """
         Launch a Re-Train task on a model
         :param model_id: The initial model ID
+        :param filepath: The path of the local input file/directory
         :param chain_metric_task: should chain the train task with a metric task ? (default: True)
         :return:
         """
         query_parameters = {
             'chain_metric_task': chain_metric_task
         }
-        _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters)
+
+        if filepath:
+            if os.path.isdir(filepath):
+                multipart = [
+                    (
+                        'input-file',
+                        (pycurl.FORM_FILE, os.path.join(filepath, filename))
+                    ) for filename in os.listdir(filepath)
+                ]
+            else:
+                multipart = [
+                    ('input-file', (pycurl.FORM_FILE, filepath))
+                ]
+        else:
+            multipart: None
+
+        _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters,
+                                   multipart=multipart)
+
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -282,13 +316,33 @@ class PrescienceClient(object):
         return Dataset(json=result, prescience=self)
 
     def refresh_dataset(self,
-                        dataset_id: str) -> 'Task':
+                        dataset_id: str,
+                        filepath: str = None) -> 'Task':
         """
         Launch a refresh task on a dataset
         :param dataset_id: The ID of the dataset we want to launch a refresh on
+        :param filepath: The path of the local input file/directory
+        :param filepath: The path of the local input file/directory
         :return: The refresh task object
         """
-        _, result, _ = self.__post(path=f'/ml/refresh/{dataset_id}')
+
+        if filepath:
+            if os.path.isdir(filepath):
+                multipart = [
+                    (
+                        'input-file',
+                        (pycurl.FORM_FILE, os.path.join(filepath, filename))
+                    ) for filename in os.listdir(filepath)
+                ]
+            else:
+                multipart = [
+                    ('input-file', (pycurl.FORM_FILE, filepath))
+                ]
+        else:
+            multipart: None
+
+        _, result, _ = self.__post(path=f'/ml/refresh/{dataset_id}', multipart=multipart)
+
         from com.ovh.mls.prescience.core.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -543,7 +597,7 @@ class PrescienceClient(object):
         :return: The tuple3 : (http response code, response content, cookie token)
         """
         switch = {
-            PrescienceWebService.API:  f'{self.prescience_config.get_current_api_url()}{path}',
+            PrescienceWebService.API: f'{self.prescience_config.get_current_api_url()}{path}',
             PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
             PrescienceWebService.SERVING: f'{self.prescience_config.get_current_serving_url()}{path}'
         }
@@ -607,7 +661,7 @@ class PrescienceClient(object):
         curl.close()
 
         if status_code // 100 != 2:
-            prescience_error =  HttpErrorExceptionFactory.construct(status_code, response_content)
+            prescience_error = HttpErrorExceptionFactory.construct(status_code, response_content)
             self.config().handle_exception(prescience_error)
         else:
             if accept == 'application/json':

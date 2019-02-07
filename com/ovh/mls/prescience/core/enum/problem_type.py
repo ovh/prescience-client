@@ -2,16 +2,13 @@
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
-from enum import Enum, unique, auto
+from enum import Enum, unique
+
 
 @unique
 class ProblemType(Enum):
-    CLASSIFICATION = auto()
-    REGRESSION = auto()
+    CLASSIFICATION = 'classification'
+    REGRESSION = 'regression'
 
     def __str__(self):
-        switch = {
-            ProblemType.CLASSIFICATION: 'classification',
-            ProblemType.REGRESSION: 'regression'
-        }
-        return switch.get(self)
+        return self.value
