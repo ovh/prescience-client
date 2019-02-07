@@ -110,12 +110,24 @@ class Task(TablePrintable):
         """
         return self.initial_payload.get('execution_info', None)
 
+    def next_task_id(self):
+        """
+        Getter of the next task id
+        :return: the next task id
+        """
+        return self.initial_payload.get('next_task_id', None)
+
     def watch(self):
         """
         Wait until the current task is DONE or ERROR
         :return: The last state of the Task (as a new Task object received from prescience)
         """
-        return self.prescience.wait_for_task_done_or_error(self)
+        final_task = self.prescience.wait_for_task_done_or_error(self)
+        while final_task.next_task_id() is not None:
+            next_task = self.prescience.task(final_task.next_task_id())
+            final_task = self.prescience.wait_for_task_done_or_error(next_task)
+
+        return final_task
 
     def interrupt(self):
         """
