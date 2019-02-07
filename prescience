@@ -28,7 +28,7 @@ def init_args():
     config_switch_parser.add_argument('project', type=str, default='default',  help='The project name you want to switch on')
 
     # config set
-    config_set_parser = config_subparser.add_parser('set', help='Add a new project')
+    config_set_parser = config_subparser.add_parser('add', help='Add a new project and its token')
     config_set_parser.add_argument('project', type=str, help='The project name')
     config_set_parser.add_argument('token', type=str, help='The token linked to this project')
 
@@ -253,7 +253,7 @@ def config_get(args: dict):
     """
     prescience.config().show()
 
-def config_set(args: dict):
+def config_add(args: dict):
     """
     Execute 'config get' command
     """
@@ -368,7 +368,7 @@ def config_cmd(args: dict):
     switch = {
         'get': config_get,
         'switch': config_switch,
-        'set': config_set
+        'add': config_add
     }
     switch[command](args)
 
