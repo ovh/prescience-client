@@ -160,6 +160,6 @@ records:
   - delay: 100
     content: "\r\n"
   - delay: 100
-    content: "+-----------------------------------------------------------+\r\n|                          \e[1m\e[33mDATASET\e[0m                          |\r\n+---+-----------------+--------+-----------+----------------+\r\n|  \e[1m\e[0m |    \e[1mdataset_id\e[0m   | \e[1mstatus\e[0m | \e[1msource_id\e[0m |  \e[1mproblem_type\e[0m  |\r\n+---+-----------------+--------+-----------+----------------+\r\n| 0 | my_dataset_mask | \e[32mBUILT\e[0m  | my-source | classification |\r\n| 1 |    my-dataset   | \e[32mBUILT\e[0m  | my-source | classification |\r\n+---+-----------------+--------+-----------+----------------+\r\n\e[33mpage 1/1\e[0m\r\n<com.ovh.mls.prescience.core.bean.page_result.PageResult object at 0x10e1934e0>\r\n>>> "
+    content: "+-----------------------------------------------------------+\r\n|                          \e[1m\e[33mDATASET\e[0m                          |\r\n+---+-----------------+--------+-----------+----------------+\r\n|  \e[1m\e[0m |    \e[1mdataset_id\e[0m   | \e[1mstatus\e[0m | \e[1msource_id\e[0m |  \e[1mproblem_type\e[0m  |\r\n+---+-----------------+--------+-----------+----------------+\r\n| 0 | my_dataset_mask | \e[32mBUILT\e[0m  | my-source | classification |\r\n| 1 |    my-dataset   | \e[32mBUILT\e[0m  | my-source | classification |\r\n+---+-----------------+--------+-----------+----------------+\r\n\e[33mpage 1/1\e[0m\r\n<prescience_client.bean.page_result.PageResult object at 0x10e1934e0>\r\n>>> "
   - delay: 10000
     content: "\r\n"

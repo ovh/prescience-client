@@ -1,6 +1,6 @@
 import unittest
 
-from com.ovh.mls.prescience.core.utils.monad import Option, List
+from prescience_client.utils.monad import Option, List
 
 
 class TestMonadUtils(unittest.TestCase):

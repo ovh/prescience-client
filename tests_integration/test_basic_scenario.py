@@ -5,7 +5,7 @@
 import unittest
 import os
 
-from com.ovh.mls.prescience.core.exception.prescience_client_exception import PrescienceException
+from prescience_client.exception.prescience_client_exception import PrescienceException
 from prescience_client import prescience
 from tests.utils import get_resource_file_path
 

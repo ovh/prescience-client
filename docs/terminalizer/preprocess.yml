@@ -246,6 +246,6 @@ records:
   - delay: 1000
     content: "\r\e[KFold serialized ████████████████████████████████ 100%\r\n"
   - delay: 18
-    content: "<com.ovh.mls.prescience.core.bean.task.PreprocessTask object at 0x1040d1a58>\r\n\e[?25h>>> "
+    content: "<prescience_client.bean.task.PreprocessTask object at 0x1040d1a58>\r\n\e[?25h>>> "
   - delay: 3448
     content: "\r\n"
