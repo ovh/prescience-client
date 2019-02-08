@@ -5,6 +5,9 @@
 from abc import ABC, abstractmethod
 from prettytable import PrettyTable
 from termcolor import colored
+import json
+
+from prescience_client.enum.output_format import OutputFormat
 
 
 class TablePrintable(ABC):
@@ -56,13 +59,16 @@ class DictPrintable(ABC):
         """
         raise NotImplementedError
 
-    def show(self) -> 'DictPrintable':
+    def show(self, ouput: OutputFormat = OutputFormat.TABLE) -> 'DictPrintable':
         """
         Print the 'description dict' as a table in console
         :return: The current object
         """
         description_dict = self.get_description_dict()
-        TablePrinter.print_dict(self.table_title(), description_dict)
+        if ouput == OutputFormat.JSON:
+            print(json.dumps(description_dict))
+        else:
+            TablePrinter.print_dict(self.table_title(), description_dict)
         return self
 
 

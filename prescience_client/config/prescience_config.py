@@ -3,8 +3,11 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import io
+import json
 import os
 import yaml
+from prescience_client.enum.output_format import OutputFormat
+
 from prescience_client.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, \
     DEFAULT_WEBSOCKET_URL, DEFAULT_SERVING_URL, \
     DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE, \
@@ -455,14 +458,17 @@ class PrescienceConfig(object):
         """
         return self.environments[self.get_current_environment()].get(KEY_SERVING_URL, None)
 
-    def show(self):
+    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
         """
         Display the current configuration a a table in console standard output
         """
-        all_line = [ConfigLine(k, v) for k, v in self.projects.items()]
-        [line.set_seleted() for line in all_line if line.get_project() == self.get_current_project_name()]
-        table = TablePrinter.get_table(ConfigLine, all_line)
-        print(table)
+        if ouput == OutputFormat.JSON:
+            print(json.dumps(self.__dict__))
+        else:
+            all_line = [ConfigLine(k, v) for k, v in self.projects.items()]
+            [line.set_seleted() for line in all_line if line.get_project() == self.get_current_project_name()]
+            table = TablePrinter.get_table(ConfigLine, all_line)
+            print(table)
 
     @staticmethod
     def create_config_path_if_not_exist(config_path: str = DEFAULT_PRESCIENCE_CONFIG_PATH) -> str:

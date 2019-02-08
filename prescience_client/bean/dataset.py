@@ -6,6 +6,7 @@ import copy
 
 from termcolor import colored
 
+from prescience_client import ProblemType
 from prescience_client.bean.config import Config
 from prescience_client.bean.page_result import PageResult
 from prescience_client.bean.source import Source
@@ -41,7 +42,6 @@ class Dataset(TablePrintable, DictPrintable):
 
     def get_description_dict(self) -> dict:
         description_dict = copy.copy(self.json_dict)
-        description_dict['status'] = self.status()
         return description_dict
 
     def uuid(self):
@@ -124,12 +124,13 @@ class Dataset(TablePrintable, DictPrintable):
         """
         return self.json_dict.get('label_id', None)
 
-    def problem_type(self):
+    def problem_type(self) -> ProblemType:
         """
         Getter if the problem_type attribute
         :return: the problem_type attribute
         """
-        return self.json_dict.get('problem_type', None)
+        problem_type_str = self.json_dict.get('problem_type', None)
+        return ProblemType(problem_type_str)
 
     def nb_fold(self):
         """
@@ -137,6 +138,13 @@ class Dataset(TablePrintable, DictPrintable):
         :return: the nb_fold attribute
         """
         return self.json_dict.get('nb_fold', None)
+
+    def get_time_column_id(self) -> str:
+        """
+        Getter of the time_column_id
+        :return: the time_column_id
+        """
+        return self.json_dict.get('time_column_id', None)
 
     def selected_columns(self):
         """
@@ -183,7 +191,7 @@ class Dataset(TablePrintable, DictPrintable):
             'dataset_id': self.dataset_id(),
             'status': self.status(),
             'source_id': self.source_id(),
-            'problem_type': self.problem_type()
+            'problem_type': str(self.problem_type())
         }
 
     def __str__(self):
