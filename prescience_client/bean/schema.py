@@ -1,6 +1,9 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
+import json
+
+from prescience_client.enum.output_format import OutputFormat
 
 from prescience_client.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
@@ -50,11 +53,14 @@ class Schema(object):
 
         return all_fields
 
-    def show(self):
+    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
         """
         Show the current schema on stdout
         """
-        print(TablePrinter.get_table(Field, self.fields()))
+        if ouput == OutputFormat.JSON:
+            print(json.dumps(self.json))
+        else:
+            print(TablePrinter.get_table(Field, self.fields()))
         return self
 
 

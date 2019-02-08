@@ -74,7 +74,6 @@ class Model(TablePrintable, DictPrintable):
 
     def get_description_dict(self) -> dict:
         description_dict = copy.copy(self.json_dict)
-        description_dict['status'] = self.status()
         return description_dict
 
     def uuid(self):

@@ -27,7 +27,7 @@ from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
-    HttpErrorExceptionFactory
+    HttpErrorExceptionFactory, PrescienceClientException
 
 
 class PrescienceClient(object):
@@ -153,7 +153,7 @@ class PrescienceClient(object):
             problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
             selected_column: list = None,
             time_column: str = None,
-            fold_size: int = -1
+            fold_size: int = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -175,7 +175,7 @@ class PrescienceClient(object):
         if time_column is not None:
             body['time_column_id'] = time_column
 
-        if fold_size >= 0:
+        if fold_size is not None and fold_size >= 0:
             body['fold_size'] = fold_size
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
@@ -916,6 +916,7 @@ class PrescienceClient(object):
         """
         dataframe = self.source_dataframe(source_id=source_id)
         if x is not None:
+            dataframe = dataframe.sort_values(by=[x])
             dataframe.plot(x=x, kind=kind)
         else:
             dataframe.plot(kind=kind)
@@ -923,21 +924,38 @@ class PrescienceClient(object):
 
     def plot_dataset(self,
                      dataset_id: str,
-                     x: str,
-                     kind: str,
-                     plot_test: bool = False,
+                     plot_train: bool = True,
+                     plot_test: bool = True,
                      block=False):
         """
         Plot a wanted dataset data
         :param dataset_id: the wanted dataset id
-        :param x: the name of the column to use as x
-        :param kind: the kind of the plot
-        :param plot_test: should plot the 'test' part instead of the 'train' part which is the default
+        :param plot_train: should plot the 'train' part
+        :param plot_test: should plot the 'test' part
         :param block: should block until user close the window
         """
-        dataframe = self.dataset_dataframe(dataset_id=dataset_id, test_part=plot_test)
-        if x is not None:
-            dataframe.plot(x=x, kind=kind)
+        dataset = self.dataset(dataset_id=dataset_id)
+        problem_type = dataset.problem_type()
+        if problem_type == ProblemType.TIME_SERIES_FORECAST:
+            time_column = dataset.get_time_column_id()
+
+            if plot_train:
+                df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+                df_train = df_train.set_index(time_column)
+                df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
+            else:
+                df_train = pandas.DataFrame({})
+
+            if plot_test:
+                df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+                df_test = df_test.set_index(time_column)
+                df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
+            else:
+                df_test = pandas.DataFrame({})
+
+            df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
+            df_final.plot()
+            matplotlib.pyplot.show(block=block)
+
         else:
-            dataframe.plot(kind=kind)
-        matplotlib.pyplot.show(block=block)
+            raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))
