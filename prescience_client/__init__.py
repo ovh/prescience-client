@@ -9,8 +9,9 @@ from typing import List
 
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.prescience_config import PrescienceConfig
-from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE
+from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
 
 config = PrescienceConfig().load()
@@ -99,6 +100,7 @@ def init_args():
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
     optimize_parser.add_argument('budget', type=int, help='Budget to allow on optimization')
+    optimize_parser.add_argument('--scoring-metric', choices=list(ScoringMetric), type=ScoringMetric, help='Scoring metric to optimize', default=DEFAULT_SCORING_METRIC)
     optimize_parser.set_defaults(watch=False)
     optimize_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     ## start train
@@ -314,9 +316,10 @@ def start_optimize(args: dict):
     """
     dataset_id = args['dataset-id']
     budget = args['budget']
+    scoring_metric = args['scoring_metric']
     watch = args['watch']
     dataset = prescience.dataset(dataset_id=dataset_id)
-    task = dataset.optimize(budget=budget)
+    task = dataset.optimize(budget=budget, scoring_metric=scoring_metric)
     if watch:
         task.watch()
 
