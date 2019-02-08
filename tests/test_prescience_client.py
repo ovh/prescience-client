@@ -10,17 +10,17 @@ import os
 
 import pycurl
 
-from com.ovh.mls.prescience.core.bean.evaluation_result import EvaluationResult
-from com.ovh.mls.prescience.core.bean.model import Model
-from com.ovh.mls.prescience.core.bean.dataset import Dataset
-from com.ovh.mls.prescience.core.bean.task import ParseTask, PreprocessTask
-from com.ovh.mls.prescience.core.bean.source import Source
-from com.ovh.mls.prescience.core.client.prescience_client import PrescienceClient
-from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfig
-from com.ovh.mls.prescience.core.enum.problem_type import ProblemType
-from com.ovh.mls.prescience.core.enum.scoring_metric import ScoringMetric
-from com.ovh.mls.prescience.core.enum.status import Status
-from com.ovh.mls.prescience.core.enum.web_service import PrescienceWebService
+from prescience_client.bean.evaluation_result import EvaluationResult
+from prescience_client.bean.model import Model
+from prescience_client.bean.dataset import Dataset
+from prescience_client.bean.task import ParseTask, PreprocessTask
+from prescience_client.bean.source import Source
+from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.config.prescience_config import PrescienceConfig
+from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.status import Status
+from prescience_client.enum.web_service import PrescienceWebService
 from tests.utils import get_resource_file_path
 from unittest.mock import MagicMock
 

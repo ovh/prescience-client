@@ -34,8 +34,8 @@ test_integration_docker:
 	docker run --rm $(DOCKER_OPT) --entrypoint=sh prescience-client -c "make test_integration"
 
 lint_local:
-	pylint --rcfile=misc/pylintrc prescience_client.py
-	pylint --rcfile=misc/pylintrc com/
+	pylint --rcfile=misc/pylintrc prescience
+	pylint --rcfile=misc/pylintrc prescience_client/
 	pylint --rcfile=misc/pylintrc tests/
 	pylint --rcfile=misc/pylintrc tests_integration/
 

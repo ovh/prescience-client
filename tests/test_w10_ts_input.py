@@ -5,10 +5,10 @@
 import unittest
 import datetime
 
-from com.ovh.mls.prescience.core.bean.entity.w10_ts_input import Warp10TimeSerieInput, TimeSerieFeature, \
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, TimeSerieFeature, \
     AugmentationFeature
-from com.ovh.mls.prescience.core.enum.augmentation_strategy import AugmentationStrategy
-from com.ovh.mls.prescience.core.enum.sampling_strategy import SamplingStrategy
+from prescience_client.enum.augmentation_strategy import AugmentationStrategy
+from prescience_client.enum.sampling_strategy import SamplingStrategy
 
 
 class TestPrescienceConfig(unittest.TestCase):

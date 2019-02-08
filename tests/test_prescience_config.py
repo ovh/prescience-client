@@ -6,7 +6,7 @@ import shutil, tempfile
 import os
 import unittest
 
-from com.ovh.mls.prescience.core.config.prescience_config import PrescienceConfig
+from prescience_client.config.prescience_config import PrescienceConfig
 from tests.utils import get_resource_file_path
 
 

@@ -248,6 +248,6 @@ records:
   - delay: 1000
     content: "\r\e[KOptimizing task. Budget left: 1 ████████████████████████████████ 100%\r\n"
   - delay: 1000
-    content: "<com.ovh.mls.prescience.core.bean.task.Task object at 0x10769fa20>\r\n\e[?25h>>> "
+    content: "<prescience_client.bean.task.Task object at 0x10769fa20>\r\n\e[?25h>>> "
   - delay: 1000
     content: "\r\n"
