@@ -94,13 +94,14 @@ def init_args():
     preprocess_parser.add_argument('--columns', type=List[str], help='Subset of columns to include in the dataset. (default: all)')
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
+    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=10)
     preprocess_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
-    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None)
+    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None, nb_fold=None)
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
     optimize_parser.add_argument('budget', type=int, help='Budget to allow on optimization')
-    optimize_parser.add_argument('--scoring-metric', choices=list(ScoringMetric), type=ScoringMetric, help='Scoring metric to optimize', default=DEFAULT_SCORING_METRIC)
+    optimize_parser.add_argument('--scoring-metric', type=ScoringMetric, choices=list(ScoringMetric), help='Scoring metric to optimize', default=DEFAULT_SCORING_METRIC)
     optimize_parser.set_defaults(watch=False)
     optimize_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     ## start train
@@ -299,13 +300,15 @@ def start_preprocess(args: dict):
     selected_columns = args['columns']
     time_column = args['time_column']
     problem_type = args['problem_type']
+    nb_fold = args['nb_fold']
     source = prescience.source(source_id=source_id)
     task = source.preprocess(
         dataset_id=dataset_id,
         label=label,
         problem_type=problem_type,
         selected_columns=selected_columns,
-        time_column=time_column
+        time_column=time_column,
+        nb_fold=nb_fold
     )
     if watch:
         task.watch()
