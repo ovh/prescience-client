@@ -5,6 +5,7 @@
 import argparse
 import sys
 import json
+import argcomplete
 from typing import List
 
 from prescience_client.client.prescience_client import PrescienceClient
@@ -13,6 +14,7 @@ from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.exception.prescience_client_exception import PrescienceException
+
 
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
@@ -185,6 +187,7 @@ def init_args():
             parser.print_usage()
             sys.exit(2)
 
+    argcomplete.autocomplete(parser)
     args = vars(parser.parse_args())
     return args
 

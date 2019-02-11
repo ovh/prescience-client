@@ -42,6 +42,12 @@ Run it in a bash console
 prescience --help
 ```
 
+Activate the autocompletion for bash console (or zsh)
+
+```bash
+eval "$(register-python-argcomplete prescience)"
+```
+
 For this running mode you'll find a `cheat sheet` at the end of this README.
 
 
