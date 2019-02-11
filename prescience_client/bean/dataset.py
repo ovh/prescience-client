@@ -206,7 +206,6 @@ class Dataset(TablePrintable, DictPrintable):
     def optimize(self,
                  scoring_metric: ScoringMetric = DEFAULT_SCORING_METRIC,
                  budget: int = None,
-                 nb_fold: int = None,
                  optimization_method: str = None,
                  custom_parameter: dict = None,
                  ) -> Task:
@@ -220,7 +219,6 @@ class Dataset(TablePrintable, DictPrintable):
             dataset_id=self.dataset_id(),
             scoring_metric=scoring_metric,
             budget=budget,
-            nb_fold=nb_fold,
             optimization_method=optimization_method,
             custom_parameter=custom_parameter
         )

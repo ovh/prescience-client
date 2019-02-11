@@ -153,6 +153,7 @@ class PrescienceClient(object):
             problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
             selected_column: list = None,
             time_column: str = None,
+            nb_fold: int = -1,
             fold_size: int = -1
     ):
         """
@@ -166,6 +167,7 @@ class PrescienceClient(object):
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
+            'nb_fold': nb_fold,
             'problem_type': str(problem_type)
         }
 
@@ -178,6 +180,9 @@ class PrescienceClient(object):
         if fold_size >= 0:
             body['fold_size'] = fold_size
 
+        if nb_fold >= 0:
+            body['nb_fold'] = nb_fold
+
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
@@ -186,7 +191,6 @@ class PrescienceClient(object):
                  dataset_id: str,
                  scoring_metric: ScoringMetric,
                  budget: int = None,
-                 nb_fold: int = None,
                  optimization_method: str = None,
                  custom_parameter: dict = None
                  ) -> 'Task':
@@ -201,7 +205,6 @@ class PrescienceClient(object):
         optimize_input = {
             'scoring_metric': str(scoring_metric),
             'budget': budget,
-            'nb_fold': nb_fold,
             'optimization_method': optimization_method,
             'custom_parameters': custom_parameter
         }
