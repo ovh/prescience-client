@@ -3,15 +3,15 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import json
+import os
+import pycurl
 import re
+import shutil
 import urllib.parse
 from io import BytesIO
-import os
-import shutil
-import pandas
-import matplotlib
 
-import pycurl
+import matplotlib
+import pandas
 from progress.bar import ChargingBar
 from websocket import create_connection
 
@@ -284,7 +284,7 @@ class PrescienceClient(object):
                     ('input-file', (pycurl.FORM_FILE, filepath))
                 ]
         else:
-            multipart: None
+            multipart = None
 
         _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters,
                                    multipart=multipart)
@@ -342,7 +342,7 @@ class PrescienceClient(object):
                     ('input-file', (pycurl.FORM_FILE, filepath))
                 ]
         else:
-            multipart: None
+            multipart = None
 
         _, result, _ = self.__post(path=f'/ml/refresh/{dataset_id}', multipart=multipart)
 
@@ -487,7 +487,7 @@ class PrescienceClient(object):
         _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
         return response
 
-    def download_source(self, source_id:str, output_directory: str):
+    def download_source(self, source_id: str, output_directory: str):
         """
         Download all source related files into the given directory
         :param source_id: The source id to download
@@ -505,7 +505,7 @@ class PrescienceClient(object):
                 stream.write(file)
                 stream.close()
 
-    def download_dataset(self, dataset_id:str, output_directory: str, test_part: bool):
+    def download_dataset(self, dataset_id: str, output_directory: str, test_part: bool):
         """
         Download all dataset related files into the given directory
         :param dataset_id: The dataset id to download
@@ -524,13 +524,14 @@ class PrescienceClient(object):
             path_part = 'train'
 
         for output in all_files:
-            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}', accept='application/octet-stream')
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}',
+                                    accept='application/octet-stream')
             full_output_path = os.path.join(output_directory, output)
             with open(full_output_path, 'wb') as stream:
                 stream.write(file)
                 stream.close()
 
-    def __get(self, path: str, query_parameters: dict = None, accept: str='application/json'):
+    def __get(self, path: str, query_parameters: dict = None, accept: str = 'application/json'):
         """
         Generic HTTP GET call
         :param path: the http path to call
@@ -587,9 +588,9 @@ class PrescienceClient(object):
             query_parameters: dict = None,
             data: dict = None,
             multipart: list = None,
-            content_type: str='application/json',
-            call_type: PrescienceWebService=PrescienceWebService.API,
-            accept: str='application/json'
+            content_type: str = 'application/json',
+            call_type: PrescienceWebService = PrescienceWebService.API,
+            accept: str = 'application/json'
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -861,7 +862,6 @@ class PrescienceClient(object):
             self.download_dataset(dataset_id=dataset_id, output_directory=datasetid_path, test_part=test_part)
 
         return datasetid_path
-
 
     def update_cache_source(self, source_id) -> str:
         """
