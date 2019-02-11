@@ -161,6 +161,9 @@ class PrescienceClient(object):
         :param dataset_id: The id that we want for the Dataset
         :param label_id: The name of the Source column that we want to predict (the label)
         :param problem_type: The type of machine learning problem that we want to solve
+        :param selected_column: subset of the source column to use for preprocessing, by default it will use all
+        :param time_column: Indicates the time column (or step column) for a time-series problem type
+        :param fold_size: The number of fold to use on cross-validation
         :return: The task object of the Preprocess Task
         """
         body = {
