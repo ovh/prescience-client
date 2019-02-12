@@ -6,10 +6,9 @@ from enum import Enum, unique
 
 
 @unique
-class ProblemType(Enum):
-    CLASSIFICATION = 'classification'
-    REGRESSION = 'regression'
-    TIME_SERIES_FORECAST = 'time_series_forecast'
+class OutputFormat(Enum):
+    TABLE = 'table'
+    JSON = 'json'
 
     def __str__(self):
         return self.value

@@ -51,7 +51,6 @@ class Source(TablePrintable, DictPrintable):
 
     def get_description_dict(self) -> dict:
         description_dict = copy.copy(self.json_dict)
-        description_dict['status'] = self.status()
         return description_dict
 
     def schema(self):
@@ -105,8 +104,8 @@ class Source(TablePrintable, DictPrintable):
                    problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
                    selected_columns: list = None,
                    time_column: str = None,
-                   nb_fold: int = -1,
-                   fold_size: int = -1):
+                   nb_fold: int = None,
+                   fold_size: int = None):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset

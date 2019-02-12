@@ -3,15 +3,15 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import json
+import os
+import pycurl
 import re
+import shutil
 import urllib.parse
 from io import BytesIO
-import os
-import shutil
-import pandas
-import matplotlib
 
-import pycurl
+import matplotlib
+import pandas
 from progress.bar import ChargingBar
 from websocket import create_connection
 
@@ -27,7 +27,7 @@ from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
-    HttpErrorExceptionFactory
+    HttpErrorExceptionFactory, PrescienceClientException
 
 
 class PrescienceClient(object):
@@ -153,8 +153,8 @@ class PrescienceClient(object):
             problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
             selected_column: list = None,
             time_column: str = None,
-            nb_fold: int = -1,
-            fold_size: int = -1
+            nb_fold: int = None,
+            fold_size: int = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -162,12 +162,14 @@ class PrescienceClient(object):
         :param dataset_id: The id that we want for the Dataset
         :param label_id: The name of the Source column that we want to predict (the label)
         :param problem_type: The type of machine learning problem that we want to solve
+        :param selected_column: subset of the source column to use for preprocessing, by default it will use all
+        :param time_column: Indicates the time column (or step column) for a time-series problem type
+        :param fold_size: The number of fold to use on cross-validation
         :return: The task object of the Preprocess Task
         """
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
-            'nb_fold': nb_fold,
             'problem_type': str(problem_type)
         }
 
@@ -177,10 +179,10 @@ class PrescienceClient(object):
         if time_column is not None:
             body['time_column_id'] = time_column
 
-        if fold_size >= 0:
+        if fold_size is not None and fold_size >= 0:
             body['fold_size'] = fold_size
 
-        if nb_fold >= 0:
+        if nb_fold is not None and nb_fold >= 0:
             body['nb_fold'] = nb_fold
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
@@ -284,7 +286,7 @@ class PrescienceClient(object):
                     ('input-file', (pycurl.FORM_FILE, filepath))
                 ]
         else:
-            multipart: None
+            multipart = None
 
         _, result, _ = self.__post(path=f'/ml/retrain/{model_id}', query_parameters=query_parameters,
                                    multipart=multipart)
@@ -342,7 +344,7 @@ class PrescienceClient(object):
                     ('input-file', (pycurl.FORM_FILE, filepath))
                 ]
         else:
-            multipart: None
+            multipart = None
 
         _, result, _ = self.__post(path=f'/ml/refresh/{dataset_id}', multipart=multipart)
 
@@ -368,7 +370,7 @@ class PrescienceClient(object):
         from prescience_client.bean.task import Task
         from prescience_client.bean.task import TaskFactory
         from prescience_client.bean.page_result import PageResult
-        return PageResult(json=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
+        return PageResult(json_dict=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
 
     def task(self, task_uuid: str) -> 'Task':
         _, result, _ = self.__get(path=f'/task/{task_uuid}')
@@ -487,7 +489,7 @@ class PrescienceClient(object):
         _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
         return response
 
-    def download_source(self, source_id:str, output_directory: str):
+    def download_source(self, source_id: str, output_directory: str):
         """
         Download all source related files into the given directory
         :param source_id: The source id to download
@@ -505,7 +507,7 @@ class PrescienceClient(object):
                 stream.write(file)
                 stream.close()
 
-    def download_dataset(self, dataset_id:str, output_directory: str, test_part: bool):
+    def download_dataset(self, dataset_id: str, output_directory: str, test_part: bool):
         """
         Download all dataset related files into the given directory
         :param dataset_id: The dataset id to download
@@ -524,13 +526,14 @@ class PrescienceClient(object):
             path_part = 'train'
 
         for output in all_files:
-            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}', accept='application/octet-stream')
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}',
+                                    accept='application/octet-stream')
             full_output_path = os.path.join(output_directory, output)
             with open(full_output_path, 'wb') as stream:
                 stream.write(file)
                 stream.close()
 
-    def __get(self, path: str, query_parameters: dict = None, accept: str='application/json'):
+    def __get(self, path: str, query_parameters: dict = None, accept: str = 'application/json'):
         """
         Generic HTTP GET call
         :param path: the http path to call
@@ -587,9 +590,9 @@ class PrescienceClient(object):
             query_parameters: dict = None,
             data: dict = None,
             multipart: list = None,
-            content_type: str='application/json',
-            call_type: PrescienceWebService=PrescienceWebService.API,
-            accept: str='application/json'
+            content_type: str = 'application/json',
+            call_type: PrescienceWebService = PrescienceWebService.API,
+            accept: str = 'application/json'
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -862,7 +865,6 @@ class PrescienceClient(object):
 
         return datasetid_path
 
-
     def update_cache_source(self, source_id) -> str:
         """
         Request for locally caching the data of the wanted source.
@@ -919,6 +921,7 @@ class PrescienceClient(object):
         """
         dataframe = self.source_dataframe(source_id=source_id)
         if x is not None:
+            dataframe = dataframe.sort_values(by=[x])
             dataframe.plot(x=x, kind=kind)
         else:
             dataframe.plot(kind=kind)
@@ -926,21 +929,38 @@ class PrescienceClient(object):
 
     def plot_dataset(self,
                      dataset_id: str,
-                     x: str,
-                     kind: str,
-                     plot_test: bool = False,
+                     plot_train: bool = True,
+                     plot_test: bool = True,
                      block=False):
         """
         Plot a wanted dataset data
         :param dataset_id: the wanted dataset id
-        :param x: the name of the column to use as x
-        :param kind: the kind of the plot
-        :param plot_test: should plot the 'test' part instead of the 'train' part which is the default
+        :param plot_train: should plot the 'train' part
+        :param plot_test: should plot the 'test' part
         :param block: should block until user close the window
         """
-        dataframe = self.dataset_dataframe(dataset_id=dataset_id, test_part=plot_test)
-        if x is not None:
-            dataframe.plot(x=x, kind=kind)
+        dataset = self.dataset(dataset_id=dataset_id)
+        problem_type = dataset.problem_type()
+        if problem_type == ProblemType.TIME_SERIES_FORECAST:
+            time_column = dataset.get_time_column_id()
+
+            if plot_train:
+                df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+                df_train = df_train.set_index(time_column)
+                df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
+            else:
+                df_train = pandas.DataFrame({})
+
+            if plot_test:
+                df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+                df_test = df_test.set_index(time_column)
+                df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
+            else:
+                df_test = pandas.DataFrame({})
+
+            df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
+            df_final.plot()
+            matplotlib.pyplot.show(block=block)
+
         else:
-            dataframe.plot(kind=kind)
-        matplotlib.pyplot.show(block=block)
+            raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))

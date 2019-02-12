@@ -1,6 +1,9 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
+import json
+
+from prescience_client.enum.output_format import OutputFormat
 
 from prescience_client.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
@@ -10,12 +13,12 @@ class Schema(object):
     """
     Prescience Schema object
     """
-    def __init__(self, json: dict):
+    def __init__(self, json_dict: dict):
         """
         Constructor of Schema object
-        :param json: the source JSON dict received from prescience
+        :param json_dict: the source JSON dict received from prescience
         """
-        self.json = json
+        self.json = json_dict
         self.mask = None
 
     def set_mask(self, selected_columns: list) -> 'Schema':
@@ -50,11 +53,14 @@ class Schema(object):
 
         return all_fields
 
-    def show(self):
+    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
         """
         Show the current schema on stdout
         """
-        print(TablePrinter.get_table(Field, self.fields()))
+        if ouput == OutputFormat.JSON:
+            print(json.dumps(self.json))
+        else:
+            print(TablePrinter.get_table(Field, self.fields()))
         return self
 
 
@@ -63,8 +69,8 @@ class Field(TablePrintable):
     Schema Field object
     """
 
-    def __init__(self, json: dict):
-        self.json = json
+    def __init__(self, json_dict: dict):
+        self.json = json_dict
         self.is_selected = None
 
     def set_is_selected(self, value: bool):
@@ -128,8 +134,8 @@ class Metadata(object):
     """
     Metadata field object
     """
-    def __init__(self, json: dict):
-        self.json = json
+    def __init__(self, json_dict: dict):
+        self.json = json_dict
 
     def n_cat(self):
         """

@@ -3,13 +3,14 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import argparse
-import sys
 import json
+import sys
 from typing import List
 
 from prescience_client.client.prescience_client import PrescienceClient
-from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
+from prescience_client.config.prescience_config import PrescienceConfig
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
@@ -28,7 +29,10 @@ def init_args():
     config_subparser = cmd_config_parser.add_subparsers(dest='config_cmd')
 
     # config get
-    config_subparser.add_parser('get', help='Show information about specifics prescience objects')
+    config_get_parser = config_subparser.add_parser('get', help='Show information about specifics prescience objects')
+    config_get_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
 
     # config switch
     config_switch_parser = config_subparser.add_parser('switch', help='Change the currently selected prescience project')
@@ -51,10 +55,19 @@ def init_args():
 
     ## get sources
     sources_parser.add_argument('--page', type=int, default=1)
+    sources_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
     ## get datasets
     datasets_parser.add_argument('--page', type=int, default=1)
+    datasets_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
     ## get models
     models_parser.add_argument('--page', type=int, default=1)
+    models_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
     ## get source
     source_parser.add_argument('id', type=str, default=None)
     source_parser.set_defaults(schema=False)
@@ -62,6 +75,7 @@ def init_args():
     source_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this source')
     source_parser.set_defaults(cache=False)
     source_parser.add_argument('--cache', action='store_true', help='Cache the source data inside local cache directory')
+    source_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
     ## get dataset
     dataset_parser.add_argument('id', type=str, default=None)
     dataset_parser.set_defaults(schema=False)
@@ -72,8 +86,14 @@ def init_args():
     dataset_parser.add_argument('--download-test', dest='download_test', type=str, default=None, help='Directory in which to download data files for this test dataset')
     dataset_parser.set_defaults(cache=False)
     dataset_parser.add_argument('--cache', action='store_true', help='Cache the dataset data inside local cache directory')
+    dataset_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                               help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                               default=OutputFormat.TABLE)
     # get model
     model_parser.add_argument('id', type=str, default=None)
+    model_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                               help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                               default=OutputFormat.TABLE)
 
     # start
     cmd_start_parser = subparsers.add_parser('start', help='Start a task on prescience')
@@ -84,7 +104,7 @@ def init_args():
     parse_parser.set_defaults(headers=True)
     parse_parser.set_defaults(watch=False)
     parse_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
-    parse_parser.add_argument('input-filepath', type=str, help='Local input file to send and parse on prescience')
+    parse_parser.add_argument('--input-filepath', type=str, help='Local input file to send and parse on prescience')
     parse_parser.add_argument('source-id', type=str, help='Identifier of your future source object')
     ## start preprocess
     preprocess_parser = start_subparser.add_parser('preprocess', help='Launch a preprocess task on prescience')
@@ -115,13 +135,13 @@ def init_args():
     retrain_parser = start_subparser.add_parser('retrain', help='Launch a retrain task on prescience')
     retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     retrain_parser.add_argument('model-id', type=str, help='Model to retrain')
-    retrain_parser.add_argument('input-filepath', type=str, help='Local input file to send in order to retrain the model on prescience')
+    retrain_parser.add_argument('--input-filepath', type=str, help='Local input file to send in order to retrain the model on prescience')
 
     ## start refresh dataset
     retrain_parser = start_subparser.add_parser('refresh', help='Launch a refresh dataset task on prescience')
     retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     retrain_parser.add_argument('dataset-id', type=str, help='Dataset to refresh')
-    retrain_parser.add_argument('input-filepath', type=str, help='Local input file/directory to send in order to refresh the dataset on prescience')
+    retrain_parser.add_argument('--input-filepath', type=str, help='Local input file/directory to send in order to refresh the dataset on prescience')
 
     # predict
     cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
@@ -158,10 +178,9 @@ def init_args():
     ## plot dataset
     plot_dataset_parser = plot_subparser.add_parser('dataset', help='Plot a dataset data object')
     plot_dataset_parser.add_argument('id', type=str, help='Identifier of the source object')
-    plot_dataset_parser.add_argument('--x', type=str, default=None, help='Plot the current source')
-    plot_dataset_parser.add_argument('--kind', type=str, default='line', help='Kind of the plot figure. Default: line')
-    plot_dataset_parser.set_defaults(test=False)
-    plot_dataset_parser.add_argument('--test', action='store_true', help='Plot only the "test" part of the dataset and not the default "train" part')
+    plot_dataset_parser.set_defaults(plot_test=True, plot_train=True)
+    plot_dataset_parser.add_argument('--no-test', dest='plot_test', action='store_false', help='Won\'t plot the test part')
+    plot_dataset_parser.add_argument('--no-train', dest='plot_train', action='store_false', help='Won\'t plot the train part')
 
 
     if len(sys.argv) == 1:
@@ -177,15 +196,17 @@ def get_models(args: dict):
     Show model list
     """
     page = args['page']
-    prescience.models(page=page).show()
+    output = args['output']
+    prescience.models(page=page).show(output)
 
 def get_model(args: dict):
     """
     Show single model
     """
     model_id = args['id']
+    output = args['output']
     model = prescience.model(model_id)
-    model.show()
+    model.show(output)
 
 
 def get_datasets(args: dict):
@@ -193,7 +214,8 @@ def get_datasets(args: dict):
     Show datasets list
     """
     page = args['page']
-    prescience.datasets(page=page).show()
+    output = args['output']
+    prescience.datasets(page=page).show(output)
 
 def get_dataset(args: dict):
     """
@@ -202,26 +224,28 @@ def get_dataset(args: dict):
     display_eval = args['eval']
     display_schema = args['schema']
     dataset_id = args['id']
+    output = args['output']
     download_train_directory = args['download_train']
     download_test_directory = args['download_test']
     dataset = prescience.dataset(dataset_id)
     if display_eval:
-        dataset.evaluation_results().show()
+        dataset.evaluation_results().show(output)
     elif display_schema:
-        dataset.schema().show()
+        dataset.schema().show(output)
     elif download_train_directory is not None:
         prescience.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory, test_part=False)
     elif download_test_directory is not None:
         prescience.download_dataset(dataset_id=dataset_id, output_directory=download_test_directory, test_part=True)
     else:
-        dataset.show()
+        dataset.show(output)
 
 def get_sources(args: dict):
     """
     Show sources list
     """
     page = args['page']
-    prescience.sources(page=page).show()
+    output = args['output']
+    prescience.sources(page=page).show(output)
 
 def get_source(args: dict):
     """
@@ -231,14 +255,15 @@ def get_source(args: dict):
     source = prescience.source(source_id)
     download_directory = args['download']
     cache = args['cache']
+    output = args['output']
     if args['schema']:
-        source.schema().show()
+        source.schema().show(output)
     elif download_directory is not None:
         prescience.download_source(source_id=source_id, output_directory=download_directory)
     elif cache:
         prescience.update_cache_source(source_id)
     else:
-        source.show()
+        source.show(output)
 
 
 def get_cmd(args: dict):
@@ -260,9 +285,8 @@ def config_get(args: dict):
     """
     Execute 'config get' command
     """
-    # Do nothing but make pylint happy
-    args.get('', None)
-    prescience.config().show()
+    output = args['output']
+    prescience.config().show(output)
 
 def config_add(args: dict):
     """
@@ -280,7 +304,7 @@ def start_parse(args: dict):
     """
     Execute 'start parse' command
     """
-    filepath = args['input-filepath']
+    filepath = args['input_filepath']
     has_headers = args['headers']
     watch = args['watch']
     source_id = args['source-id']
@@ -341,7 +365,7 @@ def start_retrain(args: dict):
     """
     Execute 'start train' command
     """
-    file = args['input-filepath']
+    file = args['input_filepath']
     model_id = args['model-id']
     watch = args['watch']
     task = prescience.retrain(model_id=model_id, filepath=file)
@@ -352,7 +376,7 @@ def start_refresh(args: dict):
     """
     Execute 'start refresh dataset' command
     """
-    file = args['input-filepath']
+    file = args['input_filepath']
     dataset_id = args['dataset-id']
     watch = args['watch']
     task = prescience.refresh_dataset(dataset_id=dataset_id, filepath=file)
@@ -446,10 +470,9 @@ def plot_source(args: dict):
 
 def plot_dataset(args: dict):
     dataset_id = args['id']
-    kind = args['kind']
-    x = args['x']
-    test = args['test']
-    prescience.plot_dataset(dataset_id=dataset_id, x=x, block=True, kind=kind, plot_test=test)
+    plot_train = args['plot_train']
+    plot_test = args['plot_test']
+    prescience.plot_dataset(dataset_id=dataset_id, block=True, plot_train=plot_train, plot_test=plot_test)
 
 
 def plot_cmd(args: dict):
