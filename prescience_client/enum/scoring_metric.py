@@ -8,11 +8,8 @@ from enum import Enum, unique
 @unique
 class ScoringMetric(Enum):
     ACCURACY = 'accuracy'
+    MSE = 'mse'
     LOG_LOSS = 'log_loss'
 
     def __str__(self):
-        switch = {
-            ScoringMetric.ACCURACY: 'accuracy',
-            ScoringMetric.LOG_LOSS: 'log_loss',
-        }
-        return switch.get(self)
+        return self.value
