@@ -153,6 +153,7 @@ class PrescienceClient(object):
             problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
             selected_column: list = None,
             time_column: str = None,
+            nb_fold: int = None,
             fold_size: int = None
     ):
         """
@@ -181,6 +182,9 @@ class PrescienceClient(object):
         if fold_size is not None and fold_size >= 0:
             body['fold_size'] = fold_size
 
+        if nb_fold is not None and nb_fold >= 0:
+            body['nb_fold'] = nb_fold
+
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
@@ -189,7 +193,6 @@ class PrescienceClient(object):
                  dataset_id: str,
                  scoring_metric: ScoringMetric,
                  budget: int = None,
-                 nb_fold: int = None,
                  optimization_method: str = None,
                  custom_parameter: dict = None
                  ) -> 'Task':
@@ -204,7 +207,6 @@ class PrescienceClient(object):
         optimize_input = {
             'scoring_metric': str(scoring_metric),
             'budget': budget,
-            'nb_fold': nb_fold,
             'optimization_method': optimization_method,
             'custom_parameters': custom_parameter
         }
@@ -368,7 +370,7 @@ class PrescienceClient(object):
         from prescience_client.bean.task import Task
         from prescience_client.bean.task import TaskFactory
         from prescience_client.bean.page_result import PageResult
-        return PageResult(json=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
+        return PageResult(json_dict=page, clazz=Task, factory_method=TaskFactory.construct, prescience=self)
 
     def task(self, task_uuid: str) -> 'Task':
         _, result, _ = self.__get(path=f'/task/{task_uuid}')

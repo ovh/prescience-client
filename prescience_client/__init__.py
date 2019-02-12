@@ -3,15 +3,16 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import argparse
-import sys
 import json
+import sys
 from typing import List
 
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.config.prescience_config import PrescienceConfig
-from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
 
 config = PrescienceConfig().load()
@@ -113,12 +114,14 @@ def init_args():
     preprocess_parser.add_argument('--columns', type=List[str], help='Subset of columns to include in the dataset. (default: all)')
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
+    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=10)
     preprocess_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
-    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None)
+    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None, nb_fold=None)
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
     optimize_parser.add_argument('budget', type=int, help='Budget to allow on optimization')
+    optimize_parser.add_argument('--scoring-metric', type=ScoringMetric, choices=list(ScoringMetric), help='Scoring metric to optimize', default=DEFAULT_SCORING_METRIC)
     optimize_parser.set_defaults(watch=False)
     optimize_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     ## start train
@@ -321,13 +324,15 @@ def start_preprocess(args: dict):
     selected_columns = args['columns']
     time_column = args['time_column']
     problem_type = args['problem_type']
+    nb_fold = args['nb_fold']
     source = prescience.source(source_id=source_id)
     task = source.preprocess(
         dataset_id=dataset_id,
         label=label,
         problem_type=problem_type,
         selected_columns=selected_columns,
-        time_column=time_column
+        time_column=time_column,
+        nb_fold=nb_fold
     )
     if watch:
         task.watch()
@@ -338,9 +343,10 @@ def start_optimize(args: dict):
     """
     dataset_id = args['dataset-id']
     budget = args['budget']
+    scoring_metric = args['scoring_metric']
     watch = args['watch']
     dataset = prescience.dataset(dataset_id=dataset_id)
-    task = dataset.optimize(budget=budget)
+    task = dataset.optimize(budget=budget, scoring_metric=scoring_metric)
     if watch:
         task.watch()
 

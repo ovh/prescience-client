@@ -104,7 +104,8 @@ class Source(TablePrintable, DictPrintable):
                    problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
                    selected_columns: list = None,
                    time_column: str = None,
-                   fold_size: int = -1):
+                   nb_fold: int = None,
+                   fold_size: int = None):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset
@@ -119,7 +120,8 @@ class Source(TablePrintable, DictPrintable):
             problem_type=problem_type,
             selected_column=selected_columns,
             time_column=time_column,
-            fold_size=fold_size
+            fold_size=fold_size,
+            nb_fold=nb_fold
         )
 
     def tree(self) -> SourceTree:
