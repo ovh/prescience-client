@@ -8,9 +8,11 @@ import json
 import argcomplete
 from typing import List
 
+from prescience_client.enum.scoring_metric import ScoringMetric
+
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.prescience_config import PrescienceConfig
-from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE
+from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.exception.prescience_client_exception import PrescienceException
@@ -71,22 +73,17 @@ def init_args():
                                 default=OutputFormat.TABLE)
     ## get source
     source_parser.add_argument('id', type=str, default=None)
-    source_parser.set_defaults(schema=False)
-    source_parser.add_argument('--schema', action='store_true', help='Display the schema of the source')
+    source_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the source')
     source_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this source')
-    source_parser.set_defaults(cache=False)
-    source_parser.add_argument('--cache', action='store_true', help='Cache the source data inside local cache directory')
+    source_parser.add_argument('--cache', default=False, action='store_true', help='Cache the source data inside local cache directory')
     source_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
     ## get dataset
     dataset_parser.add_argument('id', type=str, default=None)
-    dataset_parser.set_defaults(schema=False)
-    dataset_parser.set_defaults(eval=False)
-    dataset_parser.add_argument('--schema', action='store_true', help='Display the schema of the dataset')
-    dataset_parser.add_argument('--eval', action='store_true', help='Display the evaluation results of the dataset')
+    dataset_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the dataset')
+    dataset_parser.add_argument('--eval', default=False, action='store_true', help='Display the evaluation results of the dataset')
     dataset_parser.add_argument('--download-train', dest='download_train', type=str, default=None, help='Directory in which to download data files for this train dataset')
     dataset_parser.add_argument('--download-test', dest='download_test', type=str, default=None, help='Directory in which to download data files for this test dataset')
-    dataset_parser.set_defaults(cache=False)
-    dataset_parser.add_argument('--cache', action='store_true', help='Cache the dataset data inside local cache directory')
+    dataset_parser.add_argument('--cache', default=False, action='store_true', help='Cache the dataset data inside local cache directory')
     dataset_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                default=OutputFormat.TABLE)
@@ -101,10 +98,8 @@ def init_args():
     start_subparser = cmd_start_parser.add_subparsers(dest='subject')
     ## start parse
     parse_parser = start_subparser.add_parser('parse', help='Launch a parse task on prescience')
-    parse_parser.add_argument('--no-headers', dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
-    parse_parser.set_defaults(headers=True)
-    parse_parser.set_defaults(watch=False)
-    parse_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    parse_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
+    parse_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
     parse_parser.add_argument('--input-filepath', type=str, help='Local input file to send and parse on prescience')
     parse_parser.add_argument('source-id', type=str, help='Identifier of your future source object')
     ## start preprocess
@@ -112,23 +107,22 @@ def init_args():
     preprocess_parser.add_argument('source-id', type=str, help='Identifier of the source object to use for preprocessing')
     preprocess_parser.add_argument('dataset-id', type=str, help='Identifier of your future dataset object')
     preprocess_parser.add_argument('label', type=str, help='Identifier of the column to predict')
-    preprocess_parser.add_argument('--columns', type=List[str], help='Subset of columns to include in the dataset. (default: all)')
+    preprocess_parser.add_argument('--columns', default=None, type=List[str], help='Subset of columns to include in the dataset. (default: all)')
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
-    preprocess_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
-    preprocess_parser.set_defaults(watch=False, columns=None, time_column=None)
+    preprocess_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
-    optimize_parser.add_argument('budget', type=int, help='Budget to allow on optimization')
-    optimize_parser.set_defaults(watch=False)
-    optimize_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    optimize_parser.add_argument('scoring-metric', type=ScoringMetric, choices=list(ScoringMetric), help=f'The scoring metric to optimize on.')
+    optimize_parser.add_argument('--budget', type=int, help='Budget to allow on optimization (default: it will use the one configure on prescience server side)', default=None)
+    optimize_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
+    optimize_parser.add_argument('--forecast-horizon-steps', default=None, type=int, help='Number of steps forward to take into account as a forecast horizon for the optimization (Only in case of time series forecast)')
     ## start train
     train_parser = start_subparser.add_parser('train', help='Launch a train task on prescience')
     train_parser.add_argument('uuid', type=str, help='Chosen evaluation result uuid to train on')
     train_parser.add_argument('model-id', type=str, help='Identifier of your future model object')
-    train_parser.set_defaults(watch=False)
-    train_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
+    train_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
 
     ## start retrain
     retrain_parser = start_subparser.add_parser('retrain', help='Launch a retrain task on prescience')
@@ -146,8 +140,7 @@ def init_args():
     cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
     cmd_predict_parser.add_argument('model-id', type=str, help='Identifier if the source object to delete')
     cmd_predict_parser.add_argument('--json', type=str, default='{}', help='All arguments to send as input of prescience model (in json format)')
-    cmd_predict_parser.set_defaults(validate=False)
-    cmd_predict_parser.add_argument('--validate', action='store_true', help='Validate the prediction request and don\'t send it')
+    cmd_predict_parser.add_argument('--validate', default=False, action='store_true', help='Validate the prediction request and don\'t send it')
 
     # delete
     cmd_delete_parser = subparsers.add_parser('delete', help='Delete a prescience object')
@@ -177,9 +170,8 @@ def init_args():
     ## plot dataset
     plot_dataset_parser = plot_subparser.add_parser('dataset', help='Plot a dataset data object')
     plot_dataset_parser.add_argument('id', type=str, help='Identifier of the source object')
-    plot_dataset_parser.set_defaults(plot_test=True, plot_train=True)
-    plot_dataset_parser.add_argument('--no-test', dest='plot_test', action='store_false', help='Won\'t plot the test part')
-    plot_dataset_parser.add_argument('--no-train', dest='plot_train', action='store_false', help='Won\'t plot the train part')
+    plot_dataset_parser.add_argument('--no-test', default=True, dest='plot_test', action='store_false', help='Won\'t plot the test part')
+    plot_dataset_parser.add_argument('--no-train', default=True, dest='plot_train', action='store_false', help='Won\'t plot the train part')
 
 
     if len(sys.argv) == 1:
@@ -340,10 +332,20 @@ def start_optimize(args: dict):
     Execute 'start optimize' command
     """
     dataset_id = args['dataset-id']
+    scoring_metric = args['scoring-metric']
     budget = args['budget']
     watch = args['watch']
-    dataset = prescience.dataset(dataset_id=dataset_id)
-    task = dataset.optimize(budget=budget)
+    forecast_horizon_steps = args['forecast_horizon_steps']
+    print(args)
+    task = prescience.optimize(
+        dataset_id=dataset_id,
+        scoring_metric=scoring_metric,
+        budget=budget,
+        nb_fold=None,
+        optimization_method=None,
+        custom_parameter=None,
+        forecasting_horizon_steps=forecast_horizon_steps
+    )
     if watch:
         task.watch()
 
