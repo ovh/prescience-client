@@ -191,13 +191,16 @@ class PrescienceClient(object):
                  budget: int = None,
                  nb_fold: int = None,
                  optimization_method: str = None,
-                 custom_parameter: dict = None
+                 custom_parameter: dict = None,
+                 forecasting_horizon_steps: int = None,
+                 forecast_discount: float = None
                  ) -> 'Task':
         """
         Launch an optimize task from a dataset object
         :param dataset_id: The Id of the initial dataset
         :param scoring_metric: The scoring metric that we want to optimize on
         :param budget: The budget to consume before stopping the optimization
+        :param forecasting_horizon_steps: Number of steps forward to take into account as a forecast horizon for the optimization
         :return: The task object of the Optimize Task
         """
 
@@ -206,12 +209,16 @@ class PrescienceClient(object):
             'budget': budget,
             'nb_fold': nb_fold,
             'optimization_method': optimization_method,
-            'custom_parameters': custom_parameter
+            'custom_parameters': custom_parameter,
+            'forecasting_horizon_steps': forecasting_horizon_steps,
+            'forecast_discount': forecast_discount
         }
+
+        data = {k: v for k, v in optimize_input.items() if v is not None}  # Delete None value in dict
 
         _, result, _ = self.__post(
             path=f'/ml/optimize/{dataset_id}',
-            data={k: v for k, v in optimize_input.items() if v is not None}  # Delete None value in dict
+            data=data
         )
 
         from prescience_client.bean.task import TaskFactory
