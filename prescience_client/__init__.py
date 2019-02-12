@@ -3,20 +3,19 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import argparse
-import sys
 import json
-import argcomplete
+import sys
 from typing import List
 
-from prescience_client.enum.scoring_metric import ScoringMetric
+import argcomplete
 
 from prescience_client.client.prescience_client import PrescienceClient
-from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
+from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
-
 
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
@@ -110,6 +109,7 @@ def init_args():
     preprocess_parser.add_argument('--columns', default=None, type=List[str], help='Subset of columns to include in the dataset. (default: all)')
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
+    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=None)
     preprocess_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
@@ -316,13 +316,15 @@ def start_preprocess(args: dict):
     selected_columns = args['columns']
     time_column = args['time_column']
     problem_type = args['problem_type']
+    nb_fold = args['nb_fold']
     source = prescience.source(source_id=source_id)
     task = source.preprocess(
         dataset_id=dataset_id,
         label=label,
         problem_type=problem_type,
         selected_columns=selected_columns,
-        time_column=time_column
+        time_column=time_column,
+        nb_fold=nb_fold
     )
     if watch:
         task.watch()
@@ -332,16 +334,14 @@ def start_optimize(args: dict):
     Execute 'start optimize' command
     """
     dataset_id = args['dataset-id']
-    scoring_metric = args['scoring-metric']
     budget = args['budget']
+    scoring_metric = args['scoring_metric']
     watch = args['watch']
     forecast_horizon_steps = args['forecast_horizon_steps']
-    print(args)
     task = prescience.optimize(
         dataset_id=dataset_id,
         scoring_metric=scoring_metric,
         budget=budget,
-        nb_fold=None,
         optimization_method=None,
         custom_parameter=None,
         forecasting_horizon_steps=forecast_horizon_steps

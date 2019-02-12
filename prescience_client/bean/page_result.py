@@ -15,14 +15,14 @@ class PageResult(object):
     Prescience PageResult object
     """
     def __init__(self,
-                 json: dict,
+                 json_dict: dict,
                  clazz,
                  factory_method = None,
                  prescience: PrescienceClient = None
                  ):
         """
         Constructor of PageResult object
-        :param json: the source JSON dict received from prescience
+        :param json_dict: the source JSON dict received from prescience
         :param clazz: the python class of object contained inside page
         :param factory_method: the factory method for constructing inside object from their dict
         :param prescience: the prescience client
@@ -33,9 +33,9 @@ class PageResult(object):
         else:
             self.factory_method = clazz
 
-        self.metadata = MetadataPageResult(json_dict=json['metadata'])
-        self.content = [self.factory_method(x, prescience) for x in json['content']]
-        self.json_dict = json
+        self.metadata = MetadataPageResult(json_dict=json_dict['metadata'])
+        self.content = [self.factory_method(x, prescience) for x in json_dict['content']]
+        self.json_dict = json_dict
 
     def __str__(self):
         string = ','.join([str(x) for x in self.content])

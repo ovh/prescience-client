@@ -13,12 +13,12 @@ class Schema(object):
     """
     Prescience Schema object
     """
-    def __init__(self, json: dict):
+    def __init__(self, json_dict: dict):
         """
         Constructor of Schema object
-        :param json: the source JSON dict received from prescience
+        :param json_dict: the source JSON dict received from prescience
         """
-        self.json = json
+        self.json = json_dict
         self.mask = None
 
     def set_mask(self, selected_columns: list) -> 'Schema':
@@ -69,8 +69,8 @@ class Field(TablePrintable):
     Schema Field object
     """
 
-    def __init__(self, json: dict):
-        self.json = json
+    def __init__(self, json_dict: dict):
+        self.json = json_dict
         self.is_selected = None
 
     def set_is_selected(self, value: bool):
@@ -134,8 +134,8 @@ class Metadata(object):
     """
     Metadata field object
     """
-    def __init__(self, json: dict):
-        self.json = json
+    def __init__(self, json_dict: dict):
+        self.json = json_dict
 
     def n_cat(self):
         """
