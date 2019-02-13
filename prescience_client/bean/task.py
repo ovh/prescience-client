@@ -1,10 +1,12 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
+import copy
 
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.status import Status
-from prescience_client.utils.table_printable import TablePrintable
+from prescience_client.utils.table_printable import TablePrintable, DictPrintable
+
 
 class TaskFactory:
     @staticmethod
@@ -19,7 +21,7 @@ class TaskFactory:
         return constructor(task_dict, prescience)
 
 
-class Task(TablePrintable):
+class Task(TablePrintable, DictPrintable):
     """
     Generic task object, inherit from TablePrintable so that it can be easily printed as list on stdout
     """
@@ -31,7 +33,7 @@ class Task(TablePrintable):
         :param json: the task JSON dict received from prescience
         :param prescience: the prescience client (default: None)
         """
-        self.initial_payload:dict = json
+        self.initial_payload: dict = json
         self.prescience = prescience
 
     @classmethod
@@ -138,6 +140,9 @@ class Task(TablePrintable):
 
     def __str__(self):
         return f'Task({self.type()}, {self.status()}, {self.uuid()}, {self.current_step()}/{self.total_step()})'
+
+    def get_description_dict(self) -> dict:
+        return copy.copy(self.initial_payload)
 
 class ParseTask(Task):
     """
