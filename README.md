@@ -155,7 +155,7 @@ You can launch a parse task like this :
 
 ```python
 # Create a csv local input file object
-input_file = prescience.csv_local_input('/path/to/your/data.csv')
+input_file = prescience.csv_local_file_input('/path/to/your/data.csv')
 
 # Upload your input file on prescience and launch a parsing task on it
 parse_task = input_file.parse(source_id='my-source')
