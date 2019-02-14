@@ -54,6 +54,8 @@ def init_args():
     sources_parser = get_subparser.add_parser('sources', help='Show all source objects on the current project')
     datasets_parser = get_subparser.add_parser('datasets', help='Show all dataset objects on the current project')
     models_parser = get_subparser.add_parser('models', help='Show all model objects on the current project')
+    tasks_parser = get_subparser.add_parser('tasks', help='Show all task objects on the current project')
+    task_parser = get_subparser.add_parser('task', help='Show information about a single task')
 
     ## get sources
     sources_parser.add_argument('--page', type=int, default=1)
@@ -70,6 +72,17 @@ def init_args():
     models_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                 help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                 default=OutputFormat.TABLE)
+
+    ## get tasks
+    tasks_parser.add_argument('--page', type=int, default=1)
+    tasks_parser.add_argument('--status', type=str)
+    tasks_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
+    # Get task
+    task_parser.add_argument('id', type=str, default=None)
+    task_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
+
     ## get source
     source_parser.add_argument('id', type=str, default=None)
     source_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the source')
@@ -183,6 +196,23 @@ def init_args():
     args = vars(parser.parse_args())
     return args
 
+def get_tasks(args: dict):
+    """
+    Show model list
+    """
+    page = args['page']
+    output = args['output']
+    status = args['status']
+    prescience.tasks(page=page, status=status).show(output)
+
+def get_task(args: dict):
+    """
+    Show model list
+    """
+    output = args['output']
+    id = args['id']
+    prescience.task(id).show(output)
+
 def get_models(args: dict):
     """
     Show model list
@@ -269,7 +299,9 @@ def get_cmd(args: dict):
         'dataset': get_dataset,
         'datasets': get_datasets,
         'model': get_model,
-        'models': get_models
+        'models': get_models,
+        'tasks': get_tasks,
+        'task': get_task,
     }
     switch[subject](args)
 
