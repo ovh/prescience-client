@@ -367,7 +367,7 @@ def start_optimize(args: dict):
     """
     dataset_id = args['dataset-id']
     budget = args['budget']
-    scoring_metric = args['scoring_metric']
+    scoring_metric = args['scoring-metric']
     watch = args['watch']
     forecast_horizon_steps = args['forecast_horizon_steps']
     task = prescience.optimize(
