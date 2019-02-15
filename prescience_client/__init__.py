@@ -3,20 +3,21 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import argparse
-import sys
 import json
-import argcomplete
+import sys
 from typing import List
+
+import argcomplete
 
 from prescience_client.enum.scoring_metric import ScoringMetric
 
 from prescience_client.client.prescience_client import PrescienceClient
-from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
+from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
-
 
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
@@ -55,6 +56,8 @@ def init_args():
     sources_parser = get_subparser.add_parser('sources', help='Show all source objects on the current project')
     datasets_parser = get_subparser.add_parser('datasets', help='Show all dataset objects on the current project')
     models_parser = get_subparser.add_parser('models', help='Show all model objects on the current project')
+    tasks_parser = get_subparser.add_parser('tasks', help='Show all task objects on the current project')
+    task_parser = get_subparser.add_parser('task', help='Show information about a single task')
 
     ## get sources
     sources_parser.add_argument('--page', type=int, default=1)
@@ -71,6 +74,17 @@ def init_args():
     models_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                 help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                 default=OutputFormat.TABLE)
+
+    ## get tasks
+    tasks_parser.add_argument('--page', type=int, default=1)
+    tasks_parser.add_argument('--status', type=str)
+    tasks_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                default=OutputFormat.TABLE)
+    # Get task
+    task_parser.add_argument('id', type=str, default=None)
+    task_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
+
     ## get source
     source_parser.add_argument('id', type=str, default=None)
     source_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the source')
@@ -111,6 +125,7 @@ def init_args():
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
     preprocess_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
+    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=None)
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
@@ -183,6 +198,23 @@ def init_args():
     argcomplete.autocomplete(parser)
     args = vars(parser.parse_args())
     return args
+
+def get_tasks(args: dict):
+    """
+    Show model list
+    """
+    page = args['page']
+    output = args['output']
+    status = args['status']
+    prescience.tasks(page=page, status=status).show(output)
+
+def get_task(args: dict):
+    """
+    Show model list
+    """
+    output = args['output']
+    id = args['id']
+    prescience.task(id).show(output)
 
 def get_models(args: dict):
     """
@@ -270,7 +302,9 @@ def get_cmd(args: dict):
         'dataset': get_dataset,
         'datasets': get_datasets,
         'model': get_model,
-        'models': get_models
+        'models': get_models,
+        'tasks': get_tasks,
+        'task': get_task,
     }
     switch[subject](args)
 
@@ -317,13 +351,15 @@ def start_preprocess(args: dict):
     selected_columns = args['columns']
     time_column = args['time_column']
     problem_type = args['problem_type']
+    nb_fold = args['nb_fold']
     source = prescience.source(source_id=source_id)
     task = source.preprocess(
         dataset_id=dataset_id,
         label=label,
         problem_type=problem_type,
         selected_columns=selected_columns,
-        time_column=time_column
+        time_column=time_column,
+        nb_fold=nb_fold
     )
     if watch:
         task.watch()
@@ -333,17 +369,15 @@ def start_optimize(args: dict):
     Execute 'start optimize' command
     """
     dataset_id = args['dataset-id']
-    scoring_metric = args['scoring-metric']
     budget = args['budget']
+    scoring_metric = args['scoring-metric']
     watch = args['watch']
     forecast_horizon_steps = args['forecast_horizon_steps']
     forecast_discount = args['forecast_discount']
-    print(args)
     task = prescience.optimize(
         dataset_id=dataset_id,
         scoring_metric=scoring_metric,
         budget=budget,
-        nb_fold=None,
         optimization_method=None,
         custom_parameter=None,
         forecasting_horizon_steps=forecast_horizon_steps,
