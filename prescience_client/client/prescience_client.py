@@ -364,13 +364,18 @@ class PrescienceClient(object):
         _, project, _ = self.__get(path='/project')
         return Project(project)
 
-    def tasks(self, page: int = 1):
+    def tasks(self, page: int = 1, status: str = None):
         """
         Get the paginated list of prescience tasks for the current project
         :param page: The number of the page to get
+        :param status: Filter the status of the tasks
         :return: the page object containing prescience tasks
         """
         query_parameters = {'page': page}
+
+        if status:
+            query_parameters.update({'status': status})
+
         _, page, _ = self.__get(path='/task', query_parameters=query_parameters)
         from prescience_client.bean.task import Task
         from prescience_client.bean.task import TaskFactory
