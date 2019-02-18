@@ -210,8 +210,8 @@ def get_task(args: dict):
     Show model list
     """
     output = args['output']
-    id = args['id']
-    prescience.task(id).show(output)
+    task_id = args['id']
+    prescience.task(task_id).show(output)
 
 def get_models(args: dict):
     """
