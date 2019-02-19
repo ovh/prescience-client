@@ -60,7 +60,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
     def table_row(self) -> dict:
         round_3 = lambda x: round(x, 3)
-        cost_get_safe = lambda key: Option(self.costs().get(key, None)).map(func=round_3).get_or_else(None)
+        cost_get_safe = lambda key: Option((self.costs() or {}).get(key, None)).map(func=round_3).get_or_else(None)
         return {
             'uuid': self.uuid(),
             'config_name': self.config().name(),

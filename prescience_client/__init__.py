@@ -9,6 +9,8 @@ from typing import List
 
 import argcomplete
 
+from prescience_client.enum.scoring_metric import ScoringMetric
+
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -122,8 +124,8 @@ def init_args():
     preprocess_parser.add_argument('--columns', default=None, type=List[str], help='Subset of columns to include in the dataset. (default: all)')
     preprocess_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType), help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})", default=DEFAULT_PROBLEM_TYPE)
     preprocess_parser.add_argument('--time-column', type=str, help='Identifier of the time column for time series. Only for forecasts problems.', default=None)
-    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=None)
     preprocess_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
+    preprocess_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=None)
     ## start optimize
     optimize_parser = start_subparser.add_parser('optimize', help='Launch an optimize task on prescience')
     optimize_parser.add_argument('dataset-id', type=str, help='Dataset identifier to optimize on')
@@ -131,6 +133,7 @@ def init_args():
     optimize_parser.add_argument('--budget', type=int, help='Budget to allow on optimization (default: it will use the one configure on prescience server side)', default=None)
     optimize_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
     optimize_parser.add_argument('--forecast-horizon-steps', default=None, type=int, help='Number of steps forward to take into account as a forecast horizon for the optimization (Only in case of time series forecast)')
+    optimize_parser.add_argument('--forecast-discount', default=None, type=float, help='Discount to apply on each time step before the horizon (Only in case of time series forecast)')
     ## start train
     train_parser = start_subparser.add_parser('train', help='Launch a train task on prescience')
     train_parser.add_argument('uuid', type=str, help='Chosen evaluation result uuid to train on')
@@ -370,13 +373,15 @@ def start_optimize(args: dict):
     scoring_metric = args['scoring-metric']
     watch = args['watch']
     forecast_horizon_steps = args['forecast_horizon_steps']
+    forecast_discount = args['forecast_discount']
     task = prescience.optimize(
         dataset_id=dataset_id,
         scoring_metric=scoring_metric,
         budget=budget,
         optimization_method=None,
         custom_parameter=None,
-        forecasting_horizon_steps=forecast_horizon_steps
+        forecasting_horizon_steps=forecast_horizon_steps,
+        forecast_discount=forecast_discount
     )
     if watch:
         task.watch()

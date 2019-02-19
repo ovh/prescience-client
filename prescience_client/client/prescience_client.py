@@ -195,7 +195,8 @@ class PrescienceClient(object):
                  budget: int = None,
                  optimization_method: str = None,
                  custom_parameter: dict = None,
-                 forecasting_horizon_steps: int = None
+                 forecasting_horizon_steps: int = None,
+                 forecast_discount: float = None
                  ) -> 'Task':
         """
         Launch an optimize task from a dataset object
@@ -211,7 +212,8 @@ class PrescienceClient(object):
             'budget': budget,
             'optimization_method': optimization_method,
             'custom_parameters': custom_parameter,
-            'forecasting_horizon_steps': forecasting_horizon_steps
+            'forecasting_horizon_steps': forecasting_horizon_steps,
+            'forecast_discount': forecast_discount
         }
 
         data = {k: v for k, v in optimize_input.items() if v is not None}  # Delete None value in dict
