@@ -4,6 +4,7 @@
 
 from prescience_client.bean.config import Config
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.enum.status import Status
 from prescience_client.utils.monad import Option, List
 from prescience_client.utils.table_printable import DictPrintable, TablePrintable
 
@@ -48,22 +49,31 @@ class EvaluationResult(TablePrintable, DictPrintable):
         for x in table:
             x_copy = copy.copy(x)
             for column_name in final_header:
-                max_column = max([x[column_name] for x in table])
-                min_column = min([x[column_name] for x in table])
+                max_column = max([x[column_name] for x in table if x[column_name] is not None])
+                min_column = min([x[column_name] for x in table if x[column_name] is not None])
                 if x[column_name] == max_column:
                     x_copy[column_name] = colored(max_column, 'red')
                 if x[column_name] == min_column:
                     x_copy[column_name] = colored(min_column, 'green')
+
+            # Replace all None value with '-'
+            for key, val in x_copy.items():
+                if val is None:
+                    x_copy[key] = '-'
+
             formatted_table.append(x_copy)
 
-        return ['uuid', 'config_name'] + final_header, formatted_table
+        return ['uuid', 'status', 'config_name', 'horizon', 'discount'] + final_header, formatted_table
 
     def table_row(self) -> dict:
         round_3 = lambda x: round(x, 3)
         cost_get_safe = lambda key: Option((self.costs() or {}).get(key, None)).map(func=round_3).get_or_else(None)
         return {
             'uuid': self.uuid(),
+            'status': self.status(),
             'config_name': self.config().name(),
+            'horizon': self.config().get_forecasting_horizon_steps(),
+            'discount': self.config().get_forecasting_discount(),
             'f1_cost': cost_get_safe('f1'),
             'roc_auc_cost': cost_get_safe('roc_auc'),
             'accuracy_cost': cost_get_safe('accuracy'),
@@ -89,7 +99,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
         Getter of the status attribute
         :return: the status attribute
         """
-        return self.json_dict.get('status', None)
+        return Status[self.json_dict.get('status')]
 
     def created_at(self):
         """

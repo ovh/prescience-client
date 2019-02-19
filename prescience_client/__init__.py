@@ -95,6 +95,8 @@ def init_args():
     dataset_parser.add_argument('id', type=str, default=None)
     dataset_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the dataset')
     dataset_parser.add_argument('--eval', default=False, action='store_true', help='Display the evaluation results of the dataset')
+    dataset_parser.add_argument('--forecasting-horizon-steps', default=None, type=int)
+    dataset_parser.add_argument('--forecasting-discount', default=None, type=float)
     dataset_parser.add_argument('--download-train', dest='download_train', type=str, default=None, help='Directory in which to download data files for this train dataset')
     dataset_parser.add_argument('--download-test', dest='download_test', type=str, default=None, help='Directory in which to download data files for this test dataset')
     dataset_parser.add_argument('--cache', default=False, action='store_true', help='Cache the dataset data inside local cache directory')
@@ -247,22 +249,29 @@ def get_dataset(args: dict):
     Show single dataset
     """
     display_eval = args['eval']
+    forecasting_horizon_steps = args['forecasting_horizon_steps']
+    forecasting_discount = args['forecasting_discount']
     display_schema = args['schema']
     dataset_id = args['id']
     output = args['output']
     download_train_directory = args['download_train']
     download_test_directory = args['download_test']
-    dataset = prescience.dataset(dataset_id)
     if display_eval:
-        dataset.evaluation_results().show(output)
+        evalution_results_page = prescience.get_evaluation_results(
+            dataset_id=dataset_id,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecasting_discount=forecasting_discount,
+            sort_column='config.name'
+        )
+        evalution_results_page.show(output)
     elif display_schema:
-        dataset.schema().show(output)
+        prescience.dataset(dataset_id).schema().show(output)
     elif download_train_directory is not None:
         prescience.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory, test_part=False)
     elif download_test_directory is not None:
         prescience.download_dataset(dataset_id=dataset_id, output_directory=download_test_directory, test_part=True)
     else:
-        dataset.show(output)
+        prescience.dataset(dataset_id).show(output)
 
 def get_sources(args: dict):
     """

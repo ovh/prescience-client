@@ -213,7 +213,7 @@ class PrescienceClient(object):
             'optimization_method': optimization_method,
             'custom_parameters': custom_parameter,
             'forecasting_horizon_steps': forecasting_horizon_steps,
-            'forecast_discount': forecast_discount
+            'forecasting_discount': forecast_discount
         }
 
         data = {k: v for k, v in optimize_input.items() if v is not None}  # Delete None value in dict
@@ -436,15 +436,28 @@ class PrescienceClient(object):
         from prescience_client.bean.dataset import Dataset
         return Dataset(json=source, prescience=self)
 
-    def get_evaluation_results(self, dataset_id: str, page: int = 1) -> 'PageResult':
+    def get_evaluation_results(self,
+                               dataset_id: str,
+                               page: int = 1,
+                               sort_column: str = None,
+                               forecasting_horizon_steps: int = None,
+                               forecasting_discount: float = None
+                               ) -> 'PageResult':
         """
         Get the paginated list of evaluation results
         :param dataset_id: The dataset ID
         :param page: The number of the page to get
         :return: the page object containing the evaluation results
         """
-        query_parameters = {'dataset_id': dataset_id, 'page': page}
-        _, page, _ = self.__get(path='/evaluation-result', query_parameters=query_parameters)
+        query_parameters = {
+            'dataset_id':dataset_id,
+            'page': page,
+            'sort_column': sort_column,
+            'forecasting_horizon_steps': forecasting_horizon_steps,
+            'forecasting_discount': forecasting_discount
+        }
+        final_query_parameters = {k: v for k, v in query_parameters.items() if v is not None}
+        _, page, _ = self.__get(path='/evaluation-result', query_parameters=final_query_parameters)
         from prescience_client.bean.page_result import PageResult
         from prescience_client.bean.evaluation_result import EvaluationResult
         return PageResult(page, EvaluationResult, prescience=self)
