@@ -5,7 +5,7 @@
 import argparse
 import json
 import sys
-from typing import List
+from typing import List, Callable
 
 import argcomplete
 
@@ -18,6 +18,7 @@ from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
+from PyInquirer import prompt
 
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
@@ -40,7 +41,7 @@ def init_args():
 
     # config switch
     config_switch_parser = config_subparser.add_parser('switch', help='Change the currently selected prescience project')
-    config_switch_parser.add_argument('project', type=str, default='default',  help='The project name you want to switch on')
+    config_switch_parser.add_argument('project', nargs='?', type=str, default=None,  help='The project name you want to switch on. If no project is indicated, it will turn on the interactive mode for selecting one.')
 
     # config set
     config_set_parser = config_subparser.add_parser('add', help='Add a new project and its token')
@@ -86,13 +87,13 @@ def init_args():
     task_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
 
     ## get source
-    source_parser.add_argument('id', type=str, default=None)
+    source_parser.add_argument('id', nargs='?', type=str, default=None, help='The ID of the source. If unset if will trigger the interactive mode for selecting one.')
     source_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the source')
     source_parser.add_argument('--download', type=str, default=None, help='Directory in which to download data files for this source')
     source_parser.add_argument('--cache', default=False, action='store_true', help='Cache the source data inside local cache directory')
     source_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})", default=OutputFormat.TABLE)
     ## get dataset
-    dataset_parser.add_argument('id', type=str, default=None)
+    dataset_parser.add_argument('id', nargs='?', type=str, default=None, help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
     dataset_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the dataset')
     dataset_parser.add_argument('--eval', default=False, action='store_true', help='Display the evaluation results of the dataset')
     dataset_parser.add_argument('--forecasting-horizon-steps', default=None, type=int)
@@ -104,7 +105,7 @@ def init_args():
                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                default=OutputFormat.TABLE)
     # get model
-    model_parser.add_argument('id', type=str, default=None)
+    model_parser.add_argument('id', nargs='?', type=str, default=None, help='The ID of the model. If unset it will trigger the interactive mode for selecting one.')
     model_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                default=OutputFormat.TABLE)
@@ -117,7 +118,7 @@ def init_args():
     parse_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
     parse_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
     parse_parser.add_argument('--input-filepath', type=str, help='Local input file to send and parse on prescience')
-    parse_parser.add_argument('source-id', type=str, help='Identifier of your future source object')
+    parse_parser.add_argument('source-id', nargs='?', type=str, default=None, help='Identifier of your future source object. If unset it will trigger the interactive mode.')
     ## start preprocess
     preprocess_parser = start_subparser.add_parser('preprocess', help='Launch a preprocess task on prescience')
     preprocess_parser.add_argument('source-id', type=str, help='Identifier of the source object to use for preprocessing')
@@ -181,19 +182,20 @@ def init_args():
 
     ## plot source
     plot_source_parser = plot_subparser.add_parser('source', help='Plot a source data object')
-    plot_source_parser.add_argument('id', type=str, help='Identifier of the source object')
+    plot_source_parser.add_argument('id', nargs ='?', type=str, default=None, help='Identifier of the source object. If unset if will trigger the interactive mode for selecting one.')
     plot_source_parser.add_argument('--x', type=str, default=None, help='Plot the current source')
-    plot_source_parser.add_argument('--kind', type=str, default='line', help='Kind of the plot figure. Default: line')
+    plot_source_parser.add_argument('--kind', type=str, default=None, help='Kind of the plot figure. Default: line')
 
     ## plot dataset
     plot_dataset_parser = plot_subparser.add_parser('dataset', help='Plot a dataset data object')
-    plot_dataset_parser.add_argument('id', type=str, help='Identifier of the source object')
-    plot_dataset_parser.add_argument('--no-test', default=True, dest='plot_test', action='store_false', help='Won\'t plot the test part')
-    plot_dataset_parser.add_argument('--no-train', default=True, dest='plot_train', action='store_false', help='Won\'t plot the train part')
+    plot_dataset_parser.add_argument('id', nargs ='?', type=str, default=None, help='Identifier of the dataset object. If unset if will trigger the interactive mode for selecting one.')
+    plot_dataset_parser.add_argument('--no-test', default=None, dest='plot_test', action='store_false', help='Won\'t plot the test part')
+    plot_dataset_parser.add_argument('--no-train', default=None, dest='plot_train', action='store_false', help='Won\'t plot the train part')
 
 
     if len(sys.argv) == 1:
         if sys.stdin.isatty():
+            print('toto')
             parser.print_usage()
             sys.exit(2)
 
@@ -230,7 +232,12 @@ def get_model(args: dict):
     """
     Show single model
     """
-    model_id = args['id']
+    model_id = get_args_or_prompt_list(
+        arg_name='id',
+        args=args,
+        message='Which model do you want to get ?',
+        choices_function=lambda: [x.model_id() for x in prescience.models(page=1).content]
+    )
     output = args['output']
     model = prescience.model(model_id)
     model.show(output)
@@ -252,7 +259,7 @@ def get_dataset(args: dict):
     forecasting_horizon_steps = args['forecasting_horizon_steps']
     forecasting_discount = args['forecasting_discount']
     display_schema = args['schema']
-    dataset_id = args['id']
+    dataset_id = prompt_for_dataset_id_if_needed(args)
     output = args['output']
     download_train_directory = args['download_train']
     download_test_directory = args['download_test']
@@ -285,7 +292,7 @@ def get_source(args: dict):
     """
     Show single source
     """
-    source_id = args['id']
+    source_id = prompt_for_source_id_if_needed(args)
     source = prescience.source(source_id)
     download_directory = args['download']
     cache = args['cache']
@@ -330,20 +337,107 @@ def config_add(args: dict):
     """
     prescience.config().set_project(args['project'], args['token'])
 
+def get_args_or_prompt_list(
+        arg_name: str,
+        args: dict,
+        message: str,
+        choices_function: Callable,
+        force_interactive: bool = False
+):
+    arg_value = args.get(arg_name)
+    if arg_value is None or force_interactive:
+        questions = [
+            {
+                'type': 'list',
+                'name': arg_name,
+                'message': message,
+                'choices': choices_function()
+            }
+        ]
+        answers = prompt(questions)
+        arg_value = answers.get(arg_name)
+    return arg_value
+
+def get_args_or_prompt_confirm(
+        arg_name: str,
+        args: dict,
+        message: str,
+        force_interactive: bool = False
+):
+    arg_value = args.get(arg_name)
+    if arg_value is None or force_interactive:
+        question = {
+            'type': 'confirm',
+            'name': arg_name,
+            'message': message,
+        }
+        if arg_value is True or arg_value is False:
+            question['default'] = arg_value
+        answers = prompt([question])
+        arg_value = answers.get(arg_name)
+    return arg_value
+
+def get_args_or_prompt_input(
+        arg_name: str,
+        args: dict,
+        message: str,
+        force_interactive: bool = False
+):
+    arg_value = args.get(arg_name)
+    if arg_value is None or force_interactive:
+        questions = [
+            {
+                'type': 'input',
+                'name': arg_name,
+                'message': message,
+            }
+        ]
+        answers = prompt(questions)
+        arg_value = answers.get(arg_name)
+    return arg_value
+
+
 def config_switch(args: dict):
     """
     Execute 'config switch' command
     """
-    prescience.config().set_current_project(project_name=args['project'])
+    project = get_args_or_prompt_list(
+        arg_name='project',
+        args=args,
+        message='Which project do you want to switch on ?',
+        choices_function=prescience.config().get_all_projects_names
+    )
+    prescience.config().set_current_project(project_name=project)
 
 def start_parse(args: dict):
     """
     Execute 'start parse' command
     """
-    filepath = args['input_filepath']
-    has_headers = args['headers']
-    watch = args['watch']
-    source_id = args['source-id']
+    interactive_mode = args.get('source-id') is None
+    filepath = get_args_or_prompt_input(
+        arg_name='input_filepath',
+        args=args,
+        message='Please indicate the path on your local file you want to parse',
+        force_interactive=interactive_mode
+    )
+    has_headers = get_args_or_prompt_confirm(
+        arg_name='headers',
+        args=args,
+        message='Does your csv file has a header row ?',
+        force_interactive=interactive_mode
+    )
+    source_id = get_args_or_prompt_input(
+        arg_name='source-id',
+        args=args,
+        message='What will be the name of your source ? (should be unique in your project)',
+        force_interactive=interactive_mode
+    )
+    watch = get_args_or_prompt_confirm(
+        arg_name='watch',
+        args=args,
+        message='Do you want to keep watching for the task until it ends ?',
+        force_interactive=interactive_mode
+    )
     input_local_file = prescience.csv_local_file_input(filepath=filepath, headers=has_headers)
     parse_task = input_local_file.parse(source_id=source_id)
     if watch:
@@ -505,18 +599,34 @@ def predict_cmd(args: dict):
         result = payload.evaluate()
         result.show()
 
+def prompt_for_source_id_if_needed(args: dict):
+    return get_args_or_prompt_list(
+        arg_name='id',
+        args=args,
+        message='Which source do you want to get ?',
+        choices_function=lambda: [x.source_id for x in prescience.sources(page=1).content]
+    )
+
+def prompt_for_dataset_id_if_needed(args: dict):
+    return get_args_or_prompt_list(
+        arg_name='id',
+        args=args,
+        message='Which dataset do you want to get ?',
+        choices_function=lambda: [x.dataset_id() for x in prescience.datasets(page=1).content]
+    )
+
 
 def plot_source(args: dict):
-    source_id = args['id']
-    kind = args['kind']
-    x = args['x']
+    source_id = prompt_for_source_id_if_needed(args)
+    kind = args.get('kind') or 'line'
+    x = args.get('x')
     prescience.plot_source(source_id=source_id, x=x, block=True, kind=kind)
 
 
 def plot_dataset(args: dict):
-    dataset_id = args['id']
-    plot_train = args['plot_train']
-    plot_test = args['plot_test']
+    dataset_id = prompt_for_dataset_id_if_needed(args)
+    plot_train = args.get('plot_train') or True
+    plot_test = args.get('plot_test') or True
     prescience.plot_dataset(dataset_id=dataset_id, block=True, plot_train=plot_train, plot_test=plot_test)
 
 
@@ -524,11 +634,16 @@ def plot_cmd(args: dict):
     """
     Execute 'plot' command
     """
-    subject = args['subject']
     switch = {
         'source': plot_source,
         'dataset': plot_dataset
     }
+    subject = get_args_or_prompt_list(
+        arg_name = 'subject',
+        args=args,
+        message='Which kind of object do you want to plot on ?',
+        choices_function=lambda: list(switch.keys())
+    )
     switch[subject](args)
 
 
