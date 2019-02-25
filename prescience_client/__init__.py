@@ -9,8 +9,6 @@ from typing import List
 
 import argcomplete
 
-from prescience_client.enum.scoring_metric import ScoringMetric
-
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.config.prescience_config import PrescienceConfig
