@@ -6,7 +6,8 @@ import copy
 
 from termcolor import colored
 
-from prescience_client import ProblemType
+from prescience_client import ProblemType, AlgorithmConfigurationCategory
+from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
 from prescience_client.bean.config import Config
 from prescience_client.bean.page_result import PageResult
 from prescience_client.bean.source import Source
@@ -274,3 +275,21 @@ class Dataset(TablePrintable, DictPrintable):
         :return: The SourceTree object
         """
         return SourceTree(source_id=self.source().source_id, selected_dataset=self.dataset_id())
+
+    def get_associated_algorithm_category(self) -> list:
+        switch = {
+            ProblemType.REGRESSION: [AlgorithmConfigurationCategory.REGRESSION],
+            ProblemType.TIME_SERIES_FORECAST: [AlgorithmConfigurationCategory.TIME_SERIES_FORECAST],
+            ProblemType.CLASSIFICATION: [
+                AlgorithmConfigurationCategory.MULTICLASS,
+                AlgorithmConfigurationCategory.BINARY
+            ]
+        }
+        return switch[self.problem_type()]
+
+    def get_associated_algorithm(self) -> AlgorithmConfigurationList:
+        all_config = [self.prescience.get_available_configurations(x) for x in self.get_associated_algorithm_category()]
+        final_dict = {}
+        for single_config in all_config:
+            final_dict.update(single_config.json_dict)
+        return AlgorithmConfigurationList(final_dict)

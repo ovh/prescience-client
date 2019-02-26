@@ -10,6 +10,7 @@ from prescience_client.enum.scoring_metric import ScoringMetric
 DEFAULT_PRESCIENCE_API_URL = 'https://prescience-api.ai.ovh.net'
 DEFAULT_WEBSOCKET_URL = 'wss://prescience-websocket.ai.ovh.net'
 DEFAULT_SERVING_URL = 'https://prescience-serving.ai.ovh.net'
+DEFAULT_CONFIG_URL = 'https://prescience-config.ai.ovh.net'
 
 DEFAULT_LABEL_NAME = 'label'
 DEFAULT_PROBLEM_TYPE = ProblemType.CLASSIFICATION

@@ -20,6 +20,7 @@ from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput
 from prescience_client.bean.project import Project
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.config.prescience_config import PrescienceConfig
+from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.flow_type import FlowType
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
@@ -635,7 +636,8 @@ class PrescienceClient(object):
         switch = {
             PrescienceWebService.API: f'{self.prescience_config.get_current_api_url()}{path}',
             PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
-            PrescienceWebService.SERVING: f'{self.prescience_config.get_current_serving_url()}{path}'
+            PrescienceWebService.SERVING: f'{self.prescience_config.get_current_serving_url()}{path}',
+            PrescienceWebService.CONFIG: f'{self.prescience_config.get_current_config_url()}{path}'
         }
         complete_url = switch.get(call_type)
 
@@ -747,6 +749,16 @@ class PrescienceClient(object):
             data=request_data
         )
         return result
+
+    def get_available_configurations(self, kind: AlgorithmConfigurationCategory) -> 'AlgorithmConfigurationList':
+        path = f'/{str(kind)}'
+        _, result, _ = self.call(
+            method='GET',
+            path=path,
+            call_type=PrescienceWebService.CONFIG
+        )
+        from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
+        return AlgorithmConfigurationList(result)
 
     ############################################
     ########### WEB-SOCKET METHODS #############

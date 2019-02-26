@@ -9,6 +9,8 @@ from typing import List, Callable
 import argcomplete
 import copy
 
+from prescience_client.bean.config import Config
+from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.scoring_metric import ScoringMetric
 
 from prescience_client.client.prescience_client import PrescienceClient
@@ -59,6 +61,8 @@ def init_args():
     models_parser = get_subparser.add_parser('models', help='Show all model objects on the current project')
     tasks_parser = get_subparser.add_parser('tasks', help='Show all task objects on the current project')
     task_parser = get_subparser.add_parser('task', help='Show information about a single task')
+    algorithms_parser = get_subparser.add_parser('algorithms', help='Show all available algorithms')
+    algorithm_parser = get_subparser.add_parser('algorithm', help='Show information about a single algorithms')
 
     ## get sources
     sources_parser.add_argument('--page', type=int)
@@ -105,6 +109,18 @@ def init_args():
                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                default=OutputFormat.TABLE)
 
+    # get algorithms
+    algorithms_parser.add_argument('category', nargs='?', help='Category of algorithms. If unset it will trigger the interactive mode', type=AlgorithmConfigurationCategory, choices=list(AlgorithmConfigurationCategory))
+    algorithms_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
+
+    # get algorithm
+    algorithm_parser.add_argument('category', nargs='?', help='Category of algorithms. If unset it will trigger the interactive mode', type=AlgorithmConfigurationCategory, choices=list(AlgorithmConfigurationCategory))
+    algorithm_parser.add_argument('id', nargs='?', help='ID of the algorithm. If unset it will trigger the interactive mode')
+    algorithm_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                   help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
+    algorithm_parser.add_argument('--create', action='store_true', default=False, help='Create a json instance of a prescience configuration from the current algorithm specifications.')
+
     # start
     cmd_start_parser = subparsers.add_parser('start', help='Start a task on prescience')
     start_subparser = cmd_start_parser.add_subparsers(dest='subject')
@@ -137,18 +153,23 @@ def init_args():
     train_parser.add_argument('uuid', type=str, help='Chosen evaluation result uuid to train on')
     train_parser.add_argument('model-id', type=str, help='Identifier of your future model object')
     train_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
-
     ## start retrain
     retrain_parser = start_subparser.add_parser('retrain', help='Launch a retrain task on prescience')
     retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     retrain_parser.add_argument('model-id', type=str, help='Model to retrain')
     retrain_parser.add_argument('--input-filepath', type=str, help='Local input file to send in order to retrain the model on prescience')
-
     ## start refresh dataset
     retrain_parser = start_subparser.add_parser('refresh', help='Launch a refresh dataset task on prescience')
     retrain_parser.add_argument('--watch', action='store_true', help='Wait until the task ends and watch the progression')
     retrain_parser.add_argument('dataset-id', type=str, help='Dataset to refresh')
     retrain_parser.add_argument('--input-filepath', type=str, help='Local input file/directory to send in order to refresh the dataset on prescience')
+    ## start evaluation
+    evaluation_parser = start_subparser.add_parser('evaluation', help='Launch an evaluation of a custom algorithm configuration')
+    evaluation_parser.add_argument('dataset-id', nargs='?', type=str, help='Dataset to launch an evaluation on. If unset it will trigger the interactive mode.')
+    evaluation_parser.add_argument('custom-config', nargs='?', type=str, help='Configuration to use on the evaluation (in json format). If unset it will trigger the interactive mode.')
+    evaluation_parser.add_argument('--watch', action='store_true',
+                                help='Wait until the task ends and watch the progression')
+
 
     # predict
     cmd_predict_parser = subparsers.add_parser('predict', help='Make prediction(s) from a presience model')
@@ -299,6 +320,41 @@ def get_source(args: dict):
     else:
         source.show(output)
 
+def get_algorithms(args: dict):
+    """
+    Show all algorithms
+    """
+    category = get_args_or_prompt_list(
+        arg_name='category',
+        args=args,
+        message='Which algorithm category do you want to get ?',
+        choices_function=lambda: list(map(str, AlgorithmConfigurationCategory))
+    )
+    output = args.get('output')
+    prescience.get_available_configurations(kind=category).show(ouput=output)
+
+def get_algorithm(args: dict):
+    category = get_args_or_prompt_list(
+        arg_name='category',
+        args=args,
+        message='Which algorithm category do you want to get ?',
+        choices_function=lambda: list(map(str, AlgorithmConfigurationCategory))
+    )
+    all_config = prescience.get_available_configurations(kind=category)
+    algo_id = get_args_or_prompt_list(
+        arg_name='id',
+        args=args,
+        message='Which algorithm ID do you want to get ?',
+        choices_function=lambda: all_config.get_algorithm_list_names()
+    )
+    output = args.get('output')
+    create = args.get('create')
+    algorithm = all_config.get_algorithm(algo_id)
+    if create:
+        config = algorithm.interactive_kwargs_instanciation()
+        print(json.dumps(config.to_dict()))
+    else:
+        algorithm.show(ouput=output)
 
 def get_cmd(args: dict):
     """
@@ -313,6 +369,8 @@ def get_cmd(args: dict):
         'models': get_models,
         'tasks': get_tasks,
         'task': get_task,
+        'algorithms': get_algorithms,
+        'algorithm': get_algorithm
     }
     subject = get_args_or_prompt_list(
         arg_name='subject',
@@ -539,6 +597,40 @@ def start_preprocess(args: dict):
     if watch:
         task.watch()
 
+
+def start_evaluation(args: dict):
+    interactive_mode = args.get('dataset-id') is None or args.get('custom-config') is None
+    dataset_id = get_args_or_prompt_list(
+        arg_name='dataset-id',
+        args=args,
+        message='Which dataset do you want to launch an evaluation on ?',
+        choices_function=lambda: [x.dataset_id() for x in prescience.datasets(page=1).content],
+        force_interactive=interactive_mode
+    )
+    if not interactive_mode:
+        prescience_config = Config(json_dict=json.loads(args.get('custom-config')))
+    else:
+        # Use interactive mode to create the configuration
+        dataset = prescience.dataset(dataset_id=dataset_id)
+        all_config = dataset.get_associated_algorithm()
+        algo_id = get_args_or_prompt_list(
+            arg_name='algo_id',
+            args=args,
+            message='Which algorithm ID do you want to get ?',
+            choices_function=lambda: all_config.get_algorithm_list_names()
+        )
+        prescience_config = all_config.get_algorithm(algo_id).interactive_kwargs_instanciation()
+    watch = get_args_or_prompt_confirm(
+        arg_name='watch',
+        args=args,
+        message='Do you want to keep watching for the task until it ends ?',
+        force_interactive=interactive_mode
+    )
+    print(json.dumps(prescience_config.to_dict()))
+    task = prescience.custom_config(dataset_id=dataset_id, config=prescience_config)
+    if watch:
+        task.watch()
+
 def start_optimize(args: dict):
     """
     Execute 'start optimize' command
@@ -643,7 +735,8 @@ def start_cmd(args: dict):
         'optimize': start_optimize,
         'train': start_train,
         'retrain': start_retrain,
-        'refresh': start_refresh
+        'refresh': start_refresh,
+        'evaluation': start_evaluation
     }
     subject = get_args_or_prompt_list(
         arg_name='subject',

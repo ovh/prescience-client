@@ -9,3 +9,4 @@ class PrescienceWebService(Enum):
     API = auto()
     ADMIN_API = auto()
     SERVING = auto()
+    CONFIG = auto()

@@ -11,7 +11,7 @@ from prescience_client.enum.output_format import OutputFormat
 from prescience_client.config.constants import DEFAULT_PRESCIENCE_CONFIG_PATH, DEFAULT_PRESCIENCE_API_URL, \
     DEFAULT_WEBSOCKET_URL, DEFAULT_SERVING_URL, \
     DEFAULT_PRESCIENCE_CONFIG_FILE, DEFAULT_EXCEPTION_HANDLING, EXCEPTION_HANDLING_PRINT, EXCEPTION_HANDLING_RAISE, \
-    DEFAULT_TIMEOUT_SECOND, DEFAULT_VERBOSE
+    DEFAULT_TIMEOUT_SECOND, DEFAULT_VERBOSE, DEFAULT_CONFIG_URL
 from prescience_client.exception.prescience_client_exception import PrescienceException
 from prescience_client.utils.table_printable import TablePrintable, TablePrinter
 from termcolor import colored
@@ -32,6 +32,7 @@ KEY_API_URL = 'api_url'
 KEY_WEBSOCKET_URL = 'websocket_url'
 KEY_SERVING_URL = 'serving_url'
 KEY_ADMIN_URL = 'admin_api_url'
+KEY_CONFIG_URL = 'config_url'
 
 VALUE_DEFAULT = 'default'
 
@@ -178,6 +179,7 @@ class PrescienceConfig(object):
             api_url: str = DEFAULT_PRESCIENCE_API_URL,
             websocket_url: str = DEFAULT_WEBSOCKET_URL,
             serving_url: str = DEFAULT_SERVING_URL,
+            config_url: str = DEFAULT_CONFIG_URL,
             admin_url: str = None
     ) -> dict:
         """
@@ -186,12 +188,14 @@ class PrescienceConfig(object):
         :param websocket_url: The prescience web socket url to use for the environment
         :param serving_url: The prescience serving url to use for the environment
         :param admin_url: The prescience admin url to use for the environment
+        :param config_url: The prescience configuration url to use for the environment
         :return: The environment dictionary
         """
         initial_env = {
             KEY_API_URL: api_url,
             KEY_WEBSOCKET_URL: websocket_url,
-            KEY_SERVING_URL: serving_url
+            KEY_SERVING_URL: serving_url,
+            KEY_CONFIG_URL: config_url
         }
 
         if admin_url is not None:
@@ -207,7 +211,9 @@ class PrescienceConfig(object):
                                      env_default_api_url: str = 'PRESCIENCE_DEFAULT_API_URL',
                                      env_default_admin_api_url: str = 'PRESCIENCE_DEFAULT_ADMIN_API_URL',
                                      env_default_websocket_url = 'PRESCIENCE_DEFAULT_WEBSOCKET_URL',
-                                     env_default_serving_url: str = 'PRESCIENCE_DEFAULT_SERVING_URL') -> 'PrescienceConfig':
+                                     env_default_serving_url: str = 'PRESCIENCE_DEFAULT_SERVING_URL',
+                                     env_default_config_url: str = 'PRESCIENCE_DEFAULT_CONFIG_URL'
+                                     ) -> 'PrescienceConfig':
         """
         Automatically set an entry in the configuration file for default values.
         Default values are read from environment variables.
@@ -218,6 +224,7 @@ class PrescienceConfig(object):
         :param env_default_admin_api_url: The environment variable name for admin api url
         :param env_default_websocket_url: The environment variable name for websocket url
         :param env_default_serving_url: The environment variable name for the serving url
+        :param env_default_config_url: The environment variable name for the configuration url
         :return: self
         """
         default_project_name = os.getenv(env_default_project_name, VALUE_DEFAULT)
@@ -227,6 +234,7 @@ class PrescienceConfig(object):
         default_api_admin_url = os.getenv(env_default_admin_api_url, None)
         default_websocket_url = os.getenv(env_default_websocket_url, DEFAULT_WEBSOCKET_URL)
         default_serving_url = os.getenv(env_default_serving_url, DEFAULT_SERVING_URL)
+        default_config_url = os.getenv(env_default_config_url, DEFAULT_CONFIG_URL)
 
         if default_token is None:
             raise Exception(f'Environement variable {env_default_token} is not set...')
@@ -236,7 +244,8 @@ class PrescienceConfig(object):
             api_url=default_api_url,
             websocket_url=default_websocket_url,
             serving_url=default_serving_url,
-            admin_api_url=default_api_admin_url
+            admin_api_url=default_api_admin_url,
+            config_url=default_config_url
         ).set_project(
             project_name=default_project_name,
             token=default_token,
@@ -318,6 +327,7 @@ class PrescienceConfig(object):
                         api_url: str = DEFAULT_PRESCIENCE_API_URL,
                         websocket_url: str = DEFAULT_WEBSOCKET_URL,
                         serving_url: str = DEFAULT_SERVING_URL,
+                        config_url: str = DEFAULT_CONFIG_URL,
                         admin_api_url: str = None,
                         ) -> 'PrescienceConfig':
         """
@@ -327,13 +337,15 @@ class PrescienceConfig(object):
         :param websocket_url: The prescience websocket url
         :param serving_url: The prescience serving url
         :param admin_api_url: The prescience admin url
+        :param config_url: The prescience configuration url
         :return: The current configuration object
         """
         self.environments[environment_name] = self.environment_dict(
             api_url=api_url,
             websocket_url=websocket_url,
             serving_url=serving_url,
-            admin_url=admin_api_url
+            admin_url=admin_api_url,
+            config_url=config_url
         )
 
         return self.save()
@@ -443,6 +455,14 @@ class PrescienceConfig(object):
         """
         current_env = self.get_current_environment()
         return self.environments[current_env][KEY_API_URL]
+
+    def get_current_config_url(self) -> str:
+        """
+        Access the config url of the current working project
+        :return: the config url of the current working project
+        """
+        current_env = self.get_current_environment()
+        return self.environments[current_env][KEY_CONFIG_URL]
 
     def get_current_websocket_url(self) -> str:
         """
