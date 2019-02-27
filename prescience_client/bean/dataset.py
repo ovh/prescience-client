@@ -7,7 +7,6 @@ import copy
 from termcolor import colored
 
 from prescience_client import ProblemType, AlgorithmConfigurationCategory
-from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
 from prescience_client.bean.config import Config
 from prescience_client.bean.page_result import PageResult
 from prescience_client.bean.source import Source

@@ -7,8 +7,8 @@ from prescience_client.utils.validator import IntegerValidator, FloatValidator
 
 class Hyperparameter(DictPrintable, TablePrintable):
 
-    def __init__(self, id: str, json_dict: dict):
-        self.id = id
+    def __init__(self, param_id: str, json_dict: dict):
+        self.id = param_id
         self.json_dict = json_dict
 
     def get_name(self):
@@ -57,12 +57,17 @@ class Hyperparameter(DictPrintable, TablePrintable):
 
     def get_pyinquirer_question(self):
         if self.get_type() == 'categorical':
-            return {
+            result_dict = {
                 'type': 'list',
                 'name': str(self.get_name()),
                 'message': f'{self.get_name()}',
-                'choices': self.get_choices()
+                'choices': [str(x) for x in self.get_choices()]
             }
+            if isinstance(self.get_choices()[0], float):
+                result_dict['filter'] = float
+            elif isinstance(self.get_choices()[0], int):
+                result_dict['filter'] = int
+            return result_dict
 
         elif self.get_type() == 'constant':
             result_dict = {
@@ -72,9 +77,9 @@ class Hyperparameter(DictPrintable, TablePrintable):
                 'choices': [str(self.get_value())]
             }
             if isinstance(self.get_value(), float):
-                result_dict['filter'] = lambda val: float(val)
+                result_dict['filter'] = float
             elif isinstance(self.get_value(), int):
-                result_dict['filter'] = lambda val: int(val)
+                result_dict['filter'] = int
             return result_dict
 
         elif self.get_type() == 'uniform_int':
@@ -84,7 +89,7 @@ class Hyperparameter(DictPrintable, TablePrintable):
                 'message': f'{self.get_name()} between [{self.get_lower()} and {self.get_upper()}]',
                 'default':  str(self.get_default()),
                 'validate': IntegerValidator,
-                'filter': lambda val: int(val)
+                'filter': int
             }
 
         elif self.get_type() == 'uniform_float':
@@ -94,7 +99,7 @@ class Hyperparameter(DictPrintable, TablePrintable):
                 'message': f'{self.get_name()} between [{self.get_lower()} and {self.get_upper()}]',
                 'default':  str(self.get_default()),
                 'validate': FloatValidator,
-                'filter': lambda val: float(val)
+                'filter': float
             }
 
         else:

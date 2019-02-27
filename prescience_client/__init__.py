@@ -18,7 +18,6 @@ from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCO
 from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
-from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
 from PyInquirer import prompt
 from prescience_client.utils.monad import List as UtilList
@@ -346,14 +345,14 @@ def get_algorithm(args: dict):
         arg_name='id',
         args=args,
         message='Which algorithm ID do you want to get ?',
-        choices_function=lambda: all_config.get_algorithm_list_names()
+        choices_function=all_config.get_algorithm_list_names
     )
     output = args.get('output')
     create = args.get('create')
     algorithm = all_config.get_algorithm(algo_id)
     if create:
-        config = algorithm.interactive_kwargs_instanciation()
-        print(json.dumps(config.to_dict()))
+        algorithm_config = algorithm.interactive_kwargs_instanciation()
+        print(json.dumps(algorithm_config.to_dict()))
     else:
         algorithm.show(ouput=output)
 

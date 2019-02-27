@@ -1,7 +1,6 @@
 import json
 import typing
 
-import copy
 from PyInquirer import prompt
 from termcolor import colored
 
@@ -51,10 +50,13 @@ class AlgorithmConfiguration(TablePrintable):
     def get_multioutput(self) -> bool:
         return self.json_dict.get('multioutput')
 
+    def get_fit_dimension(self) -> int:
+        return self.json_dict.get('fit_dimension')
+
     def get_hyperparameters(self) -> list:
         hyperparameters_dict = self.json_dict.get('hyperparameters')
         return Option(hyperparameters_dict)\
-            .map(lambda x: [Hyperparameter(id=k, json_dict=v) for k, v in x.items()])\
+            .map(lambda x: [Hyperparameter(param_id=k, json_dict=v) for k, v in x.items()])\
             .get_or_else(None)
 
     def get_conditions(self) -> list:
@@ -93,8 +95,8 @@ class AlgorithmConfiguration(TablePrintable):
             condition_type = condition.get_type()
             values = condition.get_values()
 
-            question = List(questions)\
-                .find(lambda x: x.get('name') == child)\
+            question = List([x for x in questions if x.get('name') == child])\
+                .head_option()\
                 .get_or_else(None)
 
             if question is not None and condition_type == 'IN':
@@ -113,7 +115,7 @@ class AlgorithmConfiguration(TablePrintable):
                 'message': f'forecasting_horizon_steps must be at least 1',
                 'default':  str(1),
                 'validate': IntegerValidator,
-                'filter': lambda val: int(val)
+                'filter': int
             })
             questions.append({
                 'type': 'input',
@@ -121,7 +123,7 @@ class AlgorithmConfiguration(TablePrintable):
                 'message': f'forecasting_discount must be between 0.0 (excluded) and 1.1 (included)',
                 'default':  str(1.0),
                 'validate': FloatValidator,
-                'filter': lambda val: float(val)
+                'filter': float
             })
             
 
@@ -141,7 +143,9 @@ class AlgorithmConfiguration(TablePrintable):
             name=self.get_name(),
             display_name=self.get_display_name(),
             backend=self.get_backend(),
-            class_identifier=self.get_class_identifier()
+            class_identifier=self.get_class_identifier(),
+            fit_dimension=self.get_fit_dimension(),
+            multioutput=self.get_multioutput()
         )
 
     @classmethod

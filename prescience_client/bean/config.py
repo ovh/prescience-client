@@ -18,9 +18,11 @@ class Config(DictPrintable):
                         display_name,
                         class_identifier,
                         backend,
-                        kwargs = None,
-                        forecasting_horizon_steps=None,
-                        forecasting_discount=None
+                        kwargs =None,
+                        forecasting_horizon_steps: int=None,
+                        forecasting_discount: float=None,
+                        fit_dimension: int=None,
+                        multioutput: bool=None
                         ) -> 'Config':
         """
         Construct a Config object from its attributes
@@ -30,7 +32,9 @@ class Config(DictPrintable):
         :param backend: The backend attributes
         :param forecasting_horizon_steps: The forecasting horizon steps
         :param forecasting_discount: The forecasting discount
+        :param fit_dimension: The fit_dimension parameter
         :param kwargs: The kwargs dictionary for configuration
+        :param multioutput: The multioutput parameter
         :return: The newly created Config object
         """
         config = Config(json_dict={})
@@ -45,6 +49,10 @@ class Config(DictPrintable):
             config.set_forecasting_horizon_steps(forecasting_horizon_steps)
         if forecasting_discount is not None:
             config.set_forecasting_discount(forecasting_discount)
+        if fit_dimension is not None:
+            config.set_fit_dimension(fit_dimension)
+        if multioutput is not None:
+            config.set_multioutput(multioutput)
         return config
 
 
@@ -76,6 +84,20 @@ class Config(DictPrintable):
         """
         self.json_dict['display_name'] = display_name
 
+    def set_fit_dimension(self, fit_dimension):
+        """
+        Setter for the fit_dimension attribute
+        :param fit_dimension: the dimension value for fitting
+        """
+        self.json_dict['fit_dimension'] = fit_dimension
+
+    def get_fit_dimension(self):
+        """
+        Getter of the fit_dimension attribute
+        :return: the fit_dimension attribute
+        """
+        return self.json_dict.get('fit_dimension')
+
     def get_backend(self):
         """
         Getter of the name attribute
@@ -89,6 +111,20 @@ class Config(DictPrintable):
         :param backend: new name value
         """
         self.json_dict['backend'] = backend
+
+    def multioutput(self) -> bool:
+        """
+        Getter of the multioutput attribute
+        :return: the multioutput attribute
+        """
+        return self.json_dict.get('multioutput')
+
+    def set_multioutput(self, multioutput: bool):
+        """
+        Setter for the multioutput attribute
+        :param multioutput: new multioutput value
+        """
+        self.json_dict['multioutput'] = multioutput
 
     def name(self):
         """
