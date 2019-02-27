@@ -298,6 +298,13 @@ class PrescienceConfig(object):
         self.get_current_project_dict()
         return self.projects[project_name][KEY_ENVIRONMENT]
 
+    def get_all_projects_names(self) -> list:
+        """
+        Get the list of all projects names
+        :return: the list of all projects names
+        """
+        return [k for k, _ in self.projects.items()]
+
     def get_environment(self, env_name: str) -> dict:
         """
         Get the environment if the specified name
