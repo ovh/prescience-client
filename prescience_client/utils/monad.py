@@ -97,6 +97,14 @@ class List(typing.NamedTuple):
         """
         return self.filter(predicate).length()
 
+    def find(self, predicate):
+        """
+        Find the first element of the list matching the predicate
+        :param predicate: predicate used for element selection
+        :return: The option containing the element matching the predicate if any, None option otherwise
+        """
+        return self.filter(predicate).head_option()
+
 class Option(typing.NamedTuple):
     """
     Monad implementation for Option

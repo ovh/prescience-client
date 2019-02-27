@@ -1,16 +1,14 @@
 import json
-
 import typing
 
-import copy
 from PyInquirer import prompt
 from termcolor import colored
 
 from prescience_client import PrescienceClient, OutputFormat
 from prescience_client.bean.config import Config
-from prescience_client.bean.hyperparameter import Hyperparameter
-from prescience_client.utils.monad import Option
-from prescience_client.utils.table_printable import TablePrintable, DictPrintable, TablePrinter
+from prescience_client.bean.hyperparameter import Hyperparameter, AlgorithmCondition
+from prescience_client.utils.monad import Option, List
+from prescience_client.utils.table_printable import TablePrintable, TablePrinter
 
 
 class AlgorithmConfiguration(TablePrintable):
@@ -55,6 +53,10 @@ class AlgorithmConfiguration(TablePrintable):
             .map(lambda x: [Hyperparameter(id=k, json_dict=v) for k, v in x.items()])\
             .get_or_else(None)
 
+    def get_conditions(self) -> list:
+        condition_dict = self.json_dict.get('conditions')
+        return [AlgorithmCondition(x) for x in condition_dict]
+
     def show(self, ouput: OutputFormat = OutputFormat.TABLE):
         """
         Display the current algorithm configuration on std out
@@ -73,6 +75,20 @@ class AlgorithmConfiguration(TablePrintable):
         :return: the 'kwargs' dictionary
         """
         questions = [x.get_pyinquirer_question() for x in self.get_hyperparameters()]
+        conditions = self.get_conditions()
+
+        # applying conditions if any
+        for condition in conditions:
+            child = condition.get_child()
+            parent = condition.get_parent()
+            condition_type = condition.get_type()
+            values = condition.get_values()
+            question = List(questions).find(lambda x: x['name'] == child).get_or_else(None)
+            if question is not None and condition_type == 'IN':
+                question['name'] = parent
+                question['when'] = lambda answers: answers[parent] in values
+
+        # Prompting for answers
         answers = prompt(questions)
         config = self.instance_config()
         for k, v in answers.items():
@@ -106,6 +122,9 @@ class AlgorithmConfiguration(TablePrintable):
 
 
 class AlgorithmConfigurationList(typing.NamedTuple):
+    """
+    NamedTuple used for a list of AlgorithmConfiguration
+    """
     json_dict: dict
 
     def get_algorithm_list_names(self) -> list:

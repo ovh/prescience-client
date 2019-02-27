@@ -1,3 +1,5 @@
+import typing
+
 from prescience_client.utils.monad import Option
 from prescience_client.utils.table_printable import DictPrintable, TablePrintable
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
@@ -97,3 +99,21 @@ class Hyperparameter(DictPrintable, TablePrintable):
 
         else:
             raise Exception(f'Unknown type {self.get_type()}')
+
+class AlgorithmCondition(typing.NamedTuple):
+    """
+    NamedTuple used for AlgorithmCondition
+    """
+    json_dict: dict
+
+    def get_child(self) -> str:
+        return self.json_dict.get('child')
+
+    def get_parent(self) -> str:
+        return self.json_dict.get('parent')
+
+    def get_type(self) -> str:
+        return self.json_dict.get('type')
+
+    def get_values(self) -> list:
+        return self.json_dict.get('values')

@@ -599,7 +599,7 @@ def start_preprocess(args: dict):
 
 
 def start_evaluation(args: dict):
-    interactive_mode = args.get('dataset-id') is None or args.get('custom-config') is None
+    interactive_mode = args.get('dataset-id') is None
     dataset_id = get_args_or_prompt_list(
         arg_name='dataset-id',
         args=args,
@@ -607,6 +607,7 @@ def start_evaluation(args: dict):
         choices_function=lambda: [x.dataset_id() for x in prescience.datasets(page=1).content],
         force_interactive=interactive_mode
     )
+    interactive_mode = interactive_mode or args.get('custom-config') is None
     if not interactive_mode:
         prescience_config = Config(json_dict=json.loads(args.get('custom-config')))
     else:
