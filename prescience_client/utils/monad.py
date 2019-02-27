@@ -105,6 +105,12 @@ class List(typing.NamedTuple):
         """
         return self.filter(predicate).head_option()
 
+    def flatten(self):
+        return List([item for sublist in self.value for item in sublist])
+
+    def flat_map(self, func):
+        return self.map(func).flatten()
+
 class Option(typing.NamedTuple):
     """
     Monad implementation for Option

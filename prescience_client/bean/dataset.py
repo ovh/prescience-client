@@ -277,6 +277,10 @@ class Dataset(TablePrintable, DictPrintable):
         return SourceTree(source_id=self.source().source_id, selected_dataset=self.dataset_id())
 
     def get_associated_algorithm_category(self) -> list:
+        """
+        List all algorithm category that could be applied to the dataset problem type
+        :return: the list of 'AlgorithmConfigurationCategory'
+        """
         switch = {
             ProblemType.REGRESSION: [AlgorithmConfigurationCategory.REGRESSION],
             ProblemType.TIME_SERIES_FORECAST: [AlgorithmConfigurationCategory.TIME_SERIES_FORECAST],
@@ -287,9 +291,9 @@ class Dataset(TablePrintable, DictPrintable):
         }
         return switch[self.problem_type()]
 
-    def get_associated_algorithm(self) -> AlgorithmConfigurationList:
-        all_config = [self.prescience.get_available_configurations(x) for x in self.get_associated_algorithm_category()]
-        final_dict = {}
-        for single_config in all_config:
-            final_dict.update(single_config.json_dict)
-        return AlgorithmConfigurationList(final_dict)
+    def get_associated_algorithm(self) -> list:
+        """
+        List all algorithm that could be applied to the dataset problem type
+        :return: The AlgorithmConfigurationList object containing the list of all AlgorithmConfiguration
+        """
+        return [self.prescience.get_available_configurations(x) for x in self.get_associated_algorithm_category()]

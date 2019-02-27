@@ -21,6 +21,7 @@ from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.exception.prescience_client_exception import PrescienceException
 from PyInquirer import prompt
+from prescience_client.utils.monad import List as UtilList
 
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
@@ -613,14 +614,20 @@ def start_evaluation(args: dict):
     else:
         # Use interactive mode to create the configuration
         dataset = prescience.dataset(dataset_id=dataset_id)
-        all_config = dataset.get_associated_algorithm()
+        all_config_list = dataset.get_associated_algorithm()
+        choice_function = lambda: UtilList(all_config_list).flat_map(lambda x: x.get_algorithm_list_names()).value
         algo_id = get_args_or_prompt_list(
             arg_name='algo_id',
             args=args,
             message='Which algorithm ID do you want to get ?',
-            choices_function=lambda: all_config.get_algorithm_list_names()
+            choices_function=choice_function
         )
-        prescience_config = all_config.get_algorithm(algo_id).interactive_kwargs_instanciation()
+        algorithm = UtilList(all_config_list)\
+            .map(lambda x: x.get_algorithm(algo_id))\
+            .find(lambda x: x is not None)\
+            .get_or_else(None)
+
+        prescience_config = algorithm.interactive_kwargs_instanciation()
     watch = get_args_or_prompt_confirm(
         arg_name='watch',
         args=args,

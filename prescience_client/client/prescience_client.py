@@ -758,7 +758,7 @@ class PrescienceClient(object):
             call_type=PrescienceWebService.CONFIG
         )
         from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
-        return AlgorithmConfigurationList(result)
+        return AlgorithmConfigurationList(json_dict=result, category=kind)
 
     ############################################
     ########### WEB-SOCKET METHODS #############

@@ -1,14 +1,16 @@
 import json
 import typing
 
+import copy
 from PyInquirer import prompt
 from termcolor import colored
 
-from prescience_client import PrescienceClient, OutputFormat
+from prescience_client import PrescienceClient, OutputFormat, AlgorithmConfigurationCategory
 from prescience_client.bean.config import Config
 from prescience_client.bean.hyperparameter import Hyperparameter, AlgorithmCondition
 from prescience_client.utils.monad import Option, List
 from prescience_client.utils.table_printable import TablePrintable, TablePrinter
+from prescience_client.utils.validator import FloatValidator, IntegerValidator
 
 
 class AlgorithmConfiguration(TablePrintable):
@@ -20,6 +22,7 @@ class AlgorithmConfiguration(TablePrintable):
 
     def __init__(self,
                 json_dict: dict,
+                category: AlgorithmConfigurationCategory,
                 prescience: PrescienceClient = None):
         """
         Constructor of prescience configuration object for machine learning algorithms
@@ -27,6 +30,7 @@ class AlgorithmConfiguration(TablePrintable):
         :param prescience: the prescience client (default: None)
         """
         self.json_dict = json_dict
+        self.category = category
         self.prescience = prescience
 
     def get_name(self) -> str:
@@ -69,6 +73,11 @@ class AlgorithmConfiguration(TablePrintable):
             TablePrinter.print_dict('ALGORITHMS', description_dict)
             print(TablePrinter.get_table(Hyperparameter, self.get_hyperparameters()))
 
+
+    @staticmethod
+    def key_in_value(key, values):
+        return lambda x: x.get(key) in values
+
     def interactive_kwargs_instanciation(self) -> Config:
         """
         Instanciate dictionary of 'kwargs' arguments from an interactive prompt
@@ -83,10 +92,38 @@ class AlgorithmConfiguration(TablePrintable):
             parent = condition.get_parent()
             condition_type = condition.get_type()
             values = condition.get_values()
-            question = List(questions).find(lambda x: x['name'] == child).get_or_else(None)
+
+            question = List(questions)\
+                .find(lambda x: x.get('name') == child)\
+                .get_or_else(None)
+
             if question is not None and condition_type == 'IN':
                 question['name'] = parent
-                question['when'] = lambda answers: answers[parent] in values
+                # Need to keep the double lambda because of python scope and closure stuff pb
+                question['when'] = (lambda parent_key, values_value: lambda x: x.get(parent_key) in values_value)(parent, values)
+
+        # Put the question with a 'when' value at the end
+        questions = sorted(questions, key=lambda q: str(q.get('when') is not None))
+                
+        # In case of time series forecast, add horizon and discount
+        if self.category == AlgorithmConfigurationCategory.TIME_SERIES_FORECAST:
+            questions.append({
+                'type': 'input',
+                'name':  'forecasting_horizon_steps',
+                'message': f'forecasting_horizon_steps must be at least 1',
+                'default':  str(1),
+                'validate': IntegerValidator,
+                'filter': lambda val: int(val)
+            })
+            questions.append({
+                'type': 'input',
+                'name':  'forecasting_discount',
+                'message': f'forecasting_discount must be between 0.0 (excluded) and 1.1 (included)',
+                'default':  str(1.0),
+                'validate': FloatValidator,
+                'filter': lambda val: float(val)
+            })
+            
 
         # Prompting for answers
         answers = prompt(questions)
@@ -126,13 +163,14 @@ class AlgorithmConfigurationList(typing.NamedTuple):
     NamedTuple used for a list of AlgorithmConfiguration
     """
     json_dict: dict
+    category: AlgorithmConfigurationCategory
 
     def get_algorithm_list_names(self) -> list:
         return [k for k, _ in self.json_dict.items()]
 
     def get_algorithm(self, name: str, prescience: PrescienceClient = None) -> AlgorithmConfiguration:
         return Option(self.json_dict.get(name))\
-            .map(lambda x: AlgorithmConfiguration(json_dict=x, prescience=prescience))\
+            .map(lambda x: AlgorithmConfiguration(json_dict=x, category=self.category, prescience=prescience))\
             .get_or_else(None)
 
     def get_algorithm_list(self, prescience: PrescienceClient = None):

@@ -64,3 +64,16 @@ class TestMonadUtils(unittest.TestCase):
 
     def test_map_on_none_option(self):
         self.assertEqual(Option(None), Option(None).map(lambda x: x + ' dupond'))
+
+    def test_list_flatten(self):
+        self.assertEqual(List([1, 2, 3, 4]), List([[1, 2], [3, 4]]).flatten())
+
+    def test_list_find_None(self):
+        self.assertEqual(Option(None), List([1, 2, 3]).find(lambda x: x == 4))
+
+    def test_list_find_smthg(self):
+        self.assertEqual(Option(1), List([1, 2, 3]).find(lambda x: x == 1))
+
+    def test_list_flat_map(self):
+        expected = List(['john dupont', 'toto dupont', 'john dupond', 'toto dupond'])
+        self.assertEqual(expected, List(['dupont', 'dupond']).flat_map(lambda x: [f'john {x}', f'toto {x}']))
