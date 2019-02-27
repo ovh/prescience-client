@@ -9,8 +9,6 @@ from typing import List, Callable
 import argcomplete
 import copy
 
-from prescience_client.enum.scoring_metric import ScoringMetric
-
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_SCORING_METRIC
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -783,11 +781,11 @@ def plot_cmd(args: dict):
 def print_logo():
     logo = """
   _____                    _                     
- |  __ \                  (_)                    
+ |  __ \\                  (_)                    
  | |__) | __ ___  ___  ___ _  ___ _ __   ___ ___ 
- |  ___/ '__/ _ \/ __|/ __| |/ _ \ '_ \ / __/ _ \\
- | |   | | |  __/\__ \ (__| |  __/ | | | (_|  __/
- |_|   |_|  \___||___/\___|_|\___|_| |_|\___\___|
+ |  ___/ '__/ _ \\/ __|/ __| |/ _ \\ '_ \\ / __/ _ \\
+ | |   | | |  __/\\__ \\ (__| |  __/ | | | (_|  __/
+ |_|   |_|  \\___||___/\\___|_|\\___|_| |_|\\___\\___|
  
     """
     print(logo)
