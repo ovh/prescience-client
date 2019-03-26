@@ -4,9 +4,11 @@ import typing
 from PyInquirer import prompt
 from termcolor import colored
 
-from prescience_client import PrescienceClient, OutputFormat, AlgorithmConfigurationCategory
+from prescience_client import PrescienceClient
 from prescience_client.bean.config import Config
 from prescience_client.bean.hyperparameter import Hyperparameter, AlgorithmCondition
+from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.utils.monad import Option, List
 from prescience_client.utils.table_printable import TablePrintable, TablePrinter
 from prescience_client.utils.validator import FloatValidator, IntegerValidator

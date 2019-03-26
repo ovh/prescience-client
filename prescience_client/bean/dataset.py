@@ -6,13 +6,14 @@ import copy
 
 from termcolor import colored
 
-from prescience_client import ProblemType, AlgorithmConfigurationCategory
 from prescience_client.bean.config import Config
 from prescience_client.bean.page_result import PageResult
 from prescience_client.bean.source import Source
 from prescience_client.bean.task import Task
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_SCORING_METRIC
+from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
+from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
