@@ -66,8 +66,18 @@ class EvaluationResult(TablePrintable, DictPrintable):
         return ['uuid', 'status', 'config_name', 'horizon', 'discount'] + final_header, formatted_table
 
     def table_row(self) -> dict:
-        round_3 = lambda x: round(x, 3)
-        cost_get_safe = lambda key: Option((self.costs() or {}).get(key, None)).map(func=round_3).get_or_else(None)
+
+        def round_3(x):
+            if isinstance(x, str):
+                return float('nan')
+            else:
+                return round(x, 3)
+
+        cost_get_safe = lambda key: \
+            Option((self.costs() or {})\
+                .get(key, None))\
+                .map(func=round_3)\
+                .get_or_else(None)
         return {
             'uuid': self.uuid(),
             'status': self.status(),

@@ -3,6 +3,7 @@ import argparse
 from prescience_client.commands.command import Command
 from prescience_client.commands.config_command import ConfigCommand
 from prescience_client.commands.delete_command import DeleteCommand
+from prescience_client.commands.generate_command import GenerateCommand
 from prescience_client.commands.get_command import GetCommand
 from prescience_client.commands.plot_command import PlotCommand
 from prescience_client.commands.predict_command import PredictCommand
@@ -21,7 +22,8 @@ class RootCommand(Command):
                 StartCommand(prescience_client),
                 PlotCommand(prescience_client),
                 PredictCommand(prescience_client),
-                DeleteCommand(prescience_client)
+                DeleteCommand(prescience_client),
+                GenerateCommand(prescience_client)
             ]
         )
         self.selector = None

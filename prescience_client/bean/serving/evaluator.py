@@ -3,9 +3,13 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.valid import Valid
+from prescience_client.exception.prescience_client_exception import PrescienceClientException
 from prescience_client.utils.table_printable import TablePrintable
 from termcolor import colored
+
+from prescience_client.utils.validator import IntegerValidator, FloatValidator, StringValidator
 
 
 class Evaluator(object):
@@ -25,12 +29,13 @@ class Evaluator(object):
         self.json_dict = json_dict
         self.prescience = prescience
 
-    def get_problem_type(self) -> str:
+    def get_problem_type(self) -> ProblemType:
         """
         Access the problem type of the evaluator
         :return: the problem type of the evaluator
         """
-        return self.json_dict.get('problem_type', None)
+        problem_type_str = self.json_dict.get('problem_type', None)
+        return ProblemType(problem_type_str)
 
     def get_label(self) -> str:
         """
@@ -45,6 +50,30 @@ class Evaluator(object):
         :return: The inputs of the evaluator
         """
         return [Input(x) for x in self.json_dict.get('inputs')]
+
+    def get_max_steps(self) -> int:
+        """
+        Access the max_steps attribute
+        """
+        return self.json_dict.get('max_steps')
+
+    def get_forecasting_horizon_steps(self) -> int:
+        """
+        Access the forecasting_horizon_steps attribute
+        """
+        return self.json_dict.get('forecasting_horizon_steps')
+
+    def get_time_feature_name(self) -> str:
+        """
+        Access the time_feature attribute
+        """
+        return self.json_dict.get('time_feature')
+
+    def get_span(self) -> int:
+        """
+        Access the span attribute
+        """
+        return self.json_dict.get('span')
 
 class Input(TablePrintable):
     """
@@ -145,6 +174,22 @@ class Input(TablePrintable):
         """
         valid, _ = self.is_valid()
         return valid == Valid.KO
+
+    def get_validator_and_filter(self):
+        """
+        Return the correct (validator, filter) tuple for the current input type
+        """
+        switch = {
+            'integer': (IntegerValidator, int),
+            'float': (FloatValidator, float),
+            'string': (StringValidator, str),
+            'double': (FloatValidator, float)
+        }
+        validator = switch.get(self.get_type())
+        if validator is None:
+            raise PrescienceClientException(Exception(f'Undefined type in prescience client : {self.get_type()}'))
+
+        return validator
 
     @staticmethod
     def is_correct_type(expected_type: str, value)-> bool:

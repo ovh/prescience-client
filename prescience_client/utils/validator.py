@@ -17,3 +17,12 @@ class FloatValidator(Validator):
             raise ValidationError(
                 message='Please enter a float number',
                 cursor_position=len(document.text))  # Move cursor to end
+
+class StringValidator(Validator):
+    def validate(self, document):
+        try:
+            str(document.text)
+        except ValueError:
+            raise ValidationError(
+                message='Please enter a string value',
+                cursor_position=len(document.text))  # Move cursor to end

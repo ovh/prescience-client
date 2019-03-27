@@ -1,12 +1,13 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
-
+import json
 import uuid
 
 from prescience_client.bean.serving.evaluator import Evaluator, Input
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.flow_type import FlowType
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.utils.table_printable import TablePrinter
 
 
@@ -224,12 +225,14 @@ class ServingPayload(object):
 
         return self
 
-    def show(self) -> 'ServingPayload':
+    def show(self, ouput: OutputFormat = OutputFormat.TABLE) -> 'ServingPayload':
         """
         Display the result of the serving payload on std out if it exists or display the filled arguments otherwise
         :return: The current serving payload
         """
-        if self.get_result_dict() is None or len(self.get_result_dict()) == 0:
+        if ouput == OutputFormat.JSON:
+            print(json.dumps(self.json_dict))
+        elif self.get_result_dict() is None or len(self.get_result_dict()) == 0:
             return self.show_arguments()
         else:
             return self.show_result()
