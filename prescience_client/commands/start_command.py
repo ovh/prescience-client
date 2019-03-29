@@ -23,7 +23,7 @@ class StartCommand(Command):
                 StartPreprocessCommand(prescience_client),
                 StartTrainCommand(prescience_client),
                 StartOptimizeCommand(prescience_client),
-                StartEvaluationCommand(prescience_client),
+                StartEvaluateCommand(prescience_client),
                 StartReTrainCommand(prescience_client),
                 StartRefreshCommand(prescience_client)
             ]
@@ -338,10 +338,10 @@ class StartRefreshCommand(Command):
         if watch:
             task.watch()
 
-class StartEvaluationCommand(Command):
+class StartEvaluateCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
-            name='evaluation',
+            name='evaluate',
             help_message='Launch an evaluation of a custom algorithm configuration',
             prescience_client=prescience_client,
             sub_commands=[]

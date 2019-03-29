@@ -23,7 +23,8 @@ class GetCommand(Command):
                 GetTaskCommand(prescience_client),
                 GetTaskListCommand(prescience_client),
                 GetAlgorithmCommand(prescience_client),
-                GetAlgorithmListCommand(prescience_client)
+                GetAlgorithmListCommand(prescience_client),
+                GetEvaluationListCommand(prescience_client)
             ]
         )
 
@@ -79,6 +80,39 @@ class GetSourceListCommand(Command):
         output = args.get('output') or OutputFormat.TABLE
         self.prescience_client.sources(page=page).show(output)
 
+
+
+class GetEvaluationListCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='evaluations',
+            help_message='Show information about evaluations for a given dataset',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('id', nargs='?', type=str,
+                                    help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
+        self.cmd_parser.add_argument('--forecasting-horizon-steps', type=int)
+        self.cmd_parser.add_argument('--forecasting-discount', type=float)
+        self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                    help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
+
+    def exec(self, args: dict):
+        dataset_id = prompt_for_dataset_id_if_needed(args, self.prescience_client)
+        output = args.get('output')
+        forecasting_horizon_steps = args.get('forecasting_horizon_steps')
+        forecasting_discount = args.get('forecasting_discount')
+        evalution_results_page = self.prescience_client.get_evaluation_results(
+            dataset_id=dataset_id,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecasting_discount=forecasting_discount,
+            sort_column='config.name'
+        )
+        evalution_results_page.show(output)
+
 class GetDatasetCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -94,10 +128,6 @@ class GetDatasetCommand(Command):
                                     help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
         self.cmd_parser.add_argument('--schema', default=False, action='store_true',
                                     help='Display the schema of the dataset')
-        self.cmd_parser.add_argument('--eval', default=False, action='store_true',
-                                    help='Display the evaluation results of the dataset')
-        self.cmd_parser.add_argument('--forecasting-horizon-steps', type=int)
-        self.cmd_parser.add_argument('--forecasting-discount', type=float)
         self.cmd_parser.add_argument('--download-train', dest='download_train', type=str,
                                     help='Directory in which to download data files for this train dataset')
         self.cmd_parser.add_argument('--download-test', dest='download_test', type=str,
@@ -108,23 +138,12 @@ class GetDatasetCommand(Command):
                                     help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
 
     def exec(self, args: dict):
-        display_eval = args.get('eval')
-        forecasting_horizon_steps = args.get('forecasting_horizon_steps')
-        forecasting_discount = args.get('forecasting_discount')
         display_schema = args.get('schema')
         dataset_id = prompt_for_dataset_id_if_needed(args, self.prescience_client)
         output = args.get('output')
         download_train_directory = args.get('download_train')
         download_test_directory = args.get('download_test')
-        if display_eval:
-            evalution_results_page = self.prescience_client.get_evaluation_results(
-                dataset_id=dataset_id,
-                forecasting_horizon_steps=forecasting_horizon_steps,
-                forecasting_discount=forecasting_discount,
-                sort_column='config.name'
-            )
-            evalution_results_page.show(output)
-        elif display_schema:
+        if display_schema:
             self.prescience_client.dataset(dataset_id).schema().show(output)
         elif download_train_directory is not None:
             self.prescience_client.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory,

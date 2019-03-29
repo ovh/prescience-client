@@ -63,7 +63,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
             formatted_table.append(x_copy)
 
-        return ['uuid', 'status', 'config_name', 'horizon', 'discount'] + final_header, formatted_table
+        return ['uuid', 'status', 'config_name', 'past_steps', 'horizon', 'discount'] + final_header, formatted_table
 
     def table_row(self) -> dict:
 
@@ -82,6 +82,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
             'uuid': self.uuid(),
             'status': self.status(),
             'config_name': self.config().name(),
+            'past_steps': self.config().get_past_steps(),
             'horizon': self.config().get_forecasting_horizon_steps(),
             'discount': self.config().get_forecasting_discount(),
             'f1_cost': cost_get_safe('f1'),

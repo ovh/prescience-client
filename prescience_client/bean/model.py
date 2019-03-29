@@ -11,7 +11,10 @@ from prescience_client.bean.serving.serving_payload import ServingPayload
 from prescience_client.bean.source import Source
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.flow_type import FlowType
+from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
+from prescience_client.exception.prescience_client_exception import PrescienceClientException
+from prescience_client.utils import get_dataframe_real_predict_theoric
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
 
@@ -138,7 +141,8 @@ class Model(TablePrintable, DictPrintable):
         Getter of the problem_type attribute
         :return: the problem_type
         """
-        return self.json_dict.get('problem_type', None)
+        pb_type = self.json_dict.get('problem_type')
+        return ProblemType(pb_type)
 
     def label_id(self):
         """
@@ -324,3 +328,21 @@ class Model(TablePrintable, DictPrintable):
             self.model_evaluator = Evaluator(json_dict=json_dict, prescience=self.prescience)
 
         return self.model_evaluator
+
+    def get_dataframe_for_plot_result(self, input_payload_dict):
+        if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:
+            raise PrescienceClientException(
+                Exception('`get_dataframe_for_plot_result` method is only allowed for TIME_SERIES_FORECAST')
+            )
+
+        payload = self.get_model_evaluation_payload(arguments=input_payload_dict)
+        result = payload.evaluate()
+        evaluator = payload.get_evaluator()
+        time_feature_name = evaluator.get_time_feature_name()
+        df_final = get_dataframe_real_predict_theoric(
+            series_dict_input=input_payload_dict,
+            series_dict_predict=result.get_result_dict(),
+            time_feature_name=time_feature_name,
+            initial_dataframe=self.prescience.source_dataframe(self.source_id())
+        )
+        return df_final

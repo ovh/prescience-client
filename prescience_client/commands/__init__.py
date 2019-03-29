@@ -1,9 +1,5 @@
-import os
-
 from typing import Callable
 from PyInquirer import prompt
-
-from prescience_client.utils.monad import Option
 
 
 def get_args_or_prompt_list(
@@ -111,8 +107,3 @@ def prompt_for_dataset_id_if_needed(args: dict, prescience):
         message='Which dataset do you want to get ?',
         choices_function=lambda: [x.dataset_id() for x in prescience.datasets(page=1).content]
     )
-
-def get_default_json_ouput():
-    cwd = os.getcwd()
-    full_output = os.path.join(cwd, 'output.json')
-    return full_output

@@ -400,6 +400,15 @@ class PrescienceConfig(object):
         cache_datasets = os.path.join(cache_directory, 'datasets')
         return self.create_config_path_if_not_exist(cache_datasets)
 
+    def get_or_create_cache_payload_directory(self):
+        """
+        Access or create the prescience-client cache datasets directory
+        :return: the prescience-client cache datasets directory
+        """
+        cache_directory = self.get_or_create_config_cache_directory()
+        cache_payload = os.path.join(cache_directory, 'payload')
+        return self.create_config_path_if_not_exist(cache_payload)
+
     def get_full_config_file_path(self):
         """
         Access the full path of the prescience-client configuration file

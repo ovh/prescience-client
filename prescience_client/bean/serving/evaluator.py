@@ -1,6 +1,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
+from PyInquirer import prompt
 
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.problem_type import ProblemType
@@ -74,6 +75,49 @@ class Evaluator(object):
         Access the span attribute
         """
         return self.json_dict.get('span')
+
+    def interactiv_ts_forecast_payload(self) -> dict:
+        """
+        Interactively generate a payload for TS
+        """
+        final_dict = {}
+        for einput in self.get_inputs():
+            questions = []
+            validator, filter_arg = einput.get_validator_and_filter()
+            for step_number in range(0, self.get_max_steps()):
+                t = self.get_max_steps() - step_number - 1
+                key = f'{einput.get_name()}_t'
+                if t != 0:
+                    key = f'{key}-{t}'
+                questions.append({
+                    'type': 'input',
+                    'name': key,
+                    'message': f'`{key}` parameter ({einput.get_type()}) ?',
+                    'validate': validator,
+                    'filter': filter_arg
+                })
+            answers = prompt(questions)
+            final_dict[einput.get_name()] = list(answers.values())
+        return final_dict
+
+    def interactiv_default_payload(self) -> dict:
+        """
+        Interactively generate a payload for regression of classification
+        """
+        final_dict = {}
+        questions = []
+        for einput in self.get_inputs():
+            validator, filter_arg = einput.get_validator_and_filter()
+            questions.append({
+                'type': 'input',
+                'name': einput.get_name(),
+                'message': f'`{einput.get_name()}` parameter ({einput.get_type()}) ?',
+                'validate': validator,
+                'filter': filter_arg
+            })
+        answers = prompt(questions)
+        final_dict.update(answers)
+        return final_dict
 
 class Input(TablePrintable):
     """

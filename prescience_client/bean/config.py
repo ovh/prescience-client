@@ -197,6 +197,15 @@ class Config(DictPrintable):
             .map(lambda x: x.get('forecasting_discount'))\
             .get_or_else(None)
 
+    def get_past_steps(self):
+        """
+        Getter of the past_steps attribute
+        :return: the past_steps attribute
+        """
+        return Option(self.kwargs())\
+            .map(lambda x: x.get('past_steps'))\
+            .get_or_else(None)
+
     def set_forecasting_discount(self, forecasting_discount: float):
         """
         Setter for the forecasting_discount attribute

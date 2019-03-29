@@ -8,9 +8,11 @@ import pycurl
 import re
 import shutil
 import urllib.parse
+import io
 from io import BytesIO
 
 import matplotlib
+import numpy
 import pandas
 from progress.bar import ChargingBar
 from websocket import create_connection
@@ -23,12 +25,15 @@ from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.flow_type import FlowType
 from prescience_client.enum.input_type import InputType
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory, PrescienceClientException
+from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_time_feature
+from prescience_client.utils.monad import Option
 
 
 class PrescienceClient(object):
@@ -894,7 +899,7 @@ class PrescienceClient(object):
             expected_files = self.get_list_dataset_train_files(dataset_id=dataset_id)
 
         if os.path.exists(datasetid_path) and set(os.listdir(datasetid_path)) == set(expected_files):
-            print(f'Cache for dataset \'{dataset_id}\' is allready up to date on {datasetid_path}')
+            print(f'Cache for dataset \'{dataset_id}\' is already up to date on {datasetid_path}')
         else:
             self.cache_clean_dataset(dataset_id=dataset_id, test_part=test_part)
             print(f'Updating cache for source \'{dataset_id}\' : {datasetid_path}')
@@ -922,14 +927,17 @@ class PrescienceClient(object):
 
         return sourceid_path
 
-    def source_dataframe(self, source_id):
+    def source_dataframe(self, source_id, index_column: str = None):
         """
         Update source local cache for the given source and return the pandas dataframe for this source
         :param source_id: the wanted source
         :return:
         """
         source_data_path = self.update_cache_source(source_id=source_id)
-        return pandas.read_parquet(path=source_data_path)
+        df = pandas.read_parquet(path=source_data_path)
+        if index_column is not None:
+            df = df.set_index(index_column)
+        return df
 
     def dataset_dataframe(self, dataset_id: str, test_part: bool):
         """
@@ -1001,3 +1009,84 @@ class PrescienceClient(object):
 
         else:
             raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))
+
+    def generate_serving_payload(self, from_data: int, model_id: str, output=None) -> str:
+        """
+        Generate a serving payload for a prescience model
+        :param from_data: integer value indicating the index of the data for classification/regression or the value of the time column for a TS.
+        In case this value if None, it will trigger the interactive mode for fill all requested fields
+        :param model_id: The model ID to generate a payload for
+        :param output: The outfile path in with the json payload will be saved
+        :return: 
+        """
+        model = self.model(model_id)
+        payload = model.get_model_evaluation_payload(arguments={})
+        evaluator = payload.get_evaluator()
+        problem_type = evaluator.get_problem_type()
+        if from_data is None:
+            # Fill the payload with full interactiv mode
+            if problem_type == ProblemType.TIME_SERIES_FORECAST:
+                final_dict = evaluator.interactiv_ts_forecast_payload()
+            else:
+                final_dict = evaluator.interactiv_default_payload()
+        else:
+            # Fill the payload from the data
+            source_id = model.source_id()
+            df = self.source_dataframe(source_id=source_id)
+            if problem_type == ProblemType.TIME_SERIES_FORECAST:
+                min_bound = from_data - (evaluator.get_max_steps() * evaluator.get_span())
+                max_bound = from_data
+                time_feature = evaluator.get_time_feature_name()
+                filtered = filter_dataframe_on_time_feature(df, time_feature, min_bound, max_bound)
+                final_dict = dataframe_to_dict_series(filtered)
+            else:
+                final_dict = df.ix[from_data].to_dict()
+                label_name = evaluator.get_label()
+                final_dict.pop(label_name)
+        # Print the JSON on std out
+        print('Generating JSON selfpayload : ')
+
+        # In some case numpy types are not serializable
+        def default(o):
+            if isinstance(o, numpy.int64): return int(o)
+            if isinstance(o, numpy.int32): return int(o)
+            raise TypeError
+
+        print(json.dumps(final_dict, indent=4, default=default))
+        default_output = self.get_default_json_ouput()
+        full_output = Option(output) \
+            .get_or_else(default_output)
+        print(f'Saving json into `{full_output}`')
+        with io.open(full_output, 'w', encoding='utf8') as outfile:
+            json.dump(final_dict, outfile, indent=4, default=default)
+
+        return full_output
+
+    def get_default_json_ouput(self):
+        payload_directory = self\
+            .config()\
+            .get_or_create_cache_payload_directory()
+
+        full_output = os.path.join(payload_directory, 'payload.json')
+        return full_output
+
+    def generate_payload_dict_for_model(self,
+                                        model_id: str,
+                                        payload_json: str,
+                                        from_data: int = None):
+
+        if payload_json is None:
+            payload_json = self.generate_serving_payload(from_data, model_id)
+        else:
+            payload_json = payload_json.strip()
+        if len(payload_json) > 0 and payload_json[0] == '{' and payload_json[-1] == '}':
+            # In this case the user gives us a json string
+            payload_dict = json.loads(payload_json)
+        elif os.path.isfile(payload_json):
+            # In this case it is probably a path
+            with io.open(payload_json, 'r') as stream:
+                payload_dict = json.load(stream)
+        else:
+            payload_dict = json.loads('{}')
+
+        return payload_dict
