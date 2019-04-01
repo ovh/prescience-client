@@ -7,7 +7,8 @@ from prescience_client.bean.config import Config
 from prescience_client.commands import get_args_or_prompt_input, get_args_or_prompt_confirm, get_args_or_prompt_list, \
     get_args_or_prompt_checkbox
 from prescience_client.commands.command import Command
-from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE
+from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_INPUT_TYPE
+from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.utils.monad import List as UtilList
@@ -41,13 +42,11 @@ class StartParseCommand(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false',
-                                  help='Indicates that there is no header line on the csv file')
-        self.cmd_parser.add_argument('--watch', default=False, action='store_true',
-                                  help='Wait until the task ends and watch the progression')
+        self.cmd_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
+        self.cmd_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
+        self.cmd_parser.add_argument('--input-type', type=InputType, choices=list(InputType), help=f"The input type of your local file (default: {DEFAULT_INPUT_TYPE})", default=DEFAULT_INPUT_TYPE)
         self.cmd_parser.add_argument('--input-filepath', type=str, help='Local input file to send and parse on prescience')
-        self.cmd_parser.add_argument('source-id', nargs='?', type=str,
-                                  help='Identifier of your future source object. If unset it will trigger the interactive mode.')
+        self.cmd_parser.add_argument('source-id', nargs='?', type=str, help='Identifier of your future source object. If unset it will trigger the interactive mode.')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -57,12 +56,24 @@ class StartParseCommand(Command):
             message='Please indicate the path on your local file you want to parse',
             force_interactive=interactive_mode
         )
-        has_headers = get_args_or_prompt_confirm(
-            arg_name='headers',
+        input_type = get_args_or_prompt_list(
+            arg_name='input_type',
             args=args,
-            message='Does your csv file has a header row ?',
+            message='What is the type of your input file ?',
+            choices_function=lambda: list(map(str, InputType)),
             force_interactive=interactive_mode
         )
+        if input_type == str(InputType.CSV):
+            has_headers = get_args_or_prompt_confirm(
+                arg_name='headers',
+                args=args,
+                message='Does your csv file has a header row ?',
+                force_interactive=interactive_mode
+            )
+            input_local_file = self.prescience_client.csv_local_file_input(filepath=filepath, headers=has_headers)
+        else:
+            input_local_file = self.prescience_client.parquet_local_file_input(filepath=filepath)
+
         source_id = get_args_or_prompt_input(
             arg_name='source-id',
             args=args,
@@ -75,7 +86,7 @@ class StartParseCommand(Command):
             message='Do you want to keep watching for the task until it ends ?',
             force_interactive=interactive_mode
         )
-        input_local_file = self.prescience_client.csv_local_file_input(filepath=filepath, headers=has_headers)
+
         parse_task = input_local_file.parse(source_id=source_id)
         if watch:
             parse_task.watch()
