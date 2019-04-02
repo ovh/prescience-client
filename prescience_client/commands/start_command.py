@@ -26,7 +26,8 @@ class StartCommand(Command):
                 StartOptimizeCommand(prescience_client),
                 StartEvaluateCommand(prescience_client),
                 StartReTrainCommand(prescience_client),
-                StartRefreshCommand(prescience_client)
+                StartRefreshCommand(prescience_client),
+                StartMaskCommand(prescience_client)
             ]
         )
 
@@ -406,3 +407,54 @@ class StartEvaluateCommand(Command):
         task = self.prescience_client.custom_config(dataset_id=dataset_id, config=prescience_config)
         if watch:
             task.watch()
+
+class StartMaskCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='mask',
+            help_message='Create a mask from an existing dataset',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('dataset-id', type=str, nargs='?', help='Initial existing dataset')
+        self.cmd_parser.add_argument('mask-id', type=str, nargs='?', help='Wanted name for the mask')
+        self.cmd_parser.add_argument('columns', type=str, nargs='*', help='List of all initial columns to keep in the mask')
+
+    def exec(self, args: dict):
+
+        interactive_mode = args.get('dataset-id') is None
+        dataset_id = get_args_or_prompt_list(
+            arg_name='dataset-id',
+            args=args,
+            message='Which dataset do you want to mask ?',
+            choices_function=lambda: [x.dataset_id() for x in self.prescience_client.datasets(page=1).content],
+            force_interactive=interactive_mode
+        )
+        dataset = self.prescience_client.dataset(dataset_id)
+        field_selection_function = lambda: [x.name() for x in dataset.schema().fields()]
+
+        interactive_mode = interactive_mode or  args.get('mask-id') is None
+        mask_id = get_args_or_prompt_input(
+            arg_name='mask-id',
+            args=args,
+            message='What will be the name of you mask ?',
+            force_interactive=interactive_mode
+        )
+
+        interactive_mode = interactive_mode or len(args.get('columns')) == 0
+        columns = get_args_or_prompt_checkbox(
+            arg_name='columns',
+            args=args,
+            message='Select the column in your initial dataset that you want to keep',
+            choices_function=field_selection_function,
+            selected_function=field_selection_function,
+            force_interactive=interactive_mode
+        )
+        self.prescience_client.create_mask(
+            dataset_id=dataset_id,
+            mask_id=mask_id,
+            selected_column=columns
+        )
