@@ -836,6 +836,15 @@ class PrescienceClient(object):
         from prescience_client.bean.entity.local_file_input import CsvLocalFileInput
         return CsvLocalFileInput(filepath=filepath, headers=headers, prescience=self)
 
+    def parquet_local_file_input(self, filepath: str) -> 'CsvLocalFileInput':
+        """
+        Create a parquet local input file
+        :param filepath: The path of your parquet
+        :return: The ParquetLocalFileInput object
+        """
+        from prescience_client.bean.entity.local_file_input import ParquetLocalFileInput
+        return ParquetLocalFileInput(filepath=filepath, prescience=self)
+
     ############################################
     #### LOCAL CACHE MANAGEMENT METHODS ########
     ############################################
