@@ -56,7 +56,7 @@ class CsvLocalFileInput(LocalFileInput):
 
 class ParquetLocalFileInput(LocalFileInput):
     """
-    Local data file of type CSV
+    Local data file of type Parquet
     """
     def __init__(self, filepath: str, prescience: PrescienceClient = None):
         super(ParquetLocalFileInput, self).__init__(
