@@ -418,7 +418,7 @@ class StartMaskCommand(Command):
         dataset_id = get_args_or_prompt_list(
             arg_name='dataset-id',
             args=args,
-            message='Which dataset do you want to preprocess ?',
+            message='Which dataset do you want to mask ?',
             choices_function=lambda: [x.dataset_id() for x in self.prescience_client.datasets(page=1).content],
             force_interactive=interactive_mode
         )
