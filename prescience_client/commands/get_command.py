@@ -5,6 +5,7 @@ from prescience_client.commands import prompt_for_source_id_if_needed, prompt_fo
 from prescience_client.commands.command import Command
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.output_format import OutputFormat
+from prescience_client.utils.table_printable import TablePrinter
 
 
 class GetCommand(Command):
@@ -24,7 +25,8 @@ class GetCommand(Command):
                 GetTaskListCommand(prescience_client),
                 GetAlgorithmCommand(prescience_client),
                 GetAlgorithmListCommand(prescience_client),
-                GetEvaluationListCommand(prescience_client)
+                GetEvaluationListCommand(prescience_client),
+                GetModelFlowCommand(prescience_client)
             ]
         )
 
@@ -44,6 +46,7 @@ class GetSourceCommand(Command):
         self.cmd_parser.add_argument('--download', type=str, help='Directory in which to download data files for this source')
         self.cmd_parser.add_argument('--cache', default=False, action='store_true', help='Cache the source data inside local cache directory')
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
+        self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the source.')
 
     def exec(self, args: dict):
         source_id = prompt_for_source_id_if_needed(args, self.prescience_client)
@@ -51,7 +54,11 @@ class GetSourceCommand(Command):
         download_directory = args.get('download')
         cache = args.get('cache')
         output = args.get('output')
-        if args.get('schema'):
+        preview = args.get('preview')
+        if preview is not None:
+            df = self.prescience_client.source_dataframe(source_id=source_id)
+            TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
+        elif args.get('schema'):
             source.schema().show(output)
         elif download_directory is not None:
             self.prescience_client.download_source(source_id=source_id, output_directory=download_directory)
@@ -128,6 +135,7 @@ class GetDatasetCommand(Command):
                                     help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
         self.cmd_parser.add_argument('--schema', default=False, action='store_true',
                                     help='Display the schema of the dataset')
+        self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the dataset.')
         self.cmd_parser.add_argument('--download-train', dest='download_train', type=str,
                                     help='Directory in which to download data files for this train dataset')
         self.cmd_parser.add_argument('--download-test', dest='download_test', type=str,
@@ -143,8 +151,14 @@ class GetDatasetCommand(Command):
         output = args.get('output')
         download_train_directory = args.get('download_train')
         download_test_directory = args.get('download_test')
+        preview = args.get('preview')
         if display_schema:
             self.prescience_client.dataset(dataset_id).schema().show(output)
+
+        elif preview is not None:
+            df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
+
         elif download_train_directory is not None:
             self.prescience_client.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory,
                                         test_part=False)
@@ -346,3 +360,32 @@ class GetAlgorithmListCommand(Command):
         )
         output = args.get('output')
         self.prescience_client.get_available_configurations(kind=category).show(ouput=output)
+
+class GetModelFlowCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='model-flow',
+            help_message='Show information about the flow of a model evaluator',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('id', nargs='?', type=str,
+                                     help='The ID of the model. If unset it will trigger the interactive mode for selecting one.')
+        self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
+                                     help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                     default=OutputFormat.TABLE)
+
+    def exec(self, args: dict):
+        model_id = get_args_or_prompt_list(
+            arg_name='id',
+            args=args,
+            message='Which model do you want to get ?',
+            choices_function=lambda: [x.model_id() for x in self.prescience_client.models(page=1).content]
+        )
+        output = args.get('output') or OutputFormat.TABLE
+        model = self.prescience_client.model(model_id)
+        evaluator = model.get_model_evaluator()
+        evaluator.show(output)

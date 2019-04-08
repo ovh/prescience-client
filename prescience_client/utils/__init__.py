@@ -22,10 +22,11 @@ def get_dataframe_real_predict_theoric(
     if join:
         # Adding last points of real to predict dict
         for key, _ in series_dict_predict.items():
-            last_value = last_input_points[key]
+            last_value = last_input_points.get(key)
             series_dict_predict[key].append(last_value)
 
-    df_theoric = initial_dataframe[list(series_dict_predict.keys())]
+    intersect = set(series_dict_predict.keys()).intersection(set(initial_dataframe.columns))
+    df_theoric = initial_dataframe[list(intersect)]
     df_theoric = filter_dataframe_on_time_feature(
         df=df_theoric,
         time_feature=time_feature_name,

@@ -147,6 +147,13 @@ class Dataset(TablePrintable, DictPrintable):
         """
         return self.json_dict.get('time_column_id', None)
 
+    def get_feature_target_map(self) -> dict:
+        """
+        Getter of the feature_target_map
+        :return: the feature_target_map
+        """
+        return self.json_dict.get('feature_target_map')
+
     def selected_columns(self):
         """
         Getter of the selected_columns attribute

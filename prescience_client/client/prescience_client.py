@@ -997,6 +997,9 @@ class PrescienceClient(object):
         problem_type = dataset.problem_type()
         if problem_type == ProblemType.TIME_SERIES_FORECAST:
             time_column = dataset.get_time_column_id()
+            transformed_timecolumn = dataset.get_feature_target_map().get(time_column)
+            if transformed_timecolumn is not None and len(transformed_timecolumn) > 0 and plot_train:
+                time_column = transformed_timecolumn[-1]
 
             if plot_train:
                 df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)

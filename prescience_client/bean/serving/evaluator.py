@@ -7,13 +7,13 @@ from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.valid import Valid
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
-from prescience_client.utils.table_printable import TablePrintable
+from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
 
 from prescience_client.utils.validator import IntegerValidator, FloatValidator, StringValidator
 
 
-class Evaluator(object):
+class Evaluator(DictPrintable):
     """
     Prescience evaluator object
     """
@@ -29,6 +29,9 @@ class Evaluator(object):
         """
         self.json_dict = json_dict
         self.prescience = prescience
+
+    def get_description_dict(self) -> dict:
+        return self.json_dict
 
     def get_problem_type(self) -> ProblemType:
         """

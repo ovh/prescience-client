@@ -3,10 +3,13 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 from abc import ABC, abstractmethod
+
+import pandas
 from prettytable import PrettyTable
 from termcolor import colored
 import json
 
+from prescience_client.commands import get_args_or_prompt_checkbox
 from prescience_client.enum.output_format import OutputFormat
 
 
@@ -97,6 +100,44 @@ class TablePrinter(object):
             table.add_row(row)
 
         return table
+
+    @staticmethod
+    def print_dataframe(df: pandas.DataFrame, wanted_keys: list, output: OutputFormat) -> PrettyTable:
+        select_funtion = lambda : list(df.columns)
+        if wanted_keys is not None and len(wanted_keys) == 0:
+            wanted_keys = None
+        # Trigger the interactive mode if needed
+        wanted_keys = get_args_or_prompt_checkbox(
+            arg_name='wanted_keys',
+            args={'wanted_keys': wanted_keys},
+            message='Select the columns you want to diplay for the preview',
+            choices_function=select_funtion,
+            selected_function=select_funtion,
+            force_interactive=False
+        )
+
+        class DataframePrintable(TablePrintable):
+            def __init__(self, row_dict: dict):
+                self.json_dict = row_dict
+
+            def table_row(self) -> dict:
+                return self.json_dict
+
+            @classmethod
+            def table_header(cls) -> list:
+                return wanted_keys
+
+        printable_obj = []
+        for row in df.iterrows():
+            json_dict = {k: v for k, v in row[1].to_dict().items() if k in wanted_keys}
+            obj = DataframePrintable(json_dict)
+            printable_obj.append(obj)
+
+        if output == OutputFormat.JSON:
+            print(json.dumps([x.table_row() for x in printable_obj], indent=4))
+        else:
+            print(TablePrinter.get_table(DataframePrintable, printable_obj))
+
 
     @staticmethod
     def print_dict(title: str, json_dict: dict, max_value_length: int = 75) -> None:
