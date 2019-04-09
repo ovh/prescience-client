@@ -1,7 +1,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
-from PyInquirer import prompt
+import questionary
 
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.problem_type import ProblemType
@@ -99,7 +99,7 @@ class Evaluator(DictPrintable):
                     'validate': validator,
                     'filter': filter_arg
                 })
-            answers = prompt(questions)
+            answers = questionary.prompt(questions)
             final_dict[einput.get_name()] = list(answers.values())
         return final_dict
 
@@ -118,7 +118,7 @@ class Evaluator(DictPrintable):
                 'validate': validator,
                 'filter': filter_arg
             })
-        answers = prompt(questions)
+        answers = questionary.prompt(questions)
         final_dict.update(answers)
         return final_dict
 

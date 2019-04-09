@@ -1,7 +1,7 @@
 import json
 import typing
 
-from PyInquirer import prompt
+import questionary
 from termcolor import colored
 
 from prescience_client import PrescienceClient
@@ -130,7 +130,7 @@ class AlgorithmConfiguration(TablePrintable):
             
 
         # Prompting for answers
-        answers = prompt(questions)
+        answers = questionary.prompt(questions)
         config = self.instance_config()
         for k, v in answers.items():
             config.add_kwargs(k, v)

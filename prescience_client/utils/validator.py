@@ -1,4 +1,4 @@
-from PyInquirer import Validator, ValidationError
+from questionary import Validator, ValidationError
 
 class IntegerValidator(Validator):
     def validate(self, document):

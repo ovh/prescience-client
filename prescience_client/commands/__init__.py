@@ -1,5 +1,5 @@
+import questionary
 from typing import Callable
-from PyInquirer import prompt
 
 
 def get_args_or_prompt_list(
@@ -19,7 +19,7 @@ def get_args_or_prompt_list(
                 'choices': choices_function()
             }
         ]
-        answers = prompt(questions)
+        answers = questionary.prompt(questions)
         arg_value = answers.get(arg_name)
     return arg_value
 
@@ -42,7 +42,7 @@ def get_args_or_prompt_checkbox(
                 'choices': [{'name': x, 'checked': x in selected} for x in choices_function()]
             }
         ]
-        answers = prompt(questions)
+        answers = questionary.prompt(questions)
         arg_value = answers.get(arg_name)
     return arg_value
 
@@ -61,7 +61,7 @@ def get_args_or_prompt_confirm(
         }
         if arg_value is True or arg_value is False:
             question['default'] = arg_value
-        answers = prompt([question])
+        answers = questionary.prompt([question])
         arg_value = answers.get(arg_name)
     return arg_value
 
@@ -80,7 +80,7 @@ def get_args_or_prompt_input(
                 'message': message,
             }
         ]
-        answers = prompt(questions)
+        answers = questionary.prompt(questions)
         arg_value = answers.get(arg_name)
     return arg_value
 
