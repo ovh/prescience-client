@@ -53,12 +53,18 @@ class Schema(object):
 
         return all_fields
 
-    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
+    def show(self, output: OutputFormat = OutputFormat.TABLE):
         """
         Show the current schema on stdout
         """
-        if ouput == OutputFormat.JSON:
+        if isinstance(output, str):
+            output = OutputFormat(output)
+
+        if output == OutputFormat.JSON:
             print(json.dumps(self.json))
+        if output == OutputFormat.HTML:
+            df = TablePrinter.get_table_dataframe(Field, self.fields())
+            return TablePrinter.print_html(df)
         else:
             print(TablePrinter.get_table(Field, self.fields()))
         return self
@@ -80,7 +86,7 @@ class Field(TablePrintable):
     def table_header(cls) -> list:
         return ['name', 'type', 'nullable', 'n_cat', 'ratio', 'n_pop', 'median', 'mode', 'positive']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'name': self.colored_name(),
             'type': self.type(),

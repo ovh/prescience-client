@@ -13,6 +13,7 @@ from prescience_client.bean.task import Task
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_SCORING_METRIC
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
@@ -194,10 +195,10 @@ class Dataset(TablePrintable, DictPrintable):
     def table_header(cls) -> list:
         return ['dataset_id', 'status', 'source_id', 'problem_type']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'dataset_id': self.dataset_id(),
-            'status': self.status(),
+            'status': self.status().to_colored(output),
             'source_id': self.source_id(),
             'problem_type': str(self.problem_type())
         }

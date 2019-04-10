@@ -525,7 +525,7 @@ class ConfigLine(TablePrintable):
     def table_header(cls) -> list:
         return ['project', 'environment', 'token']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         string_token = '- unset -'
         if self.token() is not None:
             string_token = self.token()[:30] + '...' + self.token()[-30:]

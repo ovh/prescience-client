@@ -28,6 +28,7 @@ from prescience_client.enum.input_type import InputType
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.sort_direction import SortDirection
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
@@ -446,6 +447,7 @@ class PrescienceClient(object):
                                dataset_id: str,
                                page: int = 1,
                                sort_column: str = None,
+                               sort_direction: SortDirection = SortDirection.ASC,
                                forecasting_horizon_steps: int = None,
                                forecasting_discount: float = None
                                ) -> 'PageResult':
@@ -453,6 +455,10 @@ class PrescienceClient(object):
         Get the paginated list of evaluation results
         :param dataset_id: The dataset ID
         :param page: The number of the page to get
+        :param sort_column: The column to sort on
+        :param sort_direction: The direction to sort on
+        :param forecasting_horizon_steps: The horizon step to filter on (default: None)
+        :param forecasting_discount: The forecasting discount to filter on (default: None)
         :return: the page object containing the evaluation results
         """
         query_parameters = {
@@ -460,7 +466,8 @@ class PrescienceClient(object):
             'page': page,
             'sort_column': sort_column,
             'forecasting_horizon_steps': forecasting_horizon_steps,
-            'forecasting_discount': forecasting_discount
+            'forecasting_discount': forecasting_discount,
+            'sort_direction': str(sort_direction)
         }
         final_query_parameters = {k: v for k, v in query_parameters.items() if v is not None}
         _, page, _ = self.__get(path='/evaluation-result', query_parameters=final_query_parameters)
@@ -815,7 +822,7 @@ class PrescienceClient(object):
             current_task = self.__wait_for_task_message(websocket, initial_task)
             bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
             bar.next()
-        bar.message = f'{current_task.type()} - {current_task.status()}'
+        bar.message = f'{current_task.type()} - {current_task.status().to_colored()}'
         bar.next()
         bar.finish()
         # Closing web-socket
@@ -1055,8 +1062,6 @@ class PrescienceClient(object):
                 final_dict = df.ix[from_data].to_dict()
                 label_name = evaluator.get_label()
                 final_dict.pop(label_name)
-        # Print the JSON on std out
-        print('Generating JSON selfpayload : ')
 
         # In some case numpy types are not serializable
         def default(o):
@@ -1064,7 +1069,6 @@ class PrescienceClient(object):
             if isinstance(o, numpy.int32): return int(o)
             raise TypeError
 
-        print(json.dumps(final_dict, indent=4, default=default))
         default_output = self.get_default_json_ouput()
         full_output = Option(output) \
             .get_or_else(default_output)
@@ -1084,7 +1088,7 @@ class PrescienceClient(object):
 
     def generate_payload_dict_for_model(self,
                                         model_id: str,
-                                        payload_json: str,
+                                        payload_json: str = None,
                                         from_data: int = None):
 
         if payload_json is None:

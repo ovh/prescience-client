@@ -11,6 +11,7 @@ from prescience_client.bean.serving.serving_payload import ServingPayload
 from prescience_client.bean.source import Source
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.flow_type import FlowType
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
@@ -66,10 +67,10 @@ class Model(TablePrintable, DictPrintable):
             'source_id'
         ]
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'model_id': self.model_id(),
-            'status': self.status(),
+            'status': self.status().to_colored(output),
             'config_name': self.config().name(),
             'dataset_id': self.dataset_id(),
             'source_id': self.source_id()
@@ -343,6 +344,7 @@ class Model(TablePrintable, DictPrintable):
             series_dict_input=input_payload_dict,
             series_dict_predict=result.get_result_dict(),
             time_feature_name=time_feature_name,
+            label_id=self.label_id(),
             initial_dataframe=self.prescience.source_dataframe(self.source_id())
         )
         return df_final

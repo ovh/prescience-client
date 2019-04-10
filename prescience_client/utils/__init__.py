@@ -14,8 +14,12 @@ def get_dataframe_real_predict_theoric(
         series_dict_predict: dict,
         time_feature_name: str,
         initial_dataframe: pandas.DataFrame,
+        label_id: str,
         join: bool = True
 ):
+    # Only filter on label for prediction (ex: remove quantiles)
+    series_dict_predict = {k: v for k, v in series_dict_predict.items() if k in {label_id, time_feature_name}}
+
     last_input_points = {key: value[-1] for key, value in series_dict_input.items()}
     last_predict_points = {key: value[-1] for key, value in series_dict_predict.items()}
 
