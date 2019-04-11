@@ -772,6 +772,58 @@ class PrescienceClient(object):
         from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
         return AlgorithmConfigurationList(json_dict=result, category=kind)
 
+
+    def start_auto_ml(
+        self,
+        source_id,
+        dataset_id: str,
+        label_id: str,
+        model_id: str,
+        problem_type: ProblemType,
+        scoring_metric: ScoringMetric,
+        time_column: str = None,
+        nb_fold: int = None,
+        selected_column: list = None,
+        budget: int = None,
+        forecasting_horizon_steps: int = None,
+        forecast_discount: float = None
+    ):
+        body = {
+            'dataset_id': dataset_id,
+            'label_id': label_id,
+            'model_id': model_id,
+            'problem_type': str(problem_type),
+            'scoring_metric': str(scoring_metric),
+            'custom_parameters': {},
+            'optimization_method': 'SMAC',
+            'multiclass': False
+        }
+
+        if time_column is not None:
+            body['time_column_id'] = time_column
+
+        if nb_fold is not None and nb_fold > 1:
+            body['nb_fold'] = nb_fold
+
+        if selected_column is not None and len(selected_column) >= 0:
+            body['selected_column'] = selected_column
+
+        if budget is not None and budget >= 0:
+            body['budget'] = budget
+
+        if forecasting_horizon_steps is not None and forecasting_horizon_steps >= 0:
+            body['forecasting_horizon_steps'] = forecasting_horizon_steps
+
+        if forecast_discount is not None:
+            body['forecasting_discount'] = forecast_discount
+
+
+        print(body)
+        _, result, _ = self.__post(path=f'/ml/auto-ml/{source_id}', data=body)
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
+
+
     ############################################
     ########### WEB-SOCKET METHODS #############
     ############################################

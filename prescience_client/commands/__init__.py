@@ -69,18 +69,22 @@ def get_args_or_prompt_input(
         arg_name: str,
         args: dict,
         message: str,
-        force_interactive: bool = False
+        force_interactive: bool = False,
+        validator = None,
+        filter = None
 ):
     arg_value = args.get(arg_name)
     if arg_value is None or force_interactive:
-        questions = [
-            {
-                'type': 'input',
-                'name': arg_name,
-                'message': message,
-            }
-        ]
-        answers = questionary.prompt(questions)
+        question = {
+            'type': 'input',
+            'name': arg_name,
+            'message': message,
+        }
+        if validator is not None:
+            question['validate'] = validator
+        if filter is not None:
+            question['filter'] = filter
+        answers = questionary.prompt([question])
         arg_value = answers.get(arg_name)
     return arg_value
 

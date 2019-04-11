@@ -73,7 +73,7 @@ class DictPrintable(ABC):
 
         description_dict = self.get_description_dict()
         if output == OutputFormat.JSON:
-            print(json.dumps(description_dict))
+            print(json.dumps(description_dict, indent=4))
         elif output == OutputFormat.HTML:
             table = [[k, v] for k, v in self.get_description_dict().items()]
             df = pandas.DataFrame(table, columns=['', f'{self.table_title()} attributes'])
@@ -153,7 +153,7 @@ class TablePrinter(object):
             def __init__(self, row_dict: dict):
                 self.json_dict = row_dict
 
-            def table_row(self) -> dict:
+            def table_row(self, output: OutputFormat) -> dict:
                 return self.json_dict
 
             @classmethod

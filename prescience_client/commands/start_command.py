@@ -12,6 +12,8 @@ from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.utils.monad import List as UtilList
+from prescience_client.utils.validator import IntegerValidator, FloatValidator
+
 
 class StartCommand(Command):
     def __init__(self, prescience_client):
@@ -27,7 +29,8 @@ class StartCommand(Command):
                 StartEvaluateCommand(prescience_client),
                 StartReTrainCommand(prescience_client),
                 StartRefreshCommand(prescience_client),
-                StartMaskCommand(prescience_client)
+                StartMaskCommand(prescience_client),
+                StartAutoML(prescience_client)
             ]
         )
 
@@ -232,7 +235,6 @@ class StartOptimizeCommand(Command):
             message='Which budget do you want to allow on optimization ?',
             force_interactive=interactive_mode
         )
-        # scoring_metric = args.get('scoring-metric')
         scoring_metric = get_args_or_prompt_list(
             arg_name='scoring-metric',
             args=args,
@@ -458,3 +460,156 @@ class StartMaskCommand(Command):
             mask_id=mask_id,
             selected_column=columns
         )
+
+class StartAutoML(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='auto-ml',
+            help_message='Start an Auto-ML task, which will chain all needed tasks until model deployment',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('source-id', type=str, nargs='?', help='The source from which you want to start a AutoML task')
+
+        self.cmd_parser.add_argument('--dataset-id', type=str, help='Name you want for the created dataset')
+        self.cmd_parser.add_argument('--model-id', type=str, help='Name you want for the created model')
+
+
+        self.cmd_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType),
+                                       help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
+                                       default=DEFAULT_PROBLEM_TYPE)
+        self.cmd_parser.add_argument('--time-column', type=str,
+                                       help='Identifier of the time column for time series. Only for forecasts problems.')
+        self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
+        self.cmd_parser.add_argument('scoring-metric', nargs='?', type=ScoringMetric, choices=list(ScoringMetric),
+                                     help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
+        self.cmd_parser.add_argument('--budget', type=int,
+                                     help='Budget to allow on optimization (default: it will use the one configure on prescience server side)')
+        self.cmd_parser.add_argument('--watch', default=False, action='store_true',
+                                     help='Wait until the task ends and watch the progression')
+        self.cmd_parser.add_argument('--forecast-horizon-steps', type=int,
+                                     help='Number of steps forward to take into account as a forecast horizon for the optimization (Only in case of time series forecast)')
+        self.cmd_parser.add_argument('--forecast-discount', type=float,
+                                     help='Discount to apply on each time step before the horizon (Only in case of time series forecast)')
+
+    def exec(self, args: dict):
+
+        interactive_mode = args.get('source-id') is None
+        source_id = get_args_or_prompt_list(
+            arg_name='id',
+            args=args,
+            message='Which source do you want to preprocess ?',
+            choices_function=lambda: [x.source_id for x in self.prescience_client.sources(page=1).content],
+            force_interactive=interactive_mode
+        )
+        dataset_id = get_args_or_prompt_input(
+            arg_name='dataset_id',
+            args=args,
+            message='What will be the name of the generated dataset',
+            force_interactive=interactive_mode
+        )
+        model_id = get_args_or_prompt_input(
+            arg_name='model_id',
+            args=args,
+            message='What will be the name of the generated model',
+            force_interactive=interactive_mode
+        )
+        selected_column = get_args_or_prompt_checkbox(
+            arg_name='columns',
+            args=args,
+            message='Select the columns you want to keep for your preprocessing',
+            choices_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
+            selected_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
+            force_interactive=interactive_mode
+        )
+        problem_type = get_args_or_prompt_list(
+            arg_name='problem_type',
+            args=args,
+            message='What kind of problem do you want to solve ?',
+            choices_function=lambda: list(map(str, ProblemType)),
+            force_interactive=interactive_mode
+        )
+        label_id = get_args_or_prompt_list(
+            arg_name='label',
+            args=args,
+            message='What will be your label ? (the column you want to predict)',
+            choices_function=lambda: copy.deepcopy(selected_column),
+            force_interactive=interactive_mode
+        )
+        time_column = args.get('time_column')
+        forecasting_horizon_steps = args.get('forecast_horizon_steps')
+        forecast_discount = args.get('forecast_discount')
+        if ProblemType(problem_type) == ProblemType.TIME_SERIES_FORECAST:
+            available_time_columns = copy.deepcopy(selected_column)
+            available_time_columns.remove(label_id)
+            time_column = get_args_or_prompt_list(
+                arg_name='time_column',
+                args=args,
+                message='What will be the column used for time ?',
+                choices_function=lambda: copy.deepcopy(available_time_columns),
+                force_interactive=interactive_mode
+            )
+            forecasting_horizon_steps = get_args_or_prompt_input(
+                arg_name='forecast_horizon_steps',
+                args=args,
+                message='How many steps do you expect as a forecast horizon ?',
+                force_interactive=interactive_mode,
+                validator=IntegerValidator,
+                filter=int
+            )
+            forecast_discount = get_args_or_prompt_input(
+                arg_name='forecast_discount',
+                args=args,
+                message='Which discount value fo you want to apply on your forecasted values ?',
+                force_interactive=interactive_mode,
+                validator=FloatValidator,
+                filter=float
+            )
+        nb_fold = get_args_or_prompt_input(
+            arg_name='nb_fold',
+            args=args,
+            message='How many folds do you want ?',
+            force_interactive=interactive_mode,
+            validator=IntegerValidator,
+            filter=int
+        )
+        scoring_metric = get_args_or_prompt_list(
+            arg_name='scoring-metric',
+            args=args,
+            message='On which scoring metric do you want to optimize on ?',
+            choices_function=lambda: list(map(str, ScoringMetric)),
+            force_interactive=interactive_mode
+        )
+        budget = get_args_or_prompt_input(
+            arg_name='budget',
+            args=args,
+            message='Which budget do you want to allow on optimization ?',
+            force_interactive=interactive_mode,
+            validator=IntegerValidator,
+            filter=int
+        )
+        watch = get_args_or_prompt_confirm(
+            arg_name='watch',
+            args=args,
+            message='Do you want to keep watching for the task until it ends ?',
+            force_interactive=interactive_mode
+        )
+        task = self.prescience_client.start_auto_ml(
+            source_id=source_id,
+            dataset_id=dataset_id,
+            label_id=label_id,
+            model_id=model_id,
+            problem_type=problem_type,
+            scoring_metric=scoring_metric,
+            time_column=time_column,
+            nb_fold=nb_fold,
+            selected_column=selected_column,
+            budget=budget,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecast_discount=forecast_discount
+        )
+        if watch:
+            task.watch()
