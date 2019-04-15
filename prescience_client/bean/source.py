@@ -105,7 +105,8 @@ class Source(TablePrintable, DictPrintable):
                    selected_columns: list = None,
                    time_column: str = None,
                    nb_fold: int = None,
-                   fold_size: int = None):
+                   fold_size: int = None,
+                   test_ratio: float = None ):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset
@@ -121,7 +122,8 @@ class Source(TablePrintable, DictPrintable):
             selected_column=selected_columns,
             time_column=time_column,
             fold_size=fold_size,
-            nb_fold=nb_fold
+            nb_fold=nb_fold,
+            test_ratio=test_ratio
         )
 
     def tree(self) -> SourceTree:
