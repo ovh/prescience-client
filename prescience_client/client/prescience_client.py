@@ -9,6 +9,7 @@ import re
 import shutil
 import urllib.parse
 import io
+import uuid
 from io import BytesIO
 
 import matplotlib
@@ -25,7 +26,6 @@ from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.flow_type import FlowType
 from prescience_client.enum.input_type import InputType
-from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.sort_direction import SortDirection
@@ -98,6 +98,8 @@ class PrescienceClient(object):
             'type': str(input_type),
             'headers': headers
         }
+        print("Uploading source with following arguments :")
+        print(json.dumps(parse_input, indent=4))
 
         if os.path.isdir(filepath):
             multipart = [
@@ -776,18 +778,39 @@ class PrescienceClient(object):
     def start_auto_ml(
         self,
         source_id,
-        dataset_id: str,
         label_id: str,
-        model_id: str,
         problem_type: ProblemType,
         scoring_metric: ScoringMetric,
+        dataset_id: str = None,
+        model_id: str = None,
         time_column: str = None,
         nb_fold: int = None,
         selected_column: list = None,
         budget: int = None,
         forecasting_horizon_steps: int = None,
         forecast_discount: float = None
-    ):
+    ) -> ('Task', str, str):
+        """
+        Start an auto-ml task
+        :param source_id: The ID of the initial source object
+        :param label_id: ID of the label to predict
+        :param problem_type: The type of the problem
+        :param scoring_metric: The scoring metric to optimize on
+        :param dataset_id: The wanted dataset_id (will generate one if unser)
+        :param model_id: The wanted model_id (will generate one if unset)
+        :param time_column: The ID of the time column (Only in case of a time_series_forecast)
+        :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param selected_column: The column to keep (will keep everything if unset)
+        :param budget: The budget to use during optimization
+        :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
+        :param forecast_discount: The wanted forecasting discount
+        :return: The tuple3 of (initial task, dataset id, model id)
+        """
+        if dataset_id is None:
+            dataset_id = f'{source_id}_dataset_{uuid.uuid4()}'
+        if model_id is None:
+            model_id = f'{source_id}_model_{uuid.uuid4()}'
+
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
@@ -817,11 +840,11 @@ class PrescienceClient(object):
         if forecast_discount is not None:
             body['forecasting_discount'] = forecast_discount
 
-
-        print(body)
+        print('Starting AutoML task with following arguments :')
+        print(json.dumps(body, indent=4))
         _, result, _ = self.__post(path=f'/ml/auto-ml/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
-        return TaskFactory.construct(result, self)
+        return TaskFactory.construct(result, self), dataset_id, model_id
 
 
     ############################################
@@ -1024,7 +1047,7 @@ class PrescienceClient(object):
         else:
             return pandas.read_parquet(path=dataset_data_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str, block=False):
+    def plot_source(self, source_id: str, x: str, kind: str = 'line', block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
