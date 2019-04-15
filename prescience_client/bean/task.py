@@ -4,6 +4,7 @@
 import copy
 
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 
@@ -40,13 +41,13 @@ class Task(TablePrintable, DictPrintable):
     def table_header(cls) -> list:
         return ['uuid', 'type', 'steps', 'info', 'status']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'uuid': self.uuid(),
             'type': self.type(),
             'steps': f'{self.current_step()}/{self.total_step()}',
             'info': self.current_step_description(),
-            'status': self.status()
+            'status': self.status().to_colored()
         }
 
     def uuid(self):

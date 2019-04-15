@@ -154,7 +154,7 @@ class AlgorithmConfiguration(TablePrintable):
     def table_header(cls) -> list:
         return ['id', 'display_name', 'backend', 'class_identifier']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'id': self.get_name(),
             'display_name': self.get_display_name(),

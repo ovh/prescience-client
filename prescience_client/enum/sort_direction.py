@@ -4,12 +4,10 @@
 
 from enum import Enum, unique
 
-
 @unique
-class OutputFormat(Enum):
-    TABLE = 'table'
-    JSON = 'json'
-    HTML = 'html'
+class SortDirection(Enum):
+    ASC = 'asc'
+    DESC = 'desc'
 
     def __str__(self):
         return self.value

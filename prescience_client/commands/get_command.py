@@ -5,6 +5,7 @@ from prescience_client.commands import prompt_for_source_id_if_needed, prompt_fo
 from prescience_client.commands.command import Command
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.output_format import OutputFormat
+from prescience_client.enum.sort_direction import SortDirection
 from prescience_client.utils.table_printable import TablePrinter
 
 
@@ -104,6 +105,7 @@ class GetEvaluationListCommand(Command):
                                     help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
         self.cmd_parser.add_argument('--forecasting-horizon-steps', type=int)
         self.cmd_parser.add_argument('--forecasting-discount', type=float)
+        self.cmd_parser.add_argument('--sort', type=str, default='config.name')
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                     help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
 
@@ -112,11 +114,13 @@ class GetEvaluationListCommand(Command):
         output = args.get('output')
         forecasting_horizon_steps = args.get('forecasting_horizon_steps')
         forecasting_discount = args.get('forecasting_discount')
+        sort_column = args.get('sort')
         evalution_results_page = self.prescience_client.get_evaluation_results(
             dataset_id=dataset_id,
             forecasting_horizon_steps=forecasting_horizon_steps,
             forecasting_discount=forecasting_discount,
-            sort_column='config.name'
+            sort_column=sort_column,
+            sort_direction=SortDirection.ASC
         )
         evalution_results_page.show(output)
 
@@ -330,7 +334,7 @@ class GetAlgorithmCommand(Command):
             algorithm_config = algorithm.interactive_kwargs_instanciation()
             print(json.dumps(algorithm_config.to_dict()))
         else:
-            algorithm.show(ouput=output)
+            algorithm.show(output=output)
 
 
 class GetAlgorithmListCommand(Command):
@@ -359,7 +363,7 @@ class GetAlgorithmListCommand(Command):
             choices_function=lambda: list(map(str, AlgorithmConfigurationCategory))
         )
         output = args.get('output')
-        self.prescience_client.get_available_configurations(kind=category).show(ouput=output)
+        self.prescience_client.get_available_configurations(kind=category).show(output=output)
 
 class GetModelFlowCommand(Command):
     def __init__(self, prescience_client):

@@ -1,5 +1,6 @@
 import typing
 
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.utils.monad import Option
 from prescience_client.utils.table_printable import DictPrintable, TablePrintable
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
@@ -42,7 +43,7 @@ class Hyperparameter(DictPrintable, TablePrintable):
     def table_header(cls) -> list:
         return ['id', 'name', 'type', 'log', 'lower', 'upper', 'default', 'choices', 'value']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'id': str(self.id),
             'name': Option(self.get_name()).get_or_else('-'),

@@ -41,12 +41,19 @@ class PageResult(object):
         string = ','.join([str(x) for x in self.content])
         return f'PAGE[{self.metadata.page_number}]({string})'
 
-    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
+    def show(self, output: OutputFormat = OutputFormat.TABLE):
         """
         Show the current page on stdout
         """
-        if ouput == OutputFormat.JSON:
-            print(json.dumps(self.json_dict))
+        if isinstance(output, str):
+            output = OutputFormat(output)
+
+        if output == OutputFormat.JSON:
+            print(json.dumps(self.json_dict, indent=4))
+        elif output == OutputFormat.HTML:
+            df = TablePrinter.get_table_dataframe(self.page_class, self.content)
+            return TablePrinter.print_html(df)
+
         else:
             table = TablePrinter.get_table(self.page_class, self.content)
             print(table.get_string(title=colored(self.metadata.elements_type.upper(), 'yellow', attrs=['bold'])))

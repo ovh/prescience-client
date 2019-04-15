@@ -19,7 +19,7 @@ class TablePrintable(ABC):
     """
 
     @classmethod
-    def table_formatter(cls, table: list) -> (list, list):
+    def table_formatter(cls, table: list, output: OutputFormat) -> (list, list):
         """
         Default method which format the given table before printing it
         :param table: The table we want to format
@@ -36,7 +36,7 @@ class TablePrintable(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         """
         :return: The table row for printing the current object in console as a table
         """
@@ -62,14 +62,22 @@ class DictPrintable(ABC):
         """
         raise NotImplementedError
 
-    def show(self, ouput: OutputFormat = OutputFormat.TABLE) -> 'DictPrintable':
+    def show(self, output: OutputFormat = OutputFormat.TABLE) -> 'DictPrintable':
         """
         Print the 'description dict' as a table in console
         :return: The current object
         """
+
+        if isinstance(output, str):
+            output = OutputFormat(output)
+
         description_dict = self.get_description_dict()
-        if ouput == OutputFormat.JSON:
+        if output == OutputFormat.JSON:
             print(json.dumps(description_dict))
+        elif output == OutputFormat.HTML:
+            table = [[k, v] for k, v in self.get_description_dict().items()]
+            df = pandas.DataFrame(table, columns=['', f'{self.table_title()} attributes'])
+            return TablePrinter.print_html(df)
         else:
             TablePrinter.print_dict(self.table_title(), description_dict)
         return self
@@ -89,8 +97,8 @@ class TablePrinter(object):
         if not issubclass(clazz, TablePrintable):
             raise TypeError(f'Classe {clazz} is not a sub-class of TablePrintable')
         table = PrettyTable()
-        all_row_dict = [x.table_row() for x in table_printable_objects]
-        header, all_row_dict_formatted = clazz.table_formatter(all_row_dict)
+        all_row_dict = [x.table_row(OutputFormat.TABLE) for x in table_printable_objects]
+        header, all_row_dict_formatted = clazz.table_formatter(all_row_dict, OutputFormat.TABLE)
         final_header = [''] + list(header)
         all_row = [[x[y] for y in header] for x in all_row_dict_formatted]
         table.field_names = [colored(x, attrs=['bold']) for x in final_header]
@@ -100,6 +108,31 @@ class TablePrinter(object):
             table.add_row(row)
 
         return table
+
+    @staticmethod
+    def print_html(dataframe: pandas.DataFrame):
+        # If we are in a notebook, will print the html to output, other to stdout
+        try:
+            from IPython.core.display import HTML
+            # print()
+            return HTML(dataframe.to_html(notebook=True))
+        except ImportError:
+            print(dataframe.to_html())
+
+
+    @staticmethod
+    def get_table_dataframe(clazz: type, table_printable_objects: list) -> pandas.DataFrame:
+        """
+        Take a list of 'clazz' object and print this list as a table in console
+        'clazz' should be a sub-class of 'TablePrintable'
+        """
+        if not issubclass(clazz, TablePrintable):
+            raise TypeError(f'Classe {clazz} is not a sub-class of TablePrintable')
+        all_row_dict = [x.table_row(OutputFormat.HTML) for x in table_printable_objects]
+        header, all_row_dict_formatted = clazz.table_formatter(all_row_dict, OutputFormat.HTML)
+        all_row = [[x[y] for y in header] for x in all_row_dict_formatted]
+        df = pandas.DataFrame(all_row, columns=header)
+        return df
 
     @staticmethod
     def print_dataframe(df: pandas.DataFrame, wanted_keys: list, output: OutputFormat) -> PrettyTable:
@@ -134,7 +167,7 @@ class TablePrinter(object):
             printable_obj.append(obj)
 
         if output == OutputFormat.JSON:
-            print(json.dumps([x.table_row() for x in printable_obj], indent=4))
+            print(json.dumps([x.table_row(OutputFormat.TABLE) for x in printable_obj], indent=4))
         else:
             print(TablePrinter.get_table(DataframePrintable, printable_obj))
 

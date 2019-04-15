@@ -4,6 +4,7 @@
 
 from prescience_client.bean.config import Config
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.status import Status
 from prescience_client.utils.monad import Option, List
 from prescience_client.utils.table_printable import DictPrintable, TablePrintable
@@ -36,7 +37,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
         return []
 
     @classmethod
-    def table_formatter(cls, table: list) -> (list, list):
+    def table_formatter(cls, table: list, output: OutputFormat) -> (list, list):
         # Find headers that will be displayed
         analyzed_columns = ['f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost', 'r2_cost', 'mae_cost', 'mse_cost']
         row_from_column_key = lambda column_key: List(table).map(lambda x: x.get(column_key, None))
@@ -51,9 +52,9 @@ class EvaluationResult(TablePrintable, DictPrintable):
             for column_name in final_header:
                 max_column = max([x[column_name] for x in table if x[column_name] is not None])
                 min_column = min([x[column_name] for x in table if x[column_name] is not None])
-                if x[column_name] == max_column:
+                if x[column_name] == max_column and output == OutputFormat.TABLE:
                     x_copy[column_name] = colored(max_column, 'red')
-                if x[column_name] == min_column:
+                if x[column_name] == min_column and output == OutputFormat.TABLE:
                     x_copy[column_name] = colored(min_column, 'green')
 
             # Replace all None value with '-'
@@ -65,7 +66,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
 
         return ['uuid', 'status', 'config_name', 'past_steps', 'horizon', 'discount'] + final_header, formatted_table
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
 
         def round_3(x):
             if isinstance(x, str):
@@ -80,7 +81,7 @@ class EvaluationResult(TablePrintable, DictPrintable):
                 .get_or_else(None)
         return {
             'uuid': self.uuid(),
-            'status': self.status(),
+            'status': self.status().to_colored(output),
             'config_name': self.config().name(),
             'past_steps': self.config().get_past_steps(),
             'horizon': self.config().get_forecasting_horizon_steps(),

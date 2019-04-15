@@ -4,6 +4,7 @@
 import questionary
 
 from prescience_client.client.prescience_client import PrescienceClient
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.valid import Valid
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
@@ -131,7 +132,7 @@ class Input(TablePrintable):
     def table_header(cls) -> list:
         return ['attribute', 'type', 'value', 'valid']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         ok_ko, ok_ko_message  = self.is_valid()
         colored_placeholder = self.get_placeholder()
         if ok_ko == Valid.KO:

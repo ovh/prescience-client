@@ -5,6 +5,9 @@
 from enum import Enum, unique, auto
 from termcolor import colored
 
+from prescience_client.enum.output_format import OutputFormat
+
+
 @unique
 class Status(Enum):
     # Tasks status
@@ -35,7 +38,14 @@ class Status(Enum):
             Status.FAILED: 'FAILED',
             Status.OUTDATED: 'OUTDATED'
         }
-        return colored(switch.get(self), self.color())
+        return switch.get(self)
+
+    def to_colored(self, output: OutputFormat = OutputFormat.TABLE):
+        if output == OutputFormat.TABLE:
+            return colored(str(self), self.color())
+        else:
+            return str(self)
+
 
     def color(self):
         switch = {

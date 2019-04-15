@@ -7,6 +7,7 @@ import json
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
+from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
@@ -68,10 +69,10 @@ class Source(TablePrintable, DictPrintable):
     def table_header(cls) -> list:
         return ['source_id', 'status', 'input_type', 'info']
 
-    def table_row(self) -> dict:
+    def table_row(self, output: OutputFormat) -> dict:
         return {
             'source_id': self.source_id,
-            'status': self.status(),
+            'status': self.status().to_colored(output),
             'input_type': self.input_type,
             'info': self.current_step_description
         }
