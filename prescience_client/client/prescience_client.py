@@ -163,7 +163,8 @@ class PrescienceClient(object):
             selected_column: list = None,
             time_column: str = None,
             nb_fold: int = None,
-            fold_size: int = None
+            fold_size: int = None,
+            test_ratio: float = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -193,6 +194,9 @@ class PrescienceClient(object):
 
         if nb_fold is not None and nb_fold >= 0:
             body['nb_fold'] = nb_fold
+
+        if test_ratio is not None and test_ratio > 0:
+            body['test_ratio'] = test_ratio
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
