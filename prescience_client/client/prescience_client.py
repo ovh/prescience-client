@@ -25,7 +25,6 @@ from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.flow_type import FlowType
 from prescience_client.enum.input_type import InputType
-from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.sort_direction import SortDirection
