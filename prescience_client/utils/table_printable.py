@@ -19,7 +19,7 @@ class TablePrintable(ABC):
     """
 
     @classmethod
-    def table_formatter(cls, table: list, output: OutputFormat) -> (list, list):
+    def table_formatter(cls, table: list, output: OutputFormat) -> (list, list):  # pylint: disable=W0613
         """
         Default method which format the given table before printing it
         :param table: The table we want to format
@@ -153,7 +153,7 @@ class TablePrinter(object):
             def __init__(self, row_dict: dict):
                 self.json_dict = row_dict
 
-            def table_row(self, output: OutputFormat) -> dict:
+            def table_row(self, output: OutputFormat) -> dict:  # pylint: disable=W0613
                 return self.json_dict
 
             @classmethod

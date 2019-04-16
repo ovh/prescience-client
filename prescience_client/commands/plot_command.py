@@ -2,7 +2,6 @@ import matplotlib
 
 from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed
 from prescience_client.commands.command import Command
-from prescience_client.utils import get_dataframe_real_predict_theoric
 
 
 class PlotCommand(Command):
