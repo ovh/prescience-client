@@ -52,6 +52,7 @@ class PlotDatasetCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('id', nargs ='?', type=str, help='Identifier of the dataset object. If unset if will trigger the interactive mode for selecting one.')
+        self.cmd_parser.add_argument('--fold', type=int, help='Fold number to plot')
         self.cmd_parser.add_argument('--no-test', default=True, dest='plot_test', action='store_false', help='Won\'t plot the test part')
         self.cmd_parser.add_argument('--no-train', default=True, dest='plot_train', action='store_false', help='Won\'t plot the train part')
 
@@ -59,7 +60,15 @@ class PlotDatasetCommand(Command):
         dataset_id = prompt_for_dataset_id_if_needed(args, self.prescience_client)
         plot_train = args.get('plot_train')
         plot_test = args.get('plot_test')
-        self.prescience_client.plot_dataset(dataset_id=dataset_id, block=True, plot_train=plot_train, plot_test=plot_test)
+        fold = args.get('fold')
+        self.prescience_client.plot_dataset(
+            dataset_id=dataset_id,
+            block=True,
+            plot_train=plot_train,
+            plot_test=plot_test,
+            fold_number=fold
+        )
+
 
 
 class PlotPredictionCommand(Command):

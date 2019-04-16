@@ -567,7 +567,7 @@ class StartAutoML(Command):
                 message='How many steps do you expect as a forecast horizon ?',
                 force_interactive=interactive_mode,
                 validator=IntegerValidator,
-                filter=int
+                filter_func=int
             )
             forecast_discount = get_args_or_prompt_input(
                 arg_name='forecast_discount',
@@ -575,7 +575,7 @@ class StartAutoML(Command):
                 message='Which discount value fo you want to apply on your forecasted values ?',
                 force_interactive=interactive_mode,
                 validator=FloatValidator,
-                filter=float
+                filter_func=float
             )
         nb_fold = get_args_or_prompt_input(
             arg_name='nb_fold',
@@ -583,7 +583,7 @@ class StartAutoML(Command):
             message='How many folds do you want ?',
             force_interactive=interactive_mode,
             validator=IntegerValidator,
-            filter=int
+            filter_func=int
         )
         scoring_metric = get_args_or_prompt_list(
             arg_name='scoring-metric',
@@ -598,7 +598,7 @@ class StartAutoML(Command):
             message='Which budget do you want to allow on optimization ?',
             force_interactive=interactive_mode,
             validator=IntegerValidator,
-            filter=int
+            filter_func=int
         )
         watch = get_args_or_prompt_confirm(
             arg_name='watch',

@@ -71,7 +71,7 @@ def get_args_or_prompt_input(
         message: str,
         force_interactive: bool = False,
         validator = None,
-        filter = None,
+        filter_func = None,
         default = None
 ):
     arg_value = args.get(arg_name)
@@ -83,8 +83,8 @@ def get_args_or_prompt_input(
         }
         if validator is not None:
             question['validate'] = validator
-        if filter is not None:
-            question['filter'] = filter
+        if filter_func is not None:
+            question['filter'] = filter_func
         if default is not None:
             question['default'] = default
         answers = questionary.prompt([question])
