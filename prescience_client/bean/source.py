@@ -65,6 +65,12 @@ class Source(TablePrintable, DictPrintable):
         else:
             return None
 
+    def get_total_row_count(self):
+        """
+        Access the total row number of your source
+        """
+        return self.json_dict.get('total_row_count')
+
     @classmethod
     def table_header(cls) -> list:
         return ['source_id', 'status', 'input_type', 'info']

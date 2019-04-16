@@ -46,8 +46,10 @@ class GetSourceCommand(Command):
         self.cmd_parser.add_argument('--schema', default=False, action='store_true', help='Display the schema of the source')
         self.cmd_parser.add_argument('--download', type=str, help='Directory in which to download data files for this source')
         self.cmd_parser.add_argument('--cache', default=False, action='store_true', help='Cache the source data inside local cache directory')
+        self.cmd_parser.add_argument('--tree', default=False, action='store_true', help='Display the tree structure of your source')
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
         self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the source.')
+
 
     def exec(self, args: dict):
         source_id = prompt_for_source_id_if_needed(args, self.prescience_client)
@@ -56,6 +58,7 @@ class GetSourceCommand(Command):
         cache = args.get('cache')
         output = args.get('output')
         preview = args.get('preview')
+        tree = args.get('tree')
         if preview is not None:
             df = self.prescience_client.source_dataframe(source_id=source_id)
             TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
@@ -65,6 +68,8 @@ class GetSourceCommand(Command):
             self.prescience_client.download_source(source_id=source_id, output_directory=download_directory)
         elif cache:
             self.prescience_client.update_cache_source(source_id)
+        elif tree:
+            source.tree().show()
         else:
             source.show(output)
 
@@ -148,6 +153,8 @@ class GetDatasetCommand(Command):
                                     help='Cache the dataset data inside local cache directory')
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                     help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
+        self.cmd_parser.add_argument('--tree', default=False, action='store_true',
+                                     help='Display the tree structure of your dataset')
 
     def exec(self, args: dict):
         display_schema = args.get('schema')
@@ -156,6 +163,8 @@ class GetDatasetCommand(Command):
         download_train_directory = args.get('download_train')
         download_test_directory = args.get('download_test')
         preview = args.get('preview')
+        tree = args.get('tree')
+        cache = args.get('cache')
         if display_schema:
             self.prescience_client.dataset(dataset_id).schema().show(output)
 
@@ -168,6 +177,11 @@ class GetDatasetCommand(Command):
                                         test_part=False)
         elif download_test_directory is not None:
             self.prescience_client.download_dataset(dataset_id=dataset_id, output_directory=download_test_directory, test_part=True)
+        elif tree:
+            self.prescience_client.dataset(dataset_id).tree().show()
+        elif cache:
+            self.prescience_client.update_cache_dataset(dataset_id, True)
+            self.prescience_client.update_cache_dataset(dataset_id, False)
         else:
             self.prescience_client.dataset(dataset_id).show(output)
 
@@ -208,6 +222,8 @@ class GetModelCommand(Command):
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat),
                                    help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
                                    default=OutputFormat.TABLE)
+        self.cmd_parser.add_argument('--tree', default=False, action='store_true',
+                                     help='Display the tree structure of your model')
 
     def exec(self, args: dict):
         model_id = get_args_or_prompt_list(
@@ -217,8 +233,12 @@ class GetModelCommand(Command):
             choices_function=lambda: [x.model_id() for x in self.prescience_client.models(page=1).content]
         )
         output = args.get('output') or OutputFormat.TABLE
+        tree = args.get('tree')
         model = self.prescience_client.model(model_id)
-        model.show(output)
+        if tree:
+            model.tree().show()
+        else:
+            model.show(output)
 
 
 class GetModelListCommand(Command):

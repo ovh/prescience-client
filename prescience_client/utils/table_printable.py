@@ -73,7 +73,7 @@ class DictPrintable(ABC):
 
         description_dict = self.get_description_dict()
         if output == OutputFormat.JSON:
-            print(json.dumps(description_dict))
+            print(json.dumps(description_dict, indent=4))
         elif output == OutputFormat.HTML:
             table = [[k, v] for k, v in self.get_description_dict().items()]
             df = pandas.DataFrame(table, columns=['', f'{self.table_title()} attributes'])
