@@ -166,7 +166,7 @@ class Source(TablePrintable, DictPrintable):
         :param label_id: ID of the label to predict
         :param problem_type: The type of the problem
         :param scoring_metric: The scoring metric to optimize on
-        :param dataset_id: The wanted dataset_id (will generate one if unser)
+        :param dataset_id: The wanted dataset_id (will generate one if unset)
         :param model_id: The wanted model_id (will generate one if unset)
         :param time_column: The ID of the time column (Only in case of a time_series_forecast)
         :param nb_fold: The number of fold to create during the preprocessing of the source
