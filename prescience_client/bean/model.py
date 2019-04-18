@@ -331,6 +331,7 @@ class Model(TablePrintable, DictPrintable):
         return self.model_evaluator
 
     def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0):
+        input_payload_dict = copy.deepcopy(input_payload_dict)
         if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:
             raise PrescienceClientException(
                 Exception('`get_dataframe_for_plot_result` method is only allowed for TIME_SERIES_FORECAST')

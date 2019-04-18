@@ -1164,7 +1164,6 @@ class PrescienceClient(object):
         else:
             return pandas.read_parquet(path=dataset_data_path)
 
-
     def fold_dataframe(self, dataset_id: str, fold_number: int, test_part: bool):
         """
         Update dataset local cache for the given dataset and return the pandas dataframe for the wanted file
@@ -1176,7 +1175,7 @@ class PrescienceClient(object):
         fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
         return pandas.read_parquet(path=fold_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str = 'line', block=False):
+    def plot_source(self, source_id: str, x: str, kind: str='line', block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
