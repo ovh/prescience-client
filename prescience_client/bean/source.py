@@ -9,6 +9,7 @@ from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from prescience_client.utils.tree_printer import SourceTree
@@ -139,3 +140,61 @@ class Source(TablePrintable, DictPrintable):
         :return: The SourceTree object
         """
         return SourceTree(source_id=self.source_id, selected_source=self.source_id)
+
+    def get_source_id(self) -> str:
+        """
+        Access the source_id of the source
+        """
+        return self.source_id
+
+    def start_auto_ml(
+        self,
+        label_id: str,
+        problem_type: ProblemType,
+        scoring_metric: ScoringMetric,
+        dataset_id: str = None,
+        model_id: str = None,
+        time_column: str = None,
+        nb_fold: int = None,
+        selected_column: list = None,
+        budget: int = None,
+        forecasting_horizon_steps: int = None,
+        forecast_discount: float = None
+    ) -> ('Task', str, str):
+        """
+        Start an auto-ml task from the current source
+        :param label_id: ID of the label to predict
+        :param problem_type: The type of the problem
+        :param scoring_metric: The scoring metric to optimize on
+        :param dataset_id: The wanted dataset_id (will generate one if unset)
+        :param model_id: The wanted model_id (will generate one if unset)
+        :param time_column: The ID of the time column (Only in case of a time_series_forecast)
+        :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param selected_column: The column to keep (will keep everything if unset)
+        :param budget: The budget to use during optimization
+        :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
+        :param forecast_discount: The wanted forecasting discount
+        :return: The tuple3 of (initial task, dataset id, model id)
+        """
+        return self.prescience.start_auto_ml(
+            source_id=self.get_source_id(),
+            dataset_id=dataset_id,
+            label_id=label_id,
+            model_id=model_id,
+            problem_type=problem_type,
+            scoring_metric=scoring_metric,
+            time_column=time_column,
+            nb_fold=nb_fold,
+            selected_column=selected_column,
+            budget=budget,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecast_discount=forecast_discount
+        )
+
+    def plot(self, x: str, kind: str = 'line', block=False):
+        self.prescience.plot_source(
+            source_id=self.get_source_id(),
+            x=x,
+            kind=kind,
+            block=block
+        )

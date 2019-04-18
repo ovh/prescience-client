@@ -330,19 +330,35 @@ class Model(TablePrintable, DictPrintable):
 
         return self.model_evaluator
 
-    def get_dataframe_for_plot_result(self, input_payload_dict):
+    def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0):
         if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:
             raise PrescienceClientException(
                 Exception('`get_dataframe_for_plot_result` method is only allowed for TIME_SERIES_FORECAST')
             )
 
         payload = self.get_model_evaluation_payload(arguments=input_payload_dict)
-        result = payload.evaluate()
         evaluator = payload.get_evaluator()
         time_feature_name = evaluator.get_time_feature_name()
+        result = payload.evaluate()
+        series_dict_predict = result.get_result_dict()
+
+        # Rolling evaluation if any
+        copy_input_payload = copy.deepcopy(input_payload_dict)
+        for _ in range(rolling_steps):
+            for key in input_payload_dict.keys():
+                # In case the input type is not the same as the output type, need to convert
+                convert_function = [x.get_validator_and_filter()[1] for x in evaluator.get_inputs() if x.get_name() == key]
+                converted_value = [convert_function[0](x) for x in result.get_result_dict()[key]]
+                copy_input_payload[key].extend(converted_value)
+            payload = self.get_model_evaluation_payload(arguments=copy_input_payload)
+            for key in series_dict_predict:
+                result = payload.evaluate()
+                series_dict_predict[key].extend(result.get_result_dict()[key])
+
+        # Compute Dataframe from inputs, theorics and predictions
         df_final = get_dataframe_real_predict_theoric(
             series_dict_input=input_payload_dict,
-            series_dict_predict=result.get_result_dict(),
+            series_dict_predict=series_dict_predict,
             time_feature_name=time_feature_name,
             label_id=self.label_id(),
             initial_dataframe=self.prescience.source_dataframe(self.source_id())

@@ -7,6 +7,7 @@ from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
+from termcolor import colored
 
 
 class TaskFactory:
@@ -129,6 +130,8 @@ class Task(TablePrintable, DictPrintable):
         while final_task.next_task_id() is not None:
             next_task = self.prescience.task(final_task.next_task_id())
             final_task = self.prescience.wait_for_task_done_or_error(next_task)
+
+        print(f'Task {colored(final_task.type(), "yellow")} {final_task.uuid()} {final_task.status().to_colored()}')
 
         return final_task
 

@@ -9,6 +9,7 @@ import re
 import shutil
 import urllib.parse
 import io
+import uuid
 from io import BytesIO
 
 import matplotlib
@@ -97,6 +98,8 @@ class PrescienceClient(object):
             'type': str(input_type),
             'headers': headers
         }
+        print("Uploading source with following arguments :")
+        print(json.dumps(parse_input, indent=4))
 
         if os.path.isdir(filepath):
             multipart = [
@@ -530,6 +533,26 @@ class PrescienceClient(object):
         _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/test')
         return response
 
+    def get_list_dataset_fold_train_files(self, dataset_id: str, fold_number: int) -> list:
+        """
+        Get the list of all files of a given dataset test data
+        :param dataset_id: The wanted dataset id
+        :param fold_number: Number of the fold
+        :return: the list of all files of a given dataset test data
+        """
+        _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/fold/{fold_number}/train')
+        return response
+
+    def get_list_dataset_fold_test_files(self, dataset_id: str, fold_number: int) -> list:
+        """
+        Get the list of all files of a given dataset test data
+        :param dataset_id: The wanted dataset id
+        :param fold_number: Number of the fold
+        :return: the list of all files of a given dataset test data
+        """
+        _, response, _ = self.__get(path=f'/download/dataset/{dataset_id}/fold/{fold_number}/test')
+        return response
+
     def download_source(self, source_id: str, output_directory: str):
         """
         Download all source related files into the given directory
@@ -568,6 +591,33 @@ class PrescienceClient(object):
 
         for output in all_files:
             _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/{path_part}/{output}',
+                                    accept='application/octet-stream')
+            full_output_path = os.path.join(output_directory, output)
+            with open(full_output_path, 'wb') as stream:
+                stream.write(file)
+                stream.close()
+
+    def download_fold(self, dataset_id: str, fold_number: int, output_directory: str, test_part: bool):
+        """
+        Download all fold related files into the given directory
+        :param dataset_id: The dataset id of the wanted fold
+        :param fold_number: The number of the fold t download
+        :param output_directory: The output directory (will be created if it doesn't exist)
+        :param test_part: Download only the dataset 'test' part and not the default 'train' part
+        """
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
+        # Download train files
+        if test_part:
+            all_files = self.get_list_dataset_fold_test_files(dataset_id=dataset_id, fold_number=fold_number)
+            path_part = 'test'
+        else:
+            all_files = self.get_list_dataset_fold_train_files(dataset_id=dataset_id, fold_number=fold_number)
+            path_part = 'train'
+
+        for output in all_files:
+            _, file, _ = self.__get(path=f'/download/dataset/{dataset_id}/fold/{fold_number}/{path_part}/{output}',
                                     accept='application/octet-stream')
             full_output_path = os.path.join(output_directory, output)
             with open(full_output_path, 'wb') as stream:
@@ -779,18 +829,39 @@ class PrescienceClient(object):
     def start_auto_ml(
         self,
         source_id,
-        dataset_id: str,
         label_id: str,
-        model_id: str,
         problem_type: ProblemType,
         scoring_metric: ScoringMetric,
+        dataset_id: str = None,
+        model_id: str = None,
         time_column: str = None,
         nb_fold: int = None,
         selected_column: list = None,
         budget: int = None,
         forecasting_horizon_steps: int = None,
         forecast_discount: float = None
-    ):
+    ) -> ('Task', str, str):
+        """
+        Start an auto-ml task
+        :param source_id: The ID of the initial source object
+        :param label_id: ID of the label to predict
+        :param problem_type: The type of the problem
+        :param scoring_metric: The scoring metric to optimize on
+        :param dataset_id: The wanted dataset_id (will generate one if unset)
+        :param model_id: The wanted model_id (will generate one if unset)
+        :param time_column: The ID of the time column (Only in case of a time_series_forecast)
+        :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param selected_column: The column to keep (will keep everything if unset)
+        :param budget: The budget to use during optimization
+        :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
+        :param forecast_discount: The wanted forecasting discount
+        :return: The tuple3 of (initial task, dataset id, model id)
+        """
+        if dataset_id is None:
+            dataset_id = f'{source_id}_dataset_{uuid.uuid4()}'
+        if model_id is None:
+            model_id = f'{source_id}_model_{uuid.uuid4()}'
+
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
@@ -820,11 +891,11 @@ class PrescienceClient(object):
         if forecast_discount is not None:
             body['forecasting_discount'] = forecast_discount
 
-
-        print(body)
+        print('Starting AutoML task with following arguments :')
+        print(json.dumps(body, indent=4))
         _, result, _ = self.__post(path=f'/ml/auto-ml/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
-        return TaskFactory.construct(result, self)
+        return TaskFactory.construct(result, self), dataset_id, model_id
 
 
     ############################################
@@ -935,6 +1006,37 @@ class PrescienceClient(object):
             train_path = os.path.join(cache_dataset_directory, dataset_id, 'train')
             return self.config().create_config_path_if_not_exist(train_path)
 
+    def cache_dataset_fold_get_full_path(self, dataset_id: str, fold_number: int, test_part: bool) -> str:
+        """
+        Get the full path of the local cache for the given fold
+        :param dataset_id: the wanted dataset id
+        :param fold_number: the fold number
+        :param test_part: cache only the test part of the dataset instead of the default train part
+        :return: the full path of the local cache for the given dataset
+        """
+        cache_dataset_directory = self.config().get_or_create_cache_datasets_directory()
+        if test_part:
+            test_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number),'test')
+            return self.config().create_config_path_if_not_exist(test_path)
+        else:
+            train_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'train')
+            return self.config().create_config_path_if_not_exist(train_path)
+
+    def cache_clean_fold(self, dataset_id: str, fold_number: int, test_part: bool):
+        """
+        Clean the local cache data of the given fold
+        :param dataset_id: the dataset id
+        :param fold_number: The number of the fold
+        :param test_part: clean only the test part and not the default train part
+        """
+        datasetid_path = self.cache_dataset_fold_get_full_path(
+            dataset_id=dataset_id,
+            fold_number=fold_number,
+            test_part=test_part
+        )
+        if os.path.exists(datasetid_path):
+            shutil.rmtree(datasetid_path)
+
     def cache_clean_dataset(self, dataset_id: str, test_part: bool):
         """
         Clean the local cache data of the given dataset
@@ -953,6 +1055,41 @@ class PrescienceClient(object):
         sourceid_path = self.cache_source_get_full_path(source_id=source_id)
         if os.path.exists(sourceid_path):
             shutil.rmtree(sourceid_path)
+
+    def update_cache_fold(self, dataset_id, fold_number: int, test_part: bool):
+        """
+        Request for locally caching the data of the wanted fold of a dataset.
+        If the local fold data are already up to date, it will do nothing.
+        :param dataset_id: The dataset id of the wanted fold
+        :param fold_number: The fold number
+        :param test_part: select only the test part of the dataset instead of the default train part
+        :return: Return the directory in which dataset data are locally saved
+        """
+        fold_path = self.cache_dataset_fold_get_full_path(
+            dataset_id=dataset_id,
+            fold_number=fold_number,
+            test_part=test_part
+        )
+
+        if test_part:
+            expected_files = self.get_list_dataset_fold_test_files(dataset_id=dataset_id, fold_number=fold_number)
+        else:
+            expected_files = self.get_list_dataset_fold_train_files(dataset_id=dataset_id, fold_number=fold_number)
+
+        if os.path.exists(fold_path) and set(os.listdir(fold_path)) == set(expected_files):
+            print(f'Cache for fold {fold_number} of dataset \'{dataset_id}\' is already up to date on {fold_path}')
+        else:
+            self.cache_clean_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
+            print(f'Updating cache for source \'{dataset_id}\' : {fold_path}')
+            self.download_fold(
+                dataset_id=dataset_id,
+                fold_number=fold_number,
+                output_directory=fold_path,
+                test_part=test_part
+            )
+
+        return fold_path
+
 
     def update_cache_dataset(self, dataset_id, test_part: bool) -> str:
         """
@@ -1027,7 +1164,19 @@ class PrescienceClient(object):
         else:
             return pandas.read_parquet(path=dataset_data_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str, block=False):
+
+    def fold_dataframe(self, dataset_id: str, fold_number: int, test_part: bool):
+        """
+        Update dataset local cache for the given dataset and return the pandas dataframe for the wanted file
+        :param dataset_id: the wanted dataset
+        :param fold_number: The wanted fold number
+        :param test_part: select only the test part of the dataset instead of the default train part
+        :return:
+        """
+        fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
+        return pandas.read_parquet(path=fold_path)
+
+    def plot_source(self, source_id: str, x: str, kind: str = 'line', block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
@@ -1047,12 +1196,14 @@ class PrescienceClient(object):
                      dataset_id: str,
                      plot_train: bool = True,
                      plot_test: bool = True,
+                     fold_number: int = None,
                      block=False):
         """
         Plot a wanted dataset data
         :param dataset_id: the wanted dataset id
         :param plot_train: should plot the 'train' part
         :param plot_test: should plot the 'test' part
+        :param fold_number: Number of the fold to plot (if unset it will plot the whole dataset)
         :param block: should block until user close the window
         """
         dataset = self.dataset(dataset_id=dataset_id)
@@ -1064,14 +1215,20 @@ class PrescienceClient(object):
                 time_column = transformed_timecolumn[-1]
 
             if plot_train:
-                df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+                if fold_number is None:
+                    df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+                else:
+                    df_train = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=False)
                 df_train = df_train.set_index(time_column)
                 df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
             else:
                 df_train = pandas.DataFrame({})
 
             if plot_test:
-                df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+                if fold_number is None:
+                    df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+                else:
+                    df_test = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=True)
                 df_test = df_test.set_index(time_column)
                 df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
             else:
