@@ -41,6 +41,21 @@ class PageResult(object):
         string = ','.join([str(x) for x in self.content])
         return f'PAGE[{self.metadata.page_number}]({string})'
 
+    def get_by_uuid(self, uuid):
+        """
+         Return the right evaluation resul
+         :param uuid: the wanted model identifier
+         :return: evalution_result with the correct uuid
+         """
+
+        result_filter = [r for r in self.content if r.uuid() == uuid]
+
+        try:
+            return result_filter[0]
+        except IndexError:
+            return None
+
+
     def show(self, output: OutputFormat = OutputFormat.TABLE):
         """
         Show the current page on stdout
