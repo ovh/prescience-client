@@ -12,6 +12,7 @@ import io
 import uuid
 from io import BytesIO
 
+from datetime import datetime
 import matplotlib
 import numpy
 import pandas
@@ -281,6 +282,9 @@ class PrescienceClient(object):
                 model_id: str,
                 filepath: str = None,
                 chain_metric_task: bool = True,
+                enable_shap_summary: bool = None,
+                last_point_date: datetime = None,
+                sample_span: str = None
                 ) -> 'TrainTask':
         """
         Launch a Re-Train task on a model
@@ -290,7 +294,10 @@ class PrescienceClient(object):
         :return:
         """
         query_parameters = {
-            'chain_metric_task': chain_metric_task
+            'chain_metric_task': chain_metric_task,
+            'enable_shap_summary': enable_shap_summary,
+            'last_point_date': last_point_date.isoformat(),
+            'sample_span': sample_span
         }
 
         if filepath:
