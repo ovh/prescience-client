@@ -5,6 +5,7 @@ import copy
 
 from prescience_client.bean.config import Config
 from prescience_client.bean.entity.local_file_input import LocalFileInput
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, TimeSerieFeature, Warp10Scheduler
 from prescience_client.commands import get_args_or_prompt_input, get_args_or_prompt_confirm, get_args_or_prompt_list, \
     get_args_or_prompt_checkbox
 from prescience_client.commands.command import Command
@@ -15,6 +16,7 @@ from prescience_client.enum.sampling_strategy import SamplingStrategy
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.utils.monad import List as UtilList
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
+from prescience_client.utils.warp10 import Warp10Util
 
 
 class StartCommand(Command):
@@ -642,6 +644,9 @@ class StartAutoMLWarp(Command):
         self.cmd_parser.add_argument('sample-span', type=str, nargs='?', help='The span over which the sample is read.(e.g: 6w for 6 weeks)')
         self.cmd_parser.add_argument('sampling-interval', type=str, nargs='?', help='The size of the interval which is reduced to a single point.(e.g: 1d for 1 day)')
 
+        self.cmd_parser.add_argument('--labels', type=str,
+                                     help='The labels of the warp 10 Time Series in json (ex: {"label":"label1"})')
+
         self.cmd_parser.add_argument('--scoring-metric', nargs='?', default=ScoringMetric.MSE, type=ScoringMetric, choices=list(ScoringMetric),
                                      help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
 
@@ -665,6 +670,14 @@ class StartAutoMLWarp(Command):
         self.cmd_parser.add_argument('--forecast-discount', type=float, default=1,
                                      help='Discount to apply on each time step before the horizon (Only in case of time series forecast)')
 
+        self.cmd_parser.add_argument('--scheduler', default=False, action='store_true',
+                                     help='Add a scheduler to the model scheduled')
+
+        self.cmd_parser.add_argument('--scheduler-frequency', type=int, default=1,
+                                     help='Frequency for the prediction, linked to sampling interval. (Ex: 2 will predict every to sampling interval)')
+
+        self.cmd_parser.add_argument('--write-token', type=str, help='The warp10 write token')
+
     def exec(self, args: dict):
 
         interactive_mode = args.get('source-id') is None
@@ -687,6 +700,13 @@ class StartAutoMLWarp(Command):
             arg_name='selector',
             args=args,
             message='What is your warp 10 selector, It must match only one GTS',
+            force_interactive=interactive_mode
+        )
+
+        labels = get_args_or_prompt_input(
+            arg_name='labels',
+            args=args,
+            message='What is your warp 10 labels, It must match only one GTS (ex: {"label":"label1"})',
             force_interactive=interactive_mode
         )
 
@@ -738,6 +758,7 @@ class StartAutoMLWarp(Command):
             validator=IntegerValidator,
             filter_func=int
         )
+
         forecast_discount = get_args_or_prompt_input(
             arg_name='forecast_discount',
             args=args,
@@ -773,6 +794,57 @@ class StartAutoMLWarp(Command):
             filter_func=int
         )
 
+        backend_url = args.get('backend_url')
+
+        input_ts = TimeSerieFeature(selector, labels)
+        warp_input = Warp10TimeSerieInput(
+            value=input_ts,
+            source_id=source_id,
+            read_token=read_token,
+            sample_span=sample_span,
+            sampling_interval=sampling_interval,
+            sampling_strategy=sampling_strategy,
+            backend_url=backend_url,
+            last_point_date=None
+        )
+
+        scheduler = args.get('scheduler')
+
+        if interactive_mode:
+            scheduler = get_args_or_prompt_confirm(
+                arg_name='scheduler',
+                args=args,
+                message='Do you want to add a scheduler to the model generated ?',
+                force_interactive=interactive_mode
+            )
+
+        if scheduler:
+            write_token = get_args_or_prompt_input(
+                arg_name='write_token',
+                args=args,
+                message='What is your write token',
+                force_interactive=interactive_mode
+            )
+
+            scheduler_frequency = get_args_or_prompt_input(
+                arg_name='scheduler_frequency',
+                args=args,
+                message='How many intervals you want to make a prediction ?',
+                force_interactive=interactive_mode,
+                validator=IntegerValidator,
+                filter_func=int
+            )
+
+            # We keep the same labes and add predicted to the selector
+            scheduler_output = Warp10Scheduler(
+                write_token=write_token,
+                frequency=scheduler_frequency,
+                output_value=TimeSerieFeature(f'{selector}.predicted', labels),
+                nb_steps=None
+            )
+        else:
+            scheduler_output = None
+
         watch = get_args_or_prompt_confirm(
             arg_name='watch',
             args=args,
@@ -780,23 +852,23 @@ class StartAutoMLWarp(Command):
             force_interactive=interactive_mode
         )
 
-        backend_url = args.get('backend_url')
-
         task, _, _ = self.prescience_client.start_auto_ml_warp10(
-            source_id=source_id,
-            read_token=read_token,
-            selector=selector,
-            sample_span=sample_span,
-            sampling_interval=sampling_interval,
-            sampling_strategy=sampling_strategy,
+            warp_input=warp_input,
+            scheduler_output=scheduler_output,
             dataset_id=dataset_id,
             model_id=model_id,
             scoring_metric=scoring_metric,
             nb_fold=nb_fold,
             budget=budget,
             forecasting_horizon_steps=forecasting_horizon_steps,
-            forecast_discount=forecast_discount,
-            backend_url=backend_url
+            forecast_discount=forecast_discount
         )
+
+        query = Warp10Util.generate_warp10_query(token=read_token, input_ts=input_ts,
+                                                 interval=sampling_interval, horizon=forecasting_horizon_steps)
+
+        print('You can find your results here:')
+        print(Warp10Util.generate_warp10_quantum_query(query, backend_url))
+
         if watch:
             task.watch()

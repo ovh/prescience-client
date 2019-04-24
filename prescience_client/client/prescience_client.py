@@ -15,13 +15,12 @@ from io import BytesIO
 import matplotlib
 import numpy
 import pandas
-from prescience_client.enum.sampling_strategy import SamplingStrategy
 from progress.bar import ChargingBar
 from websocket import create_connection
 from hashids import Hashids
 
 from prescience_client.bean.config import Config
-from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler
 from prescience_client.bean.project import Project
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -905,29 +904,20 @@ class PrescienceClient(object):
 
     def start_auto_ml_warp10(
             self,
-            source_id,
-            read_token: str,
-            selector: str,
-            sample_span: str,
-            sampling_interval: str,
-            sampling_strategy: SamplingStrategy,
+            warp_input: Warp10TimeSerieInput,
+            scheduler_output: Warp10Scheduler,
             scoring_metric: ScoringMetric,
             dataset_id: str = None,
             model_id: str = None,
             nb_fold: int = None,
             budget: int = None,
-            backend_url: int = None,
             forecasting_horizon_steps: int = None,
             forecast_discount: float = None,
     ) -> ('Task', str, str):
         """
         Start an auto-ml-warp task
-        :param sampling_strategy: The strategy to use to transform an interval into a point
-        :param sampling_interval: The size of the interval which is reduced to a single point
-        :param sample_span: The span over which the sample is read
-        :param selector: The warp10 selector
-        :param read_token: The warp10 read token
-        :param source_id: The ID of the initial source object
+        :param warp_input: The Warp10 TimeSerie Input
+        :param scheduler_output: The Scheduler Output
         :param scoring_metric: The scoring metric to optimize on
         :param dataset_id: The wanted dataset_id (will generate one if unset)
         :param model_id: The wanted model_id (will generate one if unset)
@@ -939,25 +929,15 @@ class PrescienceClient(object):
         """
 
         if dataset_id is None:
-            dataset_id = f'{source_id}_dataset_{self._get_unique_id()}'
+            dataset_id = f'{warp_input.source_id}_dataset_{self._get_unique_id()}'
         if model_id is None:
-            model_id = f'{source_id}_model_{self._get_unique_id()}'
+            model_id = f'{warp_input.source_id}_model_{self._get_unique_id()}'
 
         body = {
-            'value': {
-                'selector': selector
-            },
-            'source_id': source_id,
             'dataset_id': dataset_id,
             'model_id': model_id,
-            'read_token': read_token,
-            'sample_span': sample_span,
-            'sampling_interval': sampling_interval,
             'scoring_metric': str(scoring_metric)
         }
-
-        if sampling_strategy:
-            body['sampling_strategy'] = str(sampling_strategy)
 
         if nb_fold and nb_fold > 1:
             body['nb_fold'] = nb_fold
@@ -971,8 +951,11 @@ class PrescienceClient(object):
         if forecast_discount:
             body['forecasting_discount'] = forecast_discount
 
-        if backend_url:
-            body['backend_url'] = backend_url
+        body.update(warp_input.to_dict())
+
+        if scheduler_output:
+            scheduler_output.output_value.labels["model"] = model_id
+            body.update(scheduler_output.to_dict())
 
         print('Starting AutoML Warp 10 task with following arguments :')
         print(json.dumps(body, indent=4))
