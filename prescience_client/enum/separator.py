@@ -6,10 +6,11 @@ from enum import Enum, unique
 
 
 @unique
-class InputType(Enum):
-    CSV = 'CSV'
-    PARQUET = 'PARQUET'
-    TIME_SERIE = 'TIME_SERIE'
+class Separator(Enum):
+    PIPE = 'PIPE'
+    COMMA = 'COMMA'
+    SEMICOLON = 'SEMICOLON'
+    TABULATION = 'TABULATION'
 
     def __str__(self):
         return self.value
