@@ -1,7 +1,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
-
+import json
 import typing
 from datetime import datetime
 
@@ -10,9 +10,16 @@ from prescience_client.enum.input_type import InputType
 from prescience_client.enum.sampling_strategy import SamplingStrategy
 
 
-class TimeSerieFeature(typing.NamedTuple):
+class TimeSerieFeature:
     selector: str
     labels: dict
+
+    def __init__(self, selector: str, labels: str):
+        self.selector = selector
+        if labels:
+            self.labels = json.loads(labels)
+        else:
+            self.labels = {}
 
     def to_dict(self):
         return {
@@ -62,7 +69,7 @@ class Warp10TimeSerieInput(typing.NamedTuple):
             'type': str(self.get_type()),
             'read_token': self.read_token,
             'value': self.value.to_dict(),
-            'last_point_date': self.last_point_date.isoformat(),
+            'last_point_date': self.last_point_date.isoformat() if self.last_point_date else None,
             'sample_span': self.sample_span,
             'sampling_interval': self.sampling_interval,
             'sampling_strategy': str(self.sampling_strategy),
@@ -86,3 +93,22 @@ class Warp10TimeSerieInput(typing.NamedTuple):
         :return: A new Warp10TimeSerieInput object
         """
         return self._replace(augmentation_features= self.augmentation_features + [feature])
+
+
+class Warp10Scheduler(typing.NamedTuple):
+    write_token: str
+    frequency: str
+    nb_steps: str
+    output_value: TimeSerieFeature
+
+    def to_dict(self) -> dict:
+        """
+        Convert the Warp10Scheduler into payload dictionary
+        :return: the payload dictionary
+        """
+        return {
+            'write_token': self.write_token,
+            'frequency': self.frequency,
+            'nb_steps': self.nb_steps,
+            'output_value': self.output_value.to_dict(),
+        }

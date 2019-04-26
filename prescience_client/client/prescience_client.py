@@ -7,9 +7,9 @@ import os
 import pycurl
 import re
 import shutil
+import time
 import urllib.parse
 import io
-import uuid
 from io import BytesIO
 
 import matplotlib
@@ -17,9 +17,10 @@ import numpy
 import pandas
 from progress.bar import ChargingBar
 from websocket import create_connection
+from hashids import Hashids
 
 from prescience_client.bean.config import Config
-from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler
 from prescience_client.bean.project import Project
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -46,6 +47,10 @@ class PrescienceClient(object):
     def __init__(self,
                  prescience_config: PrescienceConfig):
         self.prescience_config = prescience_config
+        self.hashids = Hashids()
+
+    def _get_unique_id(self):
+        return self.hashids.encrypt(int(time.time()))
 
     def login(self):
         """
@@ -858,9 +863,9 @@ class PrescienceClient(object):
         :return: The tuple3 of (initial task, dataset id, model id)
         """
         if dataset_id is None:
-            dataset_id = f'{source_id}_dataset_{uuid.uuid4()}'
+            dataset_id = f'{source_id}_dataset_{self._get_unique_id()}'
         if model_id is None:
-            model_id = f'{source_id}_model_{uuid.uuid4()}'
+            model_id = f'{source_id}_model_{self._get_unique_id()}'
 
         body = {
             'dataset_id': dataset_id,
@@ -894,6 +899,67 @@ class PrescienceClient(object):
         print('Starting AutoML task with following arguments :')
         print(json.dumps(body, indent=4))
         _, result, _ = self.__post(path=f'/ml/auto-ml/{source_id}', data=body)
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self), dataset_id, model_id
+
+    def start_auto_ml_warp10(
+            self,
+            warp_input: Warp10TimeSerieInput,
+            scheduler_output: Warp10Scheduler,
+            scoring_metric: ScoringMetric,
+            dataset_id: str = None,
+            model_id: str = None,
+            nb_fold: int = None,
+            budget: int = None,
+            forecasting_horizon_steps: int = None,
+            forecast_discount: float = None,
+    ) -> ('Task', str, str):
+        """
+        Start an auto-ml-warp task
+        :param warp_input: The Warp10 TimeSerie Input
+        :param scheduler_output: The Scheduler Output
+        :param scoring_metric: The scoring metric to optimize on
+        :param dataset_id: The wanted dataset_id (will generate one if unset)
+        :param model_id: The wanted model_id (will generate one if unset)
+        :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param budget: The budget to use during optimization
+        :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
+        :param forecast_discount: The wanted forecasting discount
+        :return: The tuple3 of (initial task, dataset id, model id)
+        """
+
+        if dataset_id is None:
+            dataset_id = f'{warp_input.source_id}_dataset_{self._get_unique_id()}'
+        if model_id is None:
+            model_id = f'{warp_input.source_id}_model_{self._get_unique_id()}'
+
+        body = {
+            'dataset_id': dataset_id,
+            'model_id': model_id,
+            'scoring_metric': str(scoring_metric)
+        }
+
+        if nb_fold and nb_fold > 1:
+            body['nb_fold'] = nb_fold
+
+        if budget and budget >= 0:
+            body['budget'] = budget
+
+        if forecasting_horizon_steps and forecasting_horizon_steps >= 0:
+            body['forecasting_horizon_steps'] = forecasting_horizon_steps
+
+        if forecast_discount:
+            body['forecasting_discount'] = forecast_discount
+
+        body.update(warp_input.to_dict())
+
+        if scheduler_output:
+            scheduler_output.output_value.labels["model"] = model_id
+            body.update(scheduler_output.to_dict())
+
+        print('Starting AutoML Warp 10 task with following arguments :')
+        print(json.dumps(body, indent=4))
+        _, result, _ = self.__post(path=f'/ml/auto-ml-ts', data=body)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self), dataset_id, model_id
 
@@ -1248,7 +1314,7 @@ class PrescienceClient(object):
         In case this value if None, it will trigger the interactive mode for fill all requested fields
         :param model_id: The model ID to generate a payload for
         :param output: The outfile path in with the json payload will be saved
-        :return: 
+        :return:
         """
         model = self.model(model_id)
         payload = model.get_model_evaluation_payload(arguments={})
