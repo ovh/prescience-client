@@ -295,10 +295,14 @@ class PrescienceClient(object):
         """
         query_parameters = {
             'chain_metric_task': chain_metric_task,
-            'enable_shap_summary': enable_shap_summary,
-            'last_point_date': last_point_date.isoformat(),
-            'sample_span': sample_span
+            'enable_shap_summary': enable_shap_summary
         }
+
+        if last_point_date:
+            query_parameters['last_point_date'] = last_point_date.isoformat()
+        if sample_span:
+            query_parameters['sample_span'] = sample_span
+
 
         if filepath:
             if os.path.isdir(filepath):
