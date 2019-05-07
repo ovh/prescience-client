@@ -15,7 +15,8 @@ from io import BytesIO
 import matplotlib
 import numpy
 import pandas
-from progress.bar import ChargingBar
+from prescience_client.enum.separator import Separator
+from progress.bar import ChargingBar, IncrementalBar
 from websocket import create_connection
 from hashids import Hashids
 
@@ -87,12 +88,14 @@ class PrescienceClient(object):
                       source_id: str,
                       input_type: InputType,
                       headers: bool,
+                      separator: Separator,
                       filepath: str
                       ) -> 'Task':
         """
         Upload a local input file on prescience and launch a Parse Task on it for creating a source.
         :param source_id: The id that we want for the source
         :param input_type: The input type of the given local input file
+        :param separator: The CSV Separator
         :param headers: Has the local input file headers ?
         :param filepath: The path of the local input file/directory
         :return: The task object of the Parse Task
@@ -101,7 +104,8 @@ class PrescienceClient(object):
         parse_input = {
             'source_id': source_id,
             'type': str(input_type),
-            'headers': headers
+            'headers': headers,
+            'separator': str(separator)
         }
         print("Uploading source with following arguments :")
         print(json.dumps(parse_input, indent=4))
@@ -679,6 +683,21 @@ class PrescienceClient(object):
             accept=''
         )
 
+    @staticmethod
+    def progress_curl():
+        bar = None
+
+        def progress(download_t, download_d, upload_t, upload_d):
+            nonlocal bar
+            if upload_t > 0 and not bar:
+                bar = IncrementalBar('Uploading', max=upload_t)
+                bar.suffix = '%(percent).1f%%'
+            if bar:
+                bar.next(upload_d - bar.index)
+
+        return progress
+
+
     def call(
             self,
             method: str,
@@ -731,6 +750,9 @@ class PrescienceClient(object):
         curl.setopt(pycurl.URL, complete_url)
         curl.setopt(pycurl.HTTPHEADER, http_headers)
         curl.setopt(pycurl.CUSTOMREQUEST, method)
+        curl.setopt(pycurl.NOPROGRESS, False)
+        curl.setopt(pycurl.XFERINFOFUNCTION, self.progress_curl())
+
 
         if self.config().is_verbose_activated():
             curl.setopt(pycurl.VERBOSE, 1)

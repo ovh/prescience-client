@@ -6,6 +6,7 @@ import os
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.separator import Separator
 
 DEFAULT_PRESCIENCE_API_URL = 'https://prescience-api.ai.ovh.net'
 DEFAULT_WEBSOCKET_URL = 'wss://prescience-websocket.ai.ovh.net'
@@ -15,6 +16,7 @@ DEFAULT_CONFIG_URL = 'https://prescience-config.ai.ovh.net'
 DEFAULT_LABEL_NAME = 'label'
 DEFAULT_PROBLEM_TYPE = ProblemType.CLASSIFICATION
 DEFAULT_INPUT_TYPE = InputType.CSV
+DEFAULT_SEPARATOR = Separator.COMMA
 DEFAULT_SCORING_METRIC = ScoringMetric.ACCURACY
 
 DEFAULT_PRESCIENCE_CONFIG_PATH = f'{os.environ["HOME"]}/.prescience'
