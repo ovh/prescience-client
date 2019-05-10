@@ -433,7 +433,7 @@ class StartEvaluateCommand(Command):
             message='Do you want to keep watching for the task until it ends ?',
             force_interactive=interactive_mode
         )
-        print(json.dumps(prescience_config.to_dict()))
+        print(json.dumps(prescience_config.to_dict(), indent=4))
         task = self.prescience_client.custom_config(dataset_id=dataset_id, config=prescience_config)
         if watch:
             task.watch()
