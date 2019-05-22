@@ -12,6 +12,7 @@ import urllib.parse
 import io
 from io import BytesIO
 
+from datetime import datetime
 import matplotlib
 import numpy
 import pandas
@@ -290,6 +291,9 @@ class PrescienceClient(object):
                 model_id: str,
                 filepath: str = None,
                 chain_metric_task: bool = True,
+                enable_shap_summary: bool = None,
+                last_point_date: datetime = None,
+                sample_span: str = None
                 ) -> 'TrainTask':
         """
         Launch a Re-Train task on a model
@@ -299,8 +303,15 @@ class PrescienceClient(object):
         :return:
         """
         query_parameters = {
-            'chain_metric_task': chain_metric_task
+            'chain_metric_task': chain_metric_task,
+            'enable_shap_summary': enable_shap_summary
         }
+
+        if last_point_date:
+            query_parameters['last_point_date'] = last_point_date.isoformat()
+        if sample_span:
+            query_parameters['sample_span'] = sample_span
+
 
         if filepath:
             if os.path.isdir(filepath):
@@ -722,6 +733,10 @@ class PrescienceClient(object):
         :param accept: accept header
         :return: The tuple3 : (http response code, response content, cookie token)
         """
+
+        if self.config().is_verbose_activated():
+            print(data)
+
         switch = {
             PrescienceWebService.API: f'{self.prescience_config.get_current_api_url()}{path}',
             PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
