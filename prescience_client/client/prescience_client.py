@@ -709,6 +709,10 @@ class PrescienceClient(object):
         :param accept: accept header
         :return: The tuple3 : (http response code, response content, cookie token)
         """
+
+        if self.config().is_verbose_activated():
+            print(data)
+
         switch = {
             PrescienceWebService.API: f'{self.prescience_config.get_current_api_url()}{path}',
             PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
