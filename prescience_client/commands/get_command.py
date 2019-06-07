@@ -170,7 +170,7 @@ class GetDatasetCommand(Command):
 
         elif preview is not None:
             df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
-            TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
+            TablePrinter.print_dataframe(df.head(100), wanted_keys=preview, output=output)
 
         elif download_train_directory is not None:
             self.prescience_client.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory,

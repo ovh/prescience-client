@@ -62,7 +62,7 @@ class Source(TablePrintable, DictPrintable):
         """
         schema_dict = self.json_dict.get('schema', None)
         if schema_dict is not None:
-            return Schema(json.loads(schema_dict))
+            return Schema(schema_dict)
         else:
             return None
 

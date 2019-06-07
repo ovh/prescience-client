@@ -169,7 +169,10 @@ class PrescienceClient(object):
             time_column: str = None,
             nb_fold: int = None,
             fold_size: int = None,
-            test_ratio: float = None
+            test_ratio: float = None,
+            formatter: str = None,
+            datetime_exogenous: list = None,
+            granularity: str = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -180,6 +183,7 @@ class PrescienceClient(object):
         :param selected_column: subset of the source column to use for preprocessing, by default it will use all
         :param time_column: Indicates the time column (or step column) for a time-series problem type
         :param fold_size: The number of fold to use on cross-validation
+        :param formatter: The formatter to use for parsing the time_column
         :return: The task object of the Preprocess Task
         """
         body = {
@@ -187,6 +191,8 @@ class PrescienceClient(object):
             'label_id': label_id,
             'problem_type': str(problem_type)
         }
+
+        date_time_info = {}
 
         if selected_column is not None:
             body['selected_columns'] = selected_column
@@ -202,6 +208,21 @@ class PrescienceClient(object):
 
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
+
+        if formatter is not None:
+            date_time_info['format'] = formatter
+
+        if datetime_exogenous is not None:
+            date_time_info['exogenous'] = datetime_exogenous
+
+        if granularity is not None:
+            date_time_info['granularity'] = granularity
+
+        if len(date_time_info) != 0:
+            body['datetime_info'] = date_time_info
+
+
+
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -1277,8 +1298,11 @@ class PrescienceClient(object):
         if problem_type == ProblemType.TIME_SERIES_FORECAST:
             time_column = dataset.get_time_column_id()
             transformed_timecolumn = dataset.get_feature_target_map().get(time_column)
-            if transformed_timecolumn is not None and len(transformed_timecolumn) > 0 and plot_train:
-                time_column = transformed_timecolumn[-1]
+            if transformed_timecolumn is not None and plot_train:
+                if len(transformed_timecolumn) == 1:
+                    time_column = transformed_timecolumn[-1]
+                else:
+                    time_column = [x for x in transformed_timecolumn if x.endswith('_ts')][-1]
 
             if plot_train:
                 if fold_number is None:
@@ -1307,7 +1331,7 @@ class PrescienceClient(object):
         else:
             raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))
 
-    def generate_serving_payload(self, from_data: int, model_id: str, output=None) -> str:
+    def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
         """
         Generate a serving payload for a prescience model
         :param from_data: integer value indicating the index of the data for classification/regression or the value of the time column for a TS.
@@ -1327,14 +1351,19 @@ class PrescienceClient(object):
             else:
                 final_dict = evaluator.interactiv_default_payload()
         else:
+            # Try to parse from_data to int
+            try:
+                from_data = int(from_data)
+            except:
+                pass
+
             # Fill the payload from the data
             source_id = model.source_id()
             df = self.source_dataframe(source_id=source_id)
             if problem_type == ProblemType.TIME_SERIES_FORECAST:
-                min_bound = from_data - (evaluator.get_max_steps() * evaluator.get_span())
-                max_bound = from_data
                 time_feature = evaluator.get_time_feature_name()
-                filtered = filter_dataframe_on_time_feature(df, time_feature, min_bound, max_bound)
+                max_steps = evaluator.get_max_steps()
+                filtered = df.set_index(time_feature).truncate(after=from_data).tail(max_steps).reset_index()
                 final_dict = dataframe_to_dict_series(filtered)
             else:
                 final_dict = df.ix[from_data].to_dict()
@@ -1367,7 +1396,7 @@ class PrescienceClient(object):
     def generate_payload_dict_for_model(self,
                                         model_id: str,
                                         payload_json: str = None,
-                                        from_data: int = None):
+                                        from_data = None):
 
         if payload_json is None:
             payload_json = self.generate_serving_payload(from_data, model_id)

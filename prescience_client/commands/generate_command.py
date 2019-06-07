@@ -28,7 +28,7 @@ class GeneratePredictCommand(Command):
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=str, help=f"Filename in with to save the json payload")
         self.cmd_parser.add_argument('--from-data',
                                      dest='from_data',
-                                     type=int,
+                                     type=str,
                                      help=f"Generate a prediction payload from an index in the initial data in case of a classification/regression problem or from the time value in case of a timeseries forecast problem")
 
     def exec(self, args: dict):

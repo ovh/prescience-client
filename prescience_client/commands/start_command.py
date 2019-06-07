@@ -135,6 +135,7 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
                                        help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
+        self.cmd_parser.add_argument('--date-format', type=str, help='The date format to use for your time column (if any)')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -168,6 +169,9 @@ class StartPreprocessCommand(Command):
             force_interactive=interactive_mode
         )
         time_column = None
+        formatter = None
+        exogenous = None
+        granularity = None
         if ProblemType(problem_type) == ProblemType.TIME_SERIES_FORECAST:
             available_time_columns = copy.deepcopy(selected_columns)
             available_time_columns.remove(label)
@@ -176,6 +180,27 @@ class StartPreprocessCommand(Command):
                 args=args,
                 message='What will be the column used for time ?',
                 choices_function=lambda: copy.deepcopy(available_time_columns),
+                force_interactive=interactive_mode
+            )
+            formatter = get_args_or_prompt_input(
+                arg_name='date_format',
+                args=args,
+                message='What date format do you want to use ?',
+                force_interactive=interactive_mode
+            )
+            granularity = get_args_or_prompt_list(
+                arg_name='granularity',
+                args=args,
+                message='Which granularity is used for your date ?',
+                choices_function=lambda: ['year', 'month', 'day', 'hour', 'minute'],
+                force_interactive=interactive_mode
+            )
+            exogenous = get_args_or_prompt_checkbox(
+                arg_name='exogenous',
+                args=args,
+                message='Which exogenous features do you want on your date ?',
+                choices_function=lambda: ['year', 'month', 'dayofmonth', 'hour', 'minute'],
+                selected_function=lambda: [],
                 force_interactive=interactive_mode
             )
         nb_fold = get_args_or_prompt_input(
@@ -203,7 +228,10 @@ class StartPreprocessCommand(Command):
             problem_type=problem_type,
             selected_column=selected_columns,
             time_column=time_column,
-            nb_fold=int(nb_fold)
+            nb_fold=int(nb_fold),
+            formatter=formatter,
+            datetime_exogenous=exogenous,
+            granularity=granularity
         )
         if watch:
             task.watch()
