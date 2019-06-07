@@ -3,6 +3,7 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import copy
+from datetime import datetime
 
 from prescience_client.bean.config import Config
 from prescience_client.bean.dataset import Dataset
@@ -221,7 +222,10 @@ class Model(TablePrintable, DictPrintable):
         return f'{main_name}({colored(self.model_id(), status.color())})'
 
     def retrain(self,
-                chain_metric_task: bool = True
+                chain_metric_task: bool = True,
+                enable_shap_summary: bool = None,
+                last_point_date: datetime = None,
+                sample_span: str = None
                 ):
         """
         Launch a Re-Train task on the current model
@@ -230,7 +234,10 @@ class Model(TablePrintable, DictPrintable):
         """
         return self.prescience.retrain(
             model_id=self.model_id(),
-            chain_metric_task=chain_metric_task
+            chain_metric_task=chain_metric_task,
+            enable_shap_summary = enable_shap_summary,
+            last_point_date = last_point_date,
+            sample_span = sample_span
         )
 
     def tree(self) -> SourceTree:
@@ -331,6 +338,7 @@ class Model(TablePrintable, DictPrintable):
         return self.model_evaluator
 
     def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0):
+        input_payload_dict = copy.deepcopy(input_payload_dict)
         if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:
             raise PrescienceClientException(
                 Exception('`get_dataframe_for_plot_result` method is only allowed for TIME_SERIES_FORECAST')

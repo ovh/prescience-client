@@ -65,12 +65,12 @@ class AlgorithmConfiguration(TablePrintable):
         condition_dict = self.json_dict.get('conditions')
         return [AlgorithmCondition(x) for x in condition_dict]
 
-    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
+    def show(self, output: OutputFormat = OutputFormat.TABLE):
         """
         Display the current algorithm configuration on std out
         :param ouput: The output format
         """
-        if ouput == OutputFormat.JSON:
+        if output == OutputFormat.JSON:
             print(json.dumps(self.json_dict))
         else:
             description_dict = {k: v for k, v in self.json_dict.items() if k not in ['hyperparameters']}
@@ -182,11 +182,11 @@ class AlgorithmConfigurationList(typing.NamedTuple):
     def get_algorithm_list(self, prescience: PrescienceClient = None):
         return [self.get_algorithm(name=k, prescience=prescience) for k, _ in self.json_dict.items()]
 
-    def show(self, ouput: OutputFormat = OutputFormat.TABLE):
+    def show(self, output: OutputFormat = OutputFormat.TABLE):
         """
         Show the current page on stdout
         """
-        if ouput == OutputFormat.JSON:
+        if output == OutputFormat.JSON:
             print(json.dumps(self.json_dict))
         else:
             table = TablePrinter.get_table(AlgorithmConfiguration, self.get_algorithm_list())

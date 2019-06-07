@@ -12,10 +12,12 @@ import urllib.parse
 import io
 from io import BytesIO
 
+from datetime import datetime
 import matplotlib
 import numpy
 import pandas
-from progress.bar import ChargingBar
+from prescience_client.enum.separator import Separator
+from progress.bar import ChargingBar, IncrementalBar
 from websocket import create_connection
 from hashids import Hashids
 
@@ -87,12 +89,14 @@ class PrescienceClient(object):
                       source_id: str,
                       input_type: InputType,
                       headers: bool,
+                      separator: Separator,
                       filepath: str
                       ) -> 'Task':
         """
         Upload a local input file on prescience and launch a Parse Task on it for creating a source.
         :param source_id: The id that we want for the source
         :param input_type: The input type of the given local input file
+        :param separator: The CSV Separator
         :param headers: Has the local input file headers ?
         :param filepath: The path of the local input file/directory
         :return: The task object of the Parse Task
@@ -101,7 +105,8 @@ class PrescienceClient(object):
         parse_input = {
             'source_id': source_id,
             'type': str(input_type),
-            'headers': headers
+            'headers': headers,
+            'separator': str(separator)
         }
         print("Uploading source with following arguments :")
         print(json.dumps(parse_input, indent=4))
@@ -307,6 +312,9 @@ class PrescienceClient(object):
                 model_id: str,
                 filepath: str = None,
                 chain_metric_task: bool = True,
+                enable_shap_summary: bool = None,
+                last_point_date: datetime = None,
+                sample_span: str = None
                 ) -> 'TrainTask':
         """
         Launch a Re-Train task on a model
@@ -316,8 +324,15 @@ class PrescienceClient(object):
         :return:
         """
         query_parameters = {
-            'chain_metric_task': chain_metric_task
+            'chain_metric_task': chain_metric_task,
+            'enable_shap_summary': enable_shap_summary
         }
+
+        if last_point_date:
+            query_parameters['last_point_date'] = last_point_date.isoformat()
+        if sample_span:
+            query_parameters['sample_span'] = sample_span
+
 
         if filepath:
             if os.path.isdir(filepath):
@@ -700,6 +715,21 @@ class PrescienceClient(object):
             accept=''
         )
 
+    @staticmethod
+    def progress_curl():
+        bar = None
+
+        def progress(download_t, download_d, upload_t, upload_d):
+            nonlocal bar
+            if upload_t > 0 and not bar:
+                bar = IncrementalBar('Uploading', max=upload_t)
+                bar.suffix = '%(percent).1f%%'
+            if bar:
+                bar.next(upload_d - bar.index)
+
+        return progress
+
+
     def call(
             self,
             method: str,
@@ -724,6 +754,10 @@ class PrescienceClient(object):
         :param accept: accept header
         :return: The tuple3 : (http response code, response content, cookie token)
         """
+
+        if self.config().is_verbose_activated():
+            print(data)
+
         switch = {
             PrescienceWebService.API: f'{self.prescience_config.get_current_api_url()}{path}',
             PrescienceWebService.ADMIN_API: f'{self.prescience_config.get_current_admin_api_url()}{path}',
@@ -752,6 +786,9 @@ class PrescienceClient(object):
         curl.setopt(pycurl.URL, complete_url)
         curl.setopt(pycurl.HTTPHEADER, http_headers)
         curl.setopt(pycurl.CUSTOMREQUEST, method)
+        curl.setopt(pycurl.NOPROGRESS, False)
+        curl.setopt(pycurl.XFERINFOFUNCTION, self.progress_curl())
+
 
         if self.config().is_verbose_activated():
             curl.setopt(pycurl.VERBOSE, 1)
@@ -1251,7 +1288,6 @@ class PrescienceClient(object):
         else:
             return pandas.read_parquet(path=dataset_data_path)
 
-
     def fold_dataframe(self, dataset_id: str, fold_number: int, test_part: bool):
         """
         Update dataset local cache for the given dataset and return the pandas dataframe for the wanted file
@@ -1263,7 +1299,7 @@ class PrescienceClient(object):
         fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
         return pandas.read_parquet(path=fold_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str = 'line', block=False):
+    def plot_source(self, source_id: str, x: str, kind: str='line', block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id

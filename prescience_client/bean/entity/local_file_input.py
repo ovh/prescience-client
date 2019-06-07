@@ -7,6 +7,7 @@ from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.input_type import InputType
 import os
 
+from prescience_client.enum.separator import Separator
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
 
 
@@ -17,12 +18,14 @@ class LocalFileInput(object):
     def __init__(self,
                  input_type: InputType,
                  headers: bool,
+                 separator: Separator,
                  filepath: str,
                  prescience: PrescienceClient = None):
         """
         Contructor of LocalFileInput
         :param input_type: The type of input
         :param headers: Has the input file header ?
+        :param separator: CSV Separator
         :param filepath: The path of the input file
         :param prescience: The prescience client (default: None)
         """
@@ -30,6 +33,7 @@ class LocalFileInput(object):
         self.input_type = input_type
         self.headers = headers
         self.filepath = filepath
+        self.separator = separator
 
     @classmethod
     def default_source_id_and_type(cls, filepath) -> (str, InputType):
@@ -68,6 +72,7 @@ class LocalFileInput(object):
         return self.prescience.upload_source(
             source_id=source_id,
             input_type=sent_input_type,
+            separator=self.separator,
             headers=self.headers,
             filepath=self.filepath
         )
