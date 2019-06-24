@@ -2,11 +2,11 @@
 # license that can be found in the LICENSE file.
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
+import os
+
 from prescience_client.bean.task import Task
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.enum.input_type import InputType
-import os
-
 from prescience_client.enum.separator import Separator
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
 
@@ -15,6 +15,7 @@ class LocalFileInput(object):
     """
     Local data file object that will be upload to prescience
     """
+
     def __init__(self,
                  input_type: InputType,
                  headers: bool,
@@ -82,22 +83,33 @@ class CsvLocalFileInput(LocalFileInput):
     """
     Local data file of type CSV
     """
-    def __init__(self, filepath: str, headers: bool = True, prescience: PrescienceClient = None):
+
+    def __init__(
+            self,
+            filepath: str,
+            headers: bool = True,
+            separator: Separator = Separator.COMMA,
+            prescience: PrescienceClient = None
+    ):
         super(CsvLocalFileInput, self).__init__(
             input_type=InputType.CSV,
             headers=headers,
+            separator=separator,
             filepath=filepath,
             prescience=prescience
         )
+
 
 class ParquetLocalFileInput(LocalFileInput):
     """
     Local data file of type Parquet
     """
+
     def __init__(self, filepath: str, prescience: PrescienceClient = None):
         super(ParquetLocalFileInput, self).__init__(
             input_type=InputType.PARQUET,
             headers=True,
+            separator=None,
             filepath=filepath,
             prescience=prescience
         )
