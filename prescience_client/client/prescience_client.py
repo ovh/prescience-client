@@ -1230,7 +1230,7 @@ class PrescienceClient(object):
         expected_files = self.get_list_source_files(source_id=source_id)
 
         if os.path.exists(sourceid_path) and set(os.listdir(sourceid_path)) == set(expected_files):
-            print(f'Cache for source \'{source_id}\' is allready up to date on {sourceid_path}')
+            print(f'Cache for source \'{source_id}\' is already up to date on {sourceid_path}')
         else:
             self.cache_clean_source(source_id=source_id)
             print(f'Updating cache for source \'{source_id}\' : {sourceid_path}')
