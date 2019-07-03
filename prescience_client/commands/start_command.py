@@ -9,11 +9,12 @@ from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Tim
 from prescience_client.commands import get_args_or_prompt_input, get_args_or_prompt_confirm, get_args_or_prompt_list, \
     get_args_or_prompt_checkbox
 from prescience_client.commands.command import Command
-from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_INPUT_TYPE
+from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_INPUT_TYPE, DEFAULT_SEPARATOR
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.sampling_strategy import SamplingStrategy
 from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.separator import Separator
 from prescience_client.utils.monad import List as UtilList
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
 from prescience_client.utils.warp10 import Warp10Util
@@ -54,6 +55,7 @@ class StartParseCommand(Command):
         self.cmd_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
         self.cmd_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('--input-type', type=InputType, choices=list(InputType), help=f"The input type of your local file (default: {DEFAULT_INPUT_TYPE})")
+        self.cmd_parser.add_argument('--separator', type=Separator, choices=list(Separator), help=f"The CSV Separator (default: {DEFAULT_SEPARATOR})")
         self.cmd_parser.add_argument('--source-id', nargs='?', type=str, help='Identifier of your future source object.')
         self.cmd_parser.add_argument('input-filepath', nargs='?', type=str, help='Local input file to send and parse on prescience. If unset it will trigger the interactive mode.')
 
@@ -61,6 +63,7 @@ class StartParseCommand(Command):
         filepath = args.get('input-filepath')
         source_id = args.get('source_id')
         input_type = args.get('input_type')
+        separator = args.get('separator')
         has_headers = args.get('headers')
         watch = args.get('watch')
 
@@ -79,6 +82,17 @@ class StartParseCommand(Command):
                 choices_function=lambda: list(map(str, InputType)),
                 force_interactive=interactive_mode
             )
+            if input_type == InputType.CSV:
+                separator = get_args_or_prompt_list(
+                    arg_name='separator',
+                    args=args,
+                    message='What is your CSV Separator ?',
+                    choices_function=lambda: list(map(str, Separator)),
+                    force_interactive=interactive_mode
+                )
+            else:
+                separator = None
+
             has_headers = get_args_or_prompt_confirm(
                 arg_name='headers',
                 args=args,
@@ -101,6 +115,7 @@ class StartParseCommand(Command):
         input_local_file = LocalFileInput(
             input_type=input_type,
             headers=has_headers,
+            separator=separator,
             filepath=filepath,
             prescience=self.prescience_client
         )
@@ -418,7 +433,7 @@ class StartEvaluateCommand(Command):
             message='Do you want to keep watching for the task until it ends ?',
             force_interactive=interactive_mode
         )
-        print(json.dumps(prescience_config.to_dict()))
+        print(json.dumps(prescience_config.to_dict(), indent=4))
         task = self.prescience_client.custom_config(dataset_id=dataset_id, config=prescience_config)
         if watch:
             task.watch()

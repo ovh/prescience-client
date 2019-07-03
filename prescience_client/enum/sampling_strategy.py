@@ -12,6 +12,7 @@ class SamplingStrategy(Enum):
     MAX = auto()
     MIN = auto()
     MEDIAN = auto()
+    SUM = auto()
 
     def __str__(self):
         switch = {
@@ -21,5 +22,6 @@ class SamplingStrategy(Enum):
             SamplingStrategy.MAX: 'MAX',
             SamplingStrategy.MIN: 'MIN',
             SamplingStrategy.MEDIAN: 'MEDIAN',
+            SamplingStrategy.SUM: 'SUM'
         }
         return switch.get(self)
