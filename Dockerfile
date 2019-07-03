@@ -9,6 +9,8 @@ WORKDIR /prescience-client
 RUN apt-get update
 RUN apt-get install -y libcurl4-openssl-dev libssl-dev gcc build-essential curl
 
+RUN pip install --no-cache notebook
+
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
 ADD prescience /prescience-client
@@ -35,3 +37,4 @@ ENV PRESCIENCE_DEFAULT_SERVING_URL=${DEFAULT_PRESCIENCE_SERVING_URL}
 
 ENTRYPOINT []
 CMD "/bin/sh"
+ENV HOME=/tmp
