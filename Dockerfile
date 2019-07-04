@@ -9,7 +9,6 @@ WORKDIR /prescience-client
 RUN apt-get update
 RUN apt-get install -y libcurl4-openssl-dev libssl-dev gcc build-essential curl
 
-RUN pip install --no-cache jupyterlab
 
 ADD setup.py /prescience-client
 ADD setup.cfg /prescience-client
@@ -37,5 +36,15 @@ ENV PRESCIENCE_DEFAULT_SERVING_URL=${DEFAULT_PRESCIENCE_SERVING_URL}
 
 ENTRYPOINT []
 CMD "/bin/sh"
+
+# Jupyter lab dependencies
+RUN pip install --no-cache jupyterlab
+RUN pip install --no-cache ipywidgets
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN apt-get install -y nodejs
+RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
+RUN pip install --no-cache jupyter_contrib_nbextensions
+RUN jupyter contrib nbextension install --user
+RUN jupyter nbextension enable init_cell/main
 ENV HOME=/tmp
 RUN chmod -R 777 /prescience-client
