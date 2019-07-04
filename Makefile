@@ -48,5 +48,8 @@ run_local:
 run_docker:
 	docker run --rm $(DOCKER_OPT) prescience-client
 
+run_docker_notebook:
+	docker run --rm $(DOCKER_OPT) -p 8888:8888 prescience-client jupyter-notebook --ip=0.0.0.0 --port=8888 --allow-root
+
 install_local:
 	pip install -e .
