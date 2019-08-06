@@ -114,12 +114,16 @@ class Source(TablePrintable, DictPrintable):
                    time_column: str = None,
                    nb_fold: int = None,
                    fold_size: int = None,
-                   test_ratio: float = None ):
+                   test_ratio: float = None,
+                   formatter: str = None,
+                   datetime_exogenous: list = None,
+                   granularity: str = None):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset
         :param label: The name of the Source column that we want to predict (the label)
         :param problem_type: The type of machine learning problem that we want to solve
+        :param formatter: The formatter to use for parsing the time_column
         :return: The task object of the Preprocess Task
         """
         return self.prescience.preprocess(
@@ -131,7 +135,10 @@ class Source(TablePrintable, DictPrintable):
             time_column=time_column,
             fold_size=fold_size,
             nb_fold=nb_fold,
-            test_ratio=test_ratio
+            test_ratio=test_ratio,
+            formatter=formatter,
+            datetime_exogenous=datetime_exogenous,
+            granularity=granularity
         )
 
     def tree(self) -> SourceTree:

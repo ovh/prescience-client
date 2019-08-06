@@ -308,7 +308,7 @@ class PrescienceClient(object):
         }
 
         if last_point_date:
-            query_parameters['last_point_date'] = last_point_date.isoformat()
+            query_parameters['last_point_timestamp'] = int(last_point_date.timestamp()*1e6)
         if sample_span:
             query_parameters['sample_span'] = sample_span
 
