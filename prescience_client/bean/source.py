@@ -166,7 +166,10 @@ class Source(TablePrintable, DictPrintable):
         selected_column: list = None,
         budget: int = None,
         forecasting_horizon_steps: int = None,
-        forecast_discount: float = None
+        forecast_discount: float = None,
+        formatter: str = None,
+        datetime_exogenous: list = None,
+        granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml task from the current source
@@ -181,6 +184,9 @@ class Source(TablePrintable, DictPrintable):
         :param budget: The budget to use during optimization
         :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
         :param forecast_discount: The wanted forecasting discount
+        :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The tuple3 of (initial task, dataset id, model id)
         """
         return self.prescience.start_auto_ml(
@@ -195,7 +201,10 @@ class Source(TablePrintable, DictPrintable):
             selected_column=selected_column,
             budget=budget,
             forecasting_horizon_steps=forecasting_horizon_steps,
-            forecast_discount=forecast_discount
+            forecast_discount=forecast_discount,
+            formatter=formatter,
+            datetime_exogenous=datetime_exogenous,
+            granularity=granularity
         )
 
     def plot(self, x: str, kind: str = 'line', block=False):

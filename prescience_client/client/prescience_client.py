@@ -187,8 +187,11 @@ class PrescienceClient(object):
         :param problem_type: The type of machine learning problem that we want to solve
         :param selected_column: subset of the source column to use for preprocessing, by default it will use all
         :param time_column: Indicates the time column (or step column) for a time-series problem type
+        :param nb_fold: The number of fold to create during the preprocessing of the source
         :param fold_size: The number of fold to use on cross-validation
-        :param formatter: The formatter to use for parsing the time_column
+        :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The task object of the Preprocess Task
         """
         body = {
@@ -196,8 +199,6 @@ class PrescienceClient(object):
             'label_id': label_id,
             'problem_type': str(problem_type)
         }
-
-        date_time_info = {}
 
         if selected_column is not None:
             body['selected_columns'] = selected_column
@@ -213,6 +214,8 @@ class PrescienceClient(object):
 
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
+
+        date_time_info = {}
 
         if formatter is not None:
             date_time_info['format'] = formatter
@@ -902,7 +905,10 @@ class PrescienceClient(object):
         selected_column: list = None,
         budget: int = None,
         forecasting_horizon_steps: int = None,
-        forecast_discount: float = None
+        forecast_discount: float = None,
+        formatter: str = None,
+        datetime_exogenous: list = None,
+        granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml task
@@ -918,6 +924,9 @@ class PrescienceClient(object):
         :param budget: The budget to use during optimization
         :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
         :param forecast_discount: The wanted forecasting discount
+        :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The tuple3 of (initial task, dataset id, model id)
         """
         if dataset_id is None:
@@ -953,6 +962,20 @@ class PrescienceClient(object):
 
         if forecast_discount is not None:
             body['forecasting_discount'] = forecast_discount
+
+        date_time_info = {}
+
+        if formatter is not None:
+            date_time_info['format'] = formatter
+
+        if datetime_exogenous is not None:
+            date_time_info['exogenous'] = [str(x) for x in datetime_exogenous]
+
+        if granularity is not None:
+            date_time_info['granularity'] = str(granularity)
+
+        if len(date_time_info) != 0:
+            body['datetime_info'] = date_time_info
 
         print('Starting AutoML task with following arguments :')
         print(json.dumps(body, indent=4))
