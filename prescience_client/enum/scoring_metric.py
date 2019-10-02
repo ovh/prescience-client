@@ -13,7 +13,7 @@ class ScoringMetric(Enum):
     COHEN_KAPPA = 'cohen_kappa'
     # Binary
     F1 = 'f1'
-    ROC_AUC = 'roc_auc',
+    ROC_AUC = 'roc_auc'
     PRECISION = 'precision'
     RECALL = 'recall'
     LOG_LOSS = 'log_loss'
