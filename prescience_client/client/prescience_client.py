@@ -36,7 +36,7 @@ from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory, PrescienceClientException
-from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_time_feature
+from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_index
 from prescience_client.utils.monad import Option
 
 
