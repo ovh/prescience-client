@@ -98,7 +98,7 @@ class PrescienceConfig(object):
             if self.is_verbose_activated():
                 print(f'Loading configuration file {full_config_path}')
             with io.open(full_config_path, 'r') as stream:
-                loaded_config = yaml.load(stream)
+                loaded_config = yaml.full_load(stream)
                 self.projects = loaded_config.get(KEY_PROJECTS, self.default_projects_dict())
                 self.current_project_name = loaded_config.get(KEY_CURRENT_PROJECT, VALUE_DEFAULT)
                 self.exception_handling = loaded_config.get(KEY_EXCEPTION_HANDLING, DEFAULT_EXCEPTION_HANDLING)
