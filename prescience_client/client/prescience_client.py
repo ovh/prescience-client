@@ -1322,7 +1322,13 @@ class PrescienceClient(object):
         fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
         return pandas.read_parquet(path=fold_path)
 
-    def plot_source(self, source_id: str, x: str=None, y: str=None, kind: str=None, clss: str=None, block=False):
+    def plot_source(self,
+                    source_id: str,
+                    x: str=None,
+                    y: str=None,
+                    kind: str=None,
+                    clss: str=None,
+                    block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
@@ -1343,26 +1349,39 @@ class PrescienceClient(object):
             dataframe = dataframe.sort_values(by=[x])
 
         if clss is not None:
-            available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
-            clss_value = dataframe[clss].unique().tolist()
-            clss_color = {v: available_colors[index % len(available_colors)] for index, v in enumerate(clss_value)}
-            ax = None
-            for clss_name in clss_value:
-                df = dataframe[dataframe[clss] == clss_name]
-                if ax:
-                    ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name], ax=ax)
-                else:
-                    ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name])
+            self._plot_dataframe_with_class(dataframe=dataframe, clss=clss, kind=kind, x=x, y=y)
         else:
             dataframe.plot(x=x, y=y, kind=kind)
 
         matplotlib.pyplot.show(block=block)
+
+    @classmethod
+    def _plot_dataframe_with_class(cls, dataframe: pandas.DataFrame, clss: str, kind: str, x: str, y: str):
+        available_columns = [x for x in dataframe.columns]
+        if x not in available_columns:
+            raise PrescienceClientException(Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
+        if y not in available_columns:
+            raise PrescienceClientException(Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
+
+        available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
+        clss_value = dataframe[clss].unique().tolist()
+        clss_color = {v: available_colors[index % len(available_colors)] for index, v in enumerate(clss_value)}
+        ax = None
+        for clss_name in clss_value:
+            df = dataframe[dataframe[clss] == clss_name]
+            if ax:
+                ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name], ax=ax)
+            else:
+                ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name])
 
     def plot_dataset(self,
                      dataset_id: str,
                      plot_train: bool = True,
                      plot_test: bool = True,
                      fold_number: int = None,
+                     x: str = None,
+                     y: str = None,
+                     clss: str = None,
                      block=False):
         """
         Plot a wanted dataset data
@@ -1371,9 +1390,29 @@ class PrescienceClient(object):
         :param plot_test: should plot the 'test' part
         :param fold_number: Number of the fold to plot (if unset it will plot the whole dataset)
         :param block: should block until user close the window
+        :param x: the name of the column to use as x (for a timeseries forecast it will by default take de time column)
+        :param y: the name of the column to use as y (for a timeseries forecast it will by default take all the remaining columns)
+        :param clss: the name of the category column if any (i.e class or label)
         """
         dataset = self.dataset(dataset_id=dataset_id)
         problem_type = dataset.problem_type()
+
+        if plot_train:
+            if fold_number is None:
+                df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            else:
+                df_train = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=False)
+        else:
+            df_train = None
+
+        if plot_test:
+            if fold_number is None:
+                df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+            else:
+                df_test = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=True)
+        else:
+            df_test = None
+
         if problem_type == ProblemType.TIME_SERIES_FORECAST:
             time_column = dataset.get_time_column_id()
             transformed_timecolumn = dataset.get_feature_target_map().get(time_column)
@@ -1382,33 +1421,28 @@ class PrescienceClient(object):
                     time_column = transformed_timecolumn[-1]
                 else:
                     time_column = [x for x in transformed_timecolumn if x.endswith('_ts')][-1]
+            index_column = time_column
 
-            if plot_train:
-                if fold_number is None:
-                    df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
-                else:
-                    df_train = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=False)
-                df_train = df_train.set_index(time_column)
+            if df_train is not None:
+                df_train = df_train.set_index(index_column)
                 df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
             else:
                 df_train = pandas.DataFrame({})
 
-            if plot_test:
-                if fold_number is None:
-                    df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
-                else:
-                    df_test = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=True)
-                df_test = df_test.set_index(time_column)
+            if df_test is not None:
+                df_test = df_test.set_index(index_column)
                 df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
             else:
                 df_test = pandas.DataFrame({})
 
             df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
             df_final.plot()
-            matplotlib.pyplot.show(block=block)
 
         else:
-            raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))
+            df_final = pandas.concat([df_train, df_test])
+            self._plot_dataframe_with_class(dataframe=df_final, clss=clss, kind='scatter', x=x, y=y)
+
+        matplotlib.pyplot.show(block=block)
 
     def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
         """
