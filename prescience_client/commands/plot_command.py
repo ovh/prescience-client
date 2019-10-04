@@ -30,14 +30,18 @@ class PlotSourceCommand(Command):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('id', nargs='?', type=str,
                                         help='Identifier of the source object. If unset if will trigger the interactive mode for selecting one.')
-        self.cmd_parser.add_argument('--x', type=str, help='Plot the current source')
+        self.cmd_parser.add_argument('--x', type=str, help='Column that should be used as X axe')
+        self.cmd_parser.add_argument('--y', type=str, help='Column that should be used as Y axe')
         self.cmd_parser.add_argument('--kind', type=str, help='Kind of the plot figure. Default: line')
+        self.cmd_parser.add_argument('--class', type=str, help='Column that should be used as category if any (i.e class or label)')
 
     def exec(self, args: dict):
         source_id = prompt_for_source_id_if_needed(args, self.prescience_client)
-        kind = args.get('kind') or 'line'
+        kind = args.get('kind')
         x = args.get('x')
-        self.prescience_client.plot_source(source_id=source_id, x=x, block=True, kind=kind)
+        y = args.get('y')
+        clss = args.get('class')
+        self.prescience_client.plot_source(source_id=source_id, x=x, y=y, clss=clss, block=True, kind=kind)
 
 
 class PlotDatasetCommand(Command):

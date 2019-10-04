@@ -1322,20 +1322,40 @@ class PrescienceClient(object):
         fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
         return pandas.read_parquet(path=fold_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str='line', block=False):
+    def plot_source(self, source_id: str, x: str=None, y: str=None, kind: str=None, clss: str=None, block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
         :param x: the name of the column to use as x
+        :param y: the name of the column to use as y
         :param kind: the kind of the plot
         :param block: should block until user close the window
+        :param clss: the name of the category column if any (i.e class or label)
         """
+        if kind is None and clss is None:
+            kind = 'line'
+
+        if kind is None and clss is not None:
+            kind = 'scatter'
+
         dataframe = self.source_dataframe(source_id=source_id)
         if x is not None:
             dataframe = dataframe.sort_values(by=[x])
-            dataframe.plot(x=x, kind=kind)
+
+        if clss is not None:
+            available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
+            clss_value = dataframe[clss].unique().tolist()
+            clss_color = {v: available_colors[index % len(available_colors)] for index, v in enumerate(clss_value)}
+            ax = None
+            for clss_name in clss_value:
+                df = dataframe[dataframe[clss] == clss_name]
+                if ax:
+                    ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name], ax=ax)
+                else:
+                    ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name])
         else:
-            dataframe.plot(kind=kind)
+            dataframe.plot(x=x, y=y, kind=kind)
+
         matplotlib.pyplot.show(block=block)
 
     def plot_dataset(self,

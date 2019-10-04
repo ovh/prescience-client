@@ -207,10 +207,12 @@ class Source(TablePrintable, DictPrintable):
             granularity=granularity
         )
 
-    def plot(self, x: str, kind: str = 'line', block=False):
+    def plot(self, x: str=None, y: str=None, kind: str = None, clss: str=None, block=False):
         self.prescience.plot_source(
             source_id=self.get_source_id(),
             x=x,
+            y=y,
             kind=kind,
+            clss=clss,
             block=block
         )
