@@ -1444,6 +1444,27 @@ class PrescienceClient(object):
 
         matplotlib.pyplot.show(block=block)
 
+    def plot_evaluations(self, dataset_id: str, scoring_metric: ScoringMetric, forecasting_horizon_steps: str=None, forecasting_discount: str=None):
+        """
+        Plot the evolution of evalution result scoring metrics for a given dataset
+        :param dataset_id: The related dataset ID
+        :param scoring_metric: The scoring metric to display
+        :param forecasting_horizon_steps: The forecasting_horizon_steps to filter on (if needed)
+        :param forecasting_discount: The forecasting_discount to filter on (if needed)
+        :return:
+        """
+        evalution_results_page = self.get_evaluation_results(
+            dataset_id=dataset_id,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecasting_discount=forecasting_discount
+        )
+        metric_serie = [1 - x.costs().get(str(scoring_metric)) for x in evalution_results_page.content]
+        df = pandas.DataFrame(index=[x for x in range(len(metric_serie))], data={
+            str(scoring_metric): metric_serie
+        })
+        df.plot()
+        matplotlib.pyplot.show(block=True)
+
     def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
         """
         Generate a serving payload for a prescience model
