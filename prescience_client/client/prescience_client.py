@@ -550,6 +550,27 @@ class PrescienceClient(object):
         from prescience_client.bean.model import Model
         return Model(json=model, prescience=self)
 
+    def model_metric(self, model_id: str) -> 'ModelMetric':
+        """
+        Get the model metric of a wanted model
+        :param model_id: The model ID
+        :return: The model metric object
+        """
+        _, metric, _ = self.__get(path=f'/model/{model_id}/additional-information/metrics')
+        from prescience_client.bean.model_metric import ModelMetric
+        return ModelMetric(json=metric, prescience=self)
+
+    def model_test_evaluation(self, model_id: str) -> 'TestEvaluations':
+        """
+        Get the test evaluation of a wanted model
+        :param model_id: The model ID
+        :return: The test evaluation object
+        """
+        _, test_evaluation_dict, _ = self.__get(path=f'/model/{model_id}/additional-information/test_evaluations')
+        from prescience_client.bean.test_evaluation import TestEvaluations
+        return TestEvaluations(json=test_evaluation_dict, prescience=self)
+
+
     def get_list_source_files(self, source_id: str) -> list:
         """
         Get the list of all files of a given source data

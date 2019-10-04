@@ -224,6 +224,10 @@ class GetModelCommand(Command):
                                    default=OutputFormat.TABLE)
         self.cmd_parser.add_argument('--tree', default=False, action='store_true',
                                      help='Display the tree structure of your model')
+        self.cmd_parser.add_argument('--metric', default=False, action='store_true',
+                                     help='Display the metric info your model')
+        self.cmd_parser.add_argument('--test-evaluation', default=False, action='store_true',
+                                     help='Display the test evaluation info your model')
 
     def exec(self, args: dict):
         model_id = get_args_or_prompt_list(
@@ -234,11 +238,17 @@ class GetModelCommand(Command):
         )
         output = args.get('output') or OutputFormat.TABLE
         tree = args.get('tree')
-        model = self.prescience_client.model(model_id)
-        if tree:
-            model.tree().show()
+        metric = args.get('metric')
+        test_evaluation = args.get('test_evaluation')
+
+        if metric:
+            self.prescience_client.model_metric(model_id).show(output)
+        elif test_evaluation:
+            self.prescience_client.model_test_evaluation(model_id).show(output)
+        elif tree:
+            self.prescience_client.model(model_id).tree().show()
         else:
-            model.show(output)
+            self.prescience_client.model(model_id).show(output)
 
 
 class GetModelListCommand(Command):
