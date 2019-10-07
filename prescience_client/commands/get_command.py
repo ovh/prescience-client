@@ -228,6 +228,8 @@ class GetModelCommand(Command):
                                      help='Display the metric info your model')
         self.cmd_parser.add_argument('--test-evaluation', default=False, action='store_true',
                                      help='Display the test evaluation info your model')
+        self.cmd_parser.add_argument('--confusion-matrix', action='store_true', default=False,
+                                     help='Display the confusion matrix for this model (Only available for classification models)')
 
     def exec(self, args: dict):
         model_id = get_args_or_prompt_list(
@@ -240,9 +242,13 @@ class GetModelCommand(Command):
         tree = args.get('tree')
         metric = args.get('metric')
         test_evaluation = args.get('test_evaluation')
+        confusion_matrix = args.get('confusion_matrix')
 
         if metric:
             self.prescience_client.model_metric(model_id).show(output)
+        if confusion_matrix:
+            df = self.prescience_client.get_confusion_matrix(model_id)
+            print(df)
         elif test_evaluation:
             self.prescience_client.model_test_evaluation(model_id).show(output)
         elif tree:

@@ -1541,6 +1541,36 @@ class PrescienceClient(object):
 
         return full_output
 
+    def get_confusion_matrix(self, model_id: str):
+        metric = self.model_metric(model_id)
+        confusion_matrix_dict = metric.json_dict['confusion_matrix']
+
+        columns_names = set()
+        row_names = set()
+        tab_dict = {}
+
+        for column_name, row in confusion_matrix_dict.items():
+            for row_name,value in row.items():
+                columns_names.add(column_name)
+                row_names.add(row_name)
+                if not tab_dict.get(column_name):
+                    tab_dict[column_name] = {}
+                tab_dict[column_name][row_name] = value
+
+        columns_names = list(columns_names)
+        columns_names.sort()
+        row_names = list(row_names)
+        row_names.sort()
+        final_dict = {}
+
+        for column_name in columns_names:
+            for row_name in row_names:
+                if not final_dict.get(column_name):
+                    final_dict[column_name] = []
+                final_dict[column_name].append(tab_dict[column_name][row_name])
+
+        return pandas.DataFrame(data=final_dict, index=row_names)
+
     def get_default_json_ouput(self):
         payload_directory = self\
             .config()\
