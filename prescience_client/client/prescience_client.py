@@ -1313,6 +1313,7 @@ class PrescienceClient(object):
         df = pandas.read_parquet(path=source_data_path)
         if index_column is not None:
             df = df.set_index(index_column)
+            df = df.set_index(index_column)
         return df
 
     def dataset_dataframe(self, dataset_id: str, test_part: bool):
