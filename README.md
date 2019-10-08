@@ -1,6 +1,6 @@
 # Python client for OVH Prescience
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://ovh.mybinder.org/v2/gh/ovh/prescience-client/binder-initialization?urlpath=lab/tree/index.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://ovh.mybinder.org/v2/gh/ovh/prescience-client/master?urlpath=lab/tree/index.ipynb)
 
 The `OVH Prescience` project is a distributed machine learning tool used for training and deploying `supervised algorithms` and their `models`.
 
