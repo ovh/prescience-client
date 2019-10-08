@@ -77,13 +77,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(pandas.DataFrame.equals(expected, filtered))
 
 
-    # def test_dataframe_with_dates(self):
-    #     df = pandas.DataFrame(
-    #         index=[datetime.datetime(2018, 6, 1, 0, 0), datetime.datetime(2018, 6, 2, 0, 0)],
-    #         data=[1, 2]
-    #     )
-    #     print('toto')
-
     def test_get_dataframe_real_predict_theoric_with_numbers(self):
         t_index = 50
         back_steps = 5
