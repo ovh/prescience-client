@@ -150,6 +150,7 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
                                        help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
+        self.cmd_parser.add_argument('--date-format', type=str, help='The date format to use for your time column (if any)')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -183,6 +184,9 @@ class StartPreprocessCommand(Command):
             force_interactive=interactive_mode
         )
         time_column = None
+        formatter = None
+        exogenous = None
+        granularity = None
         if ProblemType(problem_type) == ProblemType.TIME_SERIES_FORECAST:
             available_time_columns = copy.deepcopy(selected_columns)
             available_time_columns.remove(label)
@@ -191,6 +195,27 @@ class StartPreprocessCommand(Command):
                 args=args,
                 message='What will be the column used for time ?',
                 choices_function=lambda: copy.deepcopy(available_time_columns),
+                force_interactive=interactive_mode
+            )
+            formatter = get_args_or_prompt_input(
+                arg_name='date_format',
+                args=args,
+                message='What date format do you want to use ?',
+                force_interactive=interactive_mode
+            )
+            granularity = get_args_or_prompt_list(
+                arg_name='granularity',
+                args=args,
+                message='Which granularity is used for your date ?',
+                choices_function=lambda: ['year', 'month', 'day', 'hour', 'minute'],
+                force_interactive=interactive_mode
+            )
+            exogenous = get_args_or_prompt_checkbox(
+                arg_name='exogenous',
+                args=args,
+                message='Which exogenous features do you want on your date ?',
+                choices_function=lambda: ['year', 'month', 'dayofmonth', 'hour', 'minute'],
+                selected_function=lambda: [],
                 force_interactive=interactive_mode
             )
         nb_fold = get_args_or_prompt_input(
@@ -218,7 +243,10 @@ class StartPreprocessCommand(Command):
             problem_type=problem_type,
             selected_column=selected_columns,
             time_column=time_column,
-            nb_fold=int(nb_fold)
+            nb_fold=int(nb_fold),
+            formatter=formatter,
+            datetime_exogenous=exogenous,
+            granularity=granularity
         )
         if watch:
             task.watch()
@@ -500,7 +528,9 @@ class StartAutoML(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('source-id', type=str, nargs='?', help='The source from which you want to start a AutoML task')
+        self.cmd_parser.add_argument('source-id', type=str, help='The source from which you want to start a AutoML task')
+        self.cmd_parser.add_argument('scoring-metric', type=ScoringMetric, choices=list(ScoringMetric),
+                                     help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
 
         self.cmd_parser.add_argument('--dataset-id', type=str, help='Name you want for the created dataset')
         self.cmd_parser.add_argument('--model-id', type=str, help='Name you want for the created model')
@@ -512,8 +542,8 @@ class StartAutoML(Command):
         self.cmd_parser.add_argument('--time-column', type=str,
                                        help='Identifier of the time column for time series. Only for forecasts problems.')
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
-        self.cmd_parser.add_argument('scoring-metric', nargs='?', type=ScoringMetric, choices=list(ScoringMetric),
-                                     help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
+        self.cmd_parser.add_argument('--label', type=str,
+                                     help='Column of your source that you want to use as the label')
         self.cmd_parser.add_argument('--budget', type=int,
                                      help='Budget to allow on optimization (default: it will use the one configure on prescience server side)')
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
@@ -527,32 +557,44 @@ class StartAutoML(Command):
 
         interactive_mode = args.get('source-id') is None
         source_id = get_args_or_prompt_list(
-            arg_name='id',
+            arg_name='source-id',
             args=args,
             message='Which source do you want to preprocess ?',
             choices_function=lambda: [x.source_id for x in self.prescience_client.sources(page=1).content],
             force_interactive=interactive_mode
         )
-        dataset_id = get_args_or_prompt_input(
-            arg_name='dataset_id',
-            args=args,
-            message='What will be the name of the generated dataset',
-            force_interactive=interactive_mode
-        )
-        model_id = get_args_or_prompt_input(
-            arg_name='model_id',
-            args=args,
-            message='What will be the name of the generated model',
-            force_interactive=interactive_mode
-        )
-        selected_column = get_args_or_prompt_checkbox(
-            arg_name='columns',
-            args=args,
-            message='Select the columns you want to keep for your preprocessing',
-            choices_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
-            selected_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
-            force_interactive=interactive_mode
-        )
+        if interactive_mode:
+            dataset_id = get_args_or_prompt_input(
+                arg_name='dataset_id',
+                args=args,
+                message='What will be the name of the generated dataset',
+                force_interactive=interactive_mode
+            )
+        else:
+            dataset_id = args.get('dataset_id')
+
+        if interactive_mode:
+            model_id = get_args_or_prompt_input(
+                arg_name='model_id',
+                args=args,
+                message='What will be the name of the generated model',
+                force_interactive=interactive_mode
+            )
+        else:
+            model_id = args.get('model_id')
+
+        if interactive_mode:
+            selected_column = get_args_or_prompt_checkbox(
+                arg_name='columns',
+                args=args,
+                message='Select the columns you want to keep for your preprocessing',
+                choices_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
+                selected_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
+                force_interactive=interactive_mode
+            )
+        else:
+            selected_column = args.get('columns')
+
         problem_type = get_args_or_prompt_list(
             arg_name='problem_type',
             args=args,
@@ -596,14 +638,18 @@ class StartAutoML(Command):
                 validator=FloatValidator,
                 filter_func=float
             )
-        nb_fold = get_args_or_prompt_input(
-            arg_name='nb_fold',
-            args=args,
-            message='How many folds do you want ?',
-            force_interactive=interactive_mode,
-            validator=IntegerValidator,
-            filter_func=int
-        )
+        if interactive_mode:
+            nb_fold = get_args_or_prompt_input(
+                arg_name='nb_fold',
+                args=args,
+                message='How many folds do you want ?',
+                force_interactive=interactive_mode,
+                validator=IntegerValidator,
+                filter_func=int
+            )
+        else:
+            nb_fold = args.get('nb_fold')
+
         scoring_metric = get_args_or_prompt_list(
             arg_name='scoring-metric',
             args=args,
@@ -611,20 +657,29 @@ class StartAutoML(Command):
             choices_function=lambda: list(map(str, ScoringMetric)),
             force_interactive=interactive_mode
         )
-        budget = get_args_or_prompt_input(
-            arg_name='budget',
-            args=args,
-            message='Which budget do you want to allow on optimization ?',
-            force_interactive=interactive_mode,
-            validator=IntegerValidator,
-            filter_func=int
-        )
-        watch = get_args_or_prompt_confirm(
-            arg_name='watch',
-            args=args,
-            message='Do you want to keep watching for the task until it ends ?',
-            force_interactive=interactive_mode
-        )
+
+        if interactive_mode:
+            budget = get_args_or_prompt_input(
+                arg_name='budget',
+                args=args,
+                message='Which budget do you want to allow on optimization ?',
+                force_interactive=interactive_mode,
+                validator=IntegerValidator,
+                filter_func=int
+            )
+        else:
+            budget = args.get('budget')
+
+        if interactive_mode:
+            watch = get_args_or_prompt_confirm(
+                arg_name='watch',
+                args=args,
+                message='Do you want to keep watching for the task until it ends ?',
+                force_interactive=interactive_mode
+            )
+        else:
+            watch = args.get('watch')
+
         task, _, _ = self.prescience_client.start_auto_ml(
             source_id=source_id,
             dataset_id=dataset_id,

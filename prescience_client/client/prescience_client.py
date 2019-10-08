@@ -36,7 +36,7 @@ from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory, PrescienceClientException
-from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_time_feature
+from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_index
 from prescience_client.utils.monad import Option
 
 
@@ -174,7 +174,10 @@ class PrescienceClient(object):
             time_column: str = None,
             nb_fold: int = None,
             fold_size: int = None,
-            test_ratio: float = None
+            test_ratio: float = None,
+            formatter: str = None,
+            datetime_exogenous: list = None,
+            granularity: str = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -184,7 +187,11 @@ class PrescienceClient(object):
         :param problem_type: The type of machine learning problem that we want to solve
         :param selected_column: subset of the source column to use for preprocessing, by default it will use all
         :param time_column: Indicates the time column (or step column) for a time-series problem type
+        :param nb_fold: The number of fold to create during the preprocessing of the source
         :param fold_size: The number of fold to use on cross-validation
+        :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The task object of the Preprocess Task
         """
         body = {
@@ -207,6 +214,23 @@ class PrescienceClient(object):
 
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
+
+        date_time_info = {}
+
+        if formatter is not None:
+            date_time_info['format'] = formatter
+
+        if datetime_exogenous is not None:
+            date_time_info['exogenous'] = datetime_exogenous
+
+        if granularity is not None:
+            date_time_info['granularity'] = granularity
+
+        if len(date_time_info) != 0:
+            body['datetime_info'] = date_time_info
+
+
+
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -525,6 +549,27 @@ class PrescienceClient(object):
         _, model, _ = self.__get(path=f'/model/{model_id}')
         from prescience_client.bean.model import Model
         return Model(json=model, prescience=self)
+
+    def model_metric(self, model_id: str) -> 'ModelMetric':
+        """
+        Get the model metric of a wanted model
+        :param model_id: The model ID
+        :return: The model metric object
+        """
+        _, metric, _ = self.__get(path=f'/model/{model_id}/additional-information/metrics')
+        from prescience_client.bean.model_metric import ModelMetric
+        return ModelMetric(json=metric, prescience=self)
+
+    def model_test_evaluation(self, model_id: str) -> 'TestEvaluations':
+        """
+        Get the test evaluation of a wanted model
+        :param model_id: The model ID
+        :return: The test evaluation object
+        """
+        _, test_evaluation_dict, _ = self.__get(path=f'/model/{model_id}/additional-information/test_evaluations')
+        from prescience_client.bean.test_evaluation import TestEvaluations
+        return TestEvaluations(json=test_evaluation_dict, prescience=self)
+
 
     def get_list_source_files(self, source_id: str) -> list:
         """
@@ -881,7 +926,10 @@ class PrescienceClient(object):
         selected_column: list = None,
         budget: int = None,
         forecasting_horizon_steps: int = None,
-        forecast_discount: float = None
+        forecast_discount: float = None,
+        formatter: str = None,
+        datetime_exogenous: list = None,
+        granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml task
@@ -897,6 +945,9 @@ class PrescienceClient(object):
         :param budget: The budget to use during optimization
         :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
         :param forecast_discount: The wanted forecasting discount
+        :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The tuple3 of (initial task, dataset id, model id)
         """
         if dataset_id is None:
@@ -932,6 +983,20 @@ class PrescienceClient(object):
 
         if forecast_discount is not None:
             body['forecasting_discount'] = forecast_discount
+
+        date_time_info = {}
+
+        if formatter is not None:
+            date_time_info['format'] = formatter
+
+        if datetime_exogenous is not None:
+            date_time_info['exogenous'] = [str(x) for x in datetime_exogenous]
+
+        if granularity is not None:
+            date_time_info['granularity'] = str(granularity)
+
+        if len(date_time_info) != 0:
+            body['datetime_info'] = date_time_info
 
         print('Starting AutoML task with following arguments :')
         print(json.dumps(body, indent=4))
@@ -1248,6 +1313,7 @@ class PrescienceClient(object):
         df = pandas.read_parquet(path=source_data_path)
         if index_column is not None:
             df = df.set_index(index_column)
+            df = df.set_index(index_column)
         return df
 
     def dataset_dataframe(self, dataset_id: str, test_part: bool):
@@ -1278,27 +1344,66 @@ class PrescienceClient(object):
         fold_path = self.update_cache_fold(dataset_id=dataset_id, fold_number=fold_number, test_part=test_part)
         return pandas.read_parquet(path=fold_path)
 
-    def plot_source(self, source_id: str, x: str, kind: str='line', block=False):
+    def plot_source(self,
+                    source_id: str,
+                    x: str=None,
+                    y: str=None,
+                    kind: str=None,
+                    clss: str=None,
+                    block=False):
         """
         Plot a wanted source data
         :param source_id: the wanted source id
         :param x: the name of the column to use as x
+        :param y: the name of the column to use as y
         :param kind: the kind of the plot
         :param block: should block until user close the window
+        :param clss: the name of the category column if any (i.e class or label)
         """
+        if kind is None and clss is None:
+            kind = 'line'
+
+        if kind is None and clss is not None:
+            kind = 'scatter'
+
         dataframe = self.source_dataframe(source_id=source_id)
         if x is not None:
             dataframe = dataframe.sort_values(by=[x])
-            dataframe.plot(x=x, kind=kind)
+
+        if clss is not None:
+            self._plot_dataframe_with_class(dataframe=dataframe, clss=clss, kind=kind, x=x, y=y)
         else:
-            dataframe.plot(kind=kind)
+            dataframe.plot(x=x, y=y, kind=kind)
+
         matplotlib.pyplot.show(block=block)
+
+    @classmethod
+    def _plot_dataframe_with_class(cls, dataframe: pandas.DataFrame, clss: str, kind: str, x: str, y: str):
+        available_columns = [x for x in dataframe.columns]
+        if x not in available_columns:
+            raise PrescienceClientException(Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
+        if y not in available_columns:
+            raise PrescienceClientException(Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
+
+        available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
+        clss_value = dataframe[clss].unique().tolist()
+        clss_color = {v: available_colors[index % len(available_colors)] for index, v in enumerate(clss_value)}
+        ax = None
+        for clss_name in clss_value:
+            df = dataframe[dataframe[clss] == clss_name]
+            if ax:
+                ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name], ax=ax)
+            else:
+                ax = df.plot(x=x, y=y, kind=kind, label=clss_name, color=clss_color[clss_name])
 
     def plot_dataset(self,
                      dataset_id: str,
                      plot_train: bool = True,
                      plot_test: bool = True,
                      fold_number: int = None,
+                     x: str = None,
+                     y: str = None,
+                     clss: str = None,
                      block=False):
         """
         Plot a wanted dataset data
@@ -1307,43 +1412,82 @@ class PrescienceClient(object):
         :param plot_test: should plot the 'test' part
         :param fold_number: Number of the fold to plot (if unset it will plot the whole dataset)
         :param block: should block until user close the window
+        :param x: the name of the column to use as x (for a timeseries forecast it will by default take de time column)
+        :param y: the name of the column to use as y (for a timeseries forecast it will by default take all the remaining columns)
+        :param clss: the name of the category column if any (i.e class or label)
         """
         dataset = self.dataset(dataset_id=dataset_id)
         problem_type = dataset.problem_type()
+
+        if plot_train:
+            if fold_number is None:
+                df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            else:
+                df_train = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=False)
+        else:
+            df_train = None
+
+        if plot_test:
+            if fold_number is None:
+                df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
+            else:
+                df_test = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=True)
+        else:
+            df_test = None
+
         if problem_type == ProblemType.TIME_SERIES_FORECAST:
             time_column = dataset.get_time_column_id()
             transformed_timecolumn = dataset.get_feature_target_map().get(time_column)
-            if transformed_timecolumn is not None and len(transformed_timecolumn) > 0 and plot_train:
-                time_column = transformed_timecolumn[-1]
-
-            if plot_train:
-                if fold_number is None:
-                    df_train = self.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            if transformed_timecolumn is not None and plot_train:
+                if len(transformed_timecolumn) == 1:
+                    time_column = transformed_timecolumn[-1]
                 else:
-                    df_train = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=False)
-                df_train = df_train.set_index(time_column)
+                    time_column = [x for x in transformed_timecolumn if x.endswith('_ts')][-1]
+            index_column = time_column
+
+            if df_train is not None:
+                df_train = df_train.set_index(index_column)
                 df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
             else:
                 df_train = pandas.DataFrame({})
 
-            if plot_test:
-                if fold_number is None:
-                    df_test = self.dataset_dataframe(dataset_id=dataset_id, test_part=True)
-                else:
-                    df_test = self.fold_dataframe(dataset_id=dataset_id, fold_number=fold_number, test_part=True)
-                df_test = df_test.set_index(time_column)
+            if df_test is not None:
+                df_test = df_test.set_index(index_column)
                 df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
             else:
                 df_test = pandas.DataFrame({})
 
             df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
             df_final.plot()
-            matplotlib.pyplot.show(block=block)
 
         else:
-            raise PrescienceClientException(Exception(f'Plotting for {str(problem_type)} not implemented yet...'))
+            df_final = pandas.concat([df_train, df_test])
+            self._plot_dataframe_with_class(dataframe=df_final, clss=clss, kind='scatter', x=x, y=y)
 
-    def generate_serving_payload(self, from_data: int, model_id: str, output=None) -> str:
+        matplotlib.pyplot.show(block=block)
+
+    def plot_evaluations(self, dataset_id: str, scoring_metric: ScoringMetric, forecasting_horizon_steps: str=None, forecasting_discount: str=None):
+        """
+        Plot the evolution of evalution result scoring metrics for a given dataset
+        :param dataset_id: The related dataset ID
+        :param scoring_metric: The scoring metric to display
+        :param forecasting_horizon_steps: The forecasting_horizon_steps to filter on (if needed)
+        :param forecasting_discount: The forecasting_discount to filter on (if needed)
+        :return:
+        """
+        evalution_results_page = self.get_evaluation_results(
+            dataset_id=dataset_id,
+            forecasting_horizon_steps=forecasting_horizon_steps,
+            forecasting_discount=forecasting_discount
+        )
+        metric_serie = [1 - x.costs().get(str(scoring_metric)) for x in evalution_results_page.content]
+        df = pandas.DataFrame(index=[x for x in range(len(metric_serie))], data={
+            str(scoring_metric): metric_serie
+        })
+        df.plot()
+        matplotlib.pyplot.show(block=True)
+
+    def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
         """
         Generate a serving payload for a prescience model
         :param from_data: integer value indicating the index of the data for classification/regression or the value of the time column for a TS.
@@ -1363,14 +1507,19 @@ class PrescienceClient(object):
             else:
                 final_dict = evaluator.interactiv_default_payload()
         else:
+            # Try to parse from_data to int
+            try:
+                from_data = int(from_data)
+            except:
+                pass
+
             # Fill the payload from the data
             source_id = model.source_id()
             df = self.source_dataframe(source_id=source_id)
             if problem_type == ProblemType.TIME_SERIES_FORECAST:
-                min_bound = from_data - (evaluator.get_max_steps() * evaluator.get_span())
-                max_bound = from_data
                 time_feature = evaluator.get_time_feature_name()
-                filtered = filter_dataframe_on_time_feature(df, time_feature, min_bound, max_bound)
+                max_steps = evaluator.get_max_steps()
+                filtered = df.set_index(time_feature).truncate(after=from_data).tail(max_steps).reset_index()
                 final_dict = dataframe_to_dict_series(filtered)
             else:
                 final_dict = df.ix[from_data].to_dict()
@@ -1392,6 +1541,93 @@ class PrescienceClient(object):
 
         return full_output
 
+    def get_roc_curve_dataframe(self, model_id: str) -> pandas.DataFrame:
+        metric = self.model_metric(model_id)
+        roc_dict = metric.json_dict['roc']
+        return pandas.DataFrame ({'fpr': roc_dict.get('fpr'), 'tpr': roc_dict.get('tpr')})
+
+    def plot_roc_curve(self, model_id: str, block: bool=False):
+        df = self.get_roc_curve_dataframe(model_id=model_id)
+        df.plot(x='fpr', y='tpr', kind='area')
+        matplotlib.pyplot.show(block=block)
+
+
+    def get_confusion_matrix(self, model_id: str) -> pandas.DataFrame:
+        """
+        Create the pandas Dataframe of the confusion matrix for a given model
+        :param model_id: The model ID
+        :return: A new instance of pandas.Dataframe
+        """
+        metric = self.model_metric(model_id)
+        confusion_matrix_dict = metric.json_dict['confusion_matrix']
+
+        columns_names = set()
+        row_names = set()
+        tab_dict = {}
+
+        for column_name, row in confusion_matrix_dict.items():
+            for row_name,value in row.items():
+                columns_names.add(column_name)
+                row_names.add(row_name)
+                if not tab_dict.get(column_name):
+                    tab_dict[column_name] = {}
+                tab_dict[column_name][row_name] = value
+
+        columns_names = list(columns_names)
+        columns_names.sort()
+        row_names = list(row_names)
+        row_names.sort()
+        final_dict = {}
+
+        for column_name in columns_names:
+            for row_name in row_names:
+                if not final_dict.get(column_name):
+                    final_dict[column_name] = []
+                final_dict[column_name].append(tab_dict[column_name][row_name])
+
+        return pandas.DataFrame(data=final_dict, index=row_names)
+
+    def get_metric_scores_dataframe(self, model_id) -> pandas.DataFrame:
+        """
+        Create the pandas Dataframe containing all metrics for a given model
+        :param model_id: The model ID
+        :return: A new instance of pandas.Dataframe
+        """
+        metric = self.model_metric(model_id)
+        scores = metric.json_dict['scores']
+
+        columns_names = set()
+        row_names = set()
+        tab_dict = {}
+
+        for _, row in scores.items():
+            column_name = row.get('type')
+            row_name = row.get('label') or 'global'
+            value = row.get('value')
+            if column_name and row_name and value:
+                row_names.add(row_name)
+                columns_names.add(column_name)
+
+                if not tab_dict.get(column_name):
+                    tab_dict[column_name] = {}
+
+                tab_dict[column_name][row_name] = value
+
+        columns_names = list(columns_names)
+        columns_names.sort()
+        row_names = list(row_names)
+        row_names.sort()
+        final_dict = {}
+
+        for column_name in columns_names:
+            for row_name in row_names:
+                if not final_dict.get(column_name):
+                    final_dict[column_name] = []
+                value_to_append = (tab_dict.get(column_name) or {}).get(row_name) or ''
+                final_dict[column_name].append(value_to_append)
+
+        return pandas.DataFrame(data=final_dict, index=row_names)
+
     def get_default_json_ouput(self):
         payload_directory = self\
             .config()\
@@ -1400,10 +1636,11 @@ class PrescienceClient(object):
         full_output = os.path.join(payload_directory, 'payload.json')
         return full_output
 
+
     def generate_payload_dict_for_model(self,
                                         model_id: str,
                                         payload_json: str = None,
-                                        from_data: int = None):
+                                        from_data = None):
 
         if payload_json is None:
             payload_json = self.generate_serving_payload(from_data, model_id)

@@ -337,6 +337,20 @@ class Model(TablePrintable, DictPrintable):
 
         return self.model_evaluator
 
+    def get_metric(self):
+        """
+        Get the model metric of a wanted model
+        :return: The model metric object
+        """
+        return self.prescience.model_metric(self.model_id())
+
+    def get_test_evaluation(self):
+        """
+        Get the test evaluation of a wanted model
+        :return: The test evaluation object
+        """
+        return self.prescience.model_test_evaluation(self.model_id())
+
     def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0):
         input_payload_dict = copy.deepcopy(input_payload_dict)
         if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:

@@ -31,10 +31,10 @@ def get_dataframe_real_predict_theoric(
 
     intersect = set(series_dict_predict.keys()).intersection(set(initial_dataframe.columns))
     df_theoric = initial_dataframe[list(intersect)]
-    df_theoric = filter_dataframe_on_time_feature(
+    df_theoric = filter_dataframe_on_index(
         df=df_theoric,
-        time_feature=time_feature_name,
-        min_bound=last_input_points[time_feature_name] -1, # -1 is because 'min_bound' is excluded
+        index=time_feature_name,
+        min_bound=last_input_points[time_feature_name],
         max_bound=last_predict_points[time_feature_name]
     )
     df_theoric = df_theoric.set_index(time_feature_name)
@@ -48,14 +48,14 @@ def get_dataframe_real_predict_theoric(
     return df_final
 
 
-def filter_dataframe_on_time_feature(
+def filter_dataframe_on_index(
         df: pandas.DataFrame,
-        time_feature: str,
-        min_bound: int,
-        max_bound: int
+        index,
+        min_bound,
+        max_bound
 ):
-    filtered = df.loc[(df[time_feature] > min_bound) & (df[time_feature] <= max_bound)]
-    return filtered
+    filtered = df[(df[index] >= min_bound) & (df[index] <= max_bound)]
+    return filtered.set_index(keys=index, drop=False)
 
 def dataframe_to_dict_series(df: pandas.DataFrame):
     return {k: list(v.values()) for k, v in df.to_dict().items()}

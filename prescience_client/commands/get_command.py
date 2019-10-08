@@ -170,7 +170,7 @@ class GetDatasetCommand(Command):
 
         elif preview is not None:
             df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
-            TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
+            TablePrinter.print_dataframe(df.head(100), wanted_keys=preview, output=output)
 
         elif download_train_directory is not None:
             self.prescience_client.download_dataset(dataset_id=dataset_id, output_directory=download_train_directory,
@@ -224,6 +224,12 @@ class GetModelCommand(Command):
                                    default=OutputFormat.TABLE)
         self.cmd_parser.add_argument('--tree', default=False, action='store_true',
                                      help='Display the tree structure of your model')
+        self.cmd_parser.add_argument('--test-evaluation', default=False, action='store_true',
+                                     help='Display the test evaluation info your model')
+        self.cmd_parser.add_argument('--confusion-matrix', action='store_true', default=False,
+                                     help='Display the confusion matrix for this model (Only available for classification models)')
+        self.cmd_parser.add_argument('--scores', action='store_true', default=False,
+                                     help='Display the computed scores for the given model')
 
     def exec(self, args: dict):
         model_id = get_args_or_prompt_list(
@@ -234,11 +240,22 @@ class GetModelCommand(Command):
         )
         output = args.get('output') or OutputFormat.TABLE
         tree = args.get('tree')
-        model = self.prescience_client.model(model_id)
-        if tree:
-            model.tree().show()
+        scores = args.get('scores')
+        test_evaluation = args.get('test_evaluation')
+        confusion_matrix = args.get('confusion_matrix')
+
+        if scores:
+            df = self.prescience_client.get_metric_scores_dataframe(model_id)
+            print(df)
+        elif confusion_matrix:
+            df = self.prescience_client.get_confusion_matrix(model_id)
+            print(df)
+        elif test_evaluation:
+            self.prescience_client.model_test_evaluation(model_id).show(output)
+        elif tree:
+            self.prescience_client.model(model_id).tree().show()
         else:
-            model.show(output)
+            self.prescience_client.model(model_id).show(output)
 
 
 class GetModelListCommand(Command):

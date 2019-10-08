@@ -39,7 +39,10 @@ class EvaluationResult(TablePrintable, DictPrintable):
     @classmethod
     def table_formatter(cls, table: list, output: OutputFormat) -> (list, list):
         # Find headers that will be displayed
-        analyzed_columns = ['f1_cost', 'roc_auc_cost', 'accuracy_cost', 'cohen_kappa_cost', 'average_precision_cost', 'r2_cost', 'mae_cost', 'mse_cost']
+        analyzed_columns = ['accuracy_cost', 'cohen_kappa_cost',
+                            'f1_cost', 'roc_auc_cost', 'average_precision_cost', 'precision_cost', 'recall_cost', 'log_loss_cost',
+                            'f1_micro_cost', 'f1_macro_cost', 'roc_auc_micro_cost', 'roc_auc_macro_cost', 'average_precision_micro_cost', 'average_precision_macro_cost',
+                            'mape_cost', 'r2_cost', 'mae_cost', 'mse_cost']
         row_from_column_key = lambda column_key: List(table).map(lambda x: x.get(column_key, None))
         tuple_from_key = lambda column_key: (column_key, row_from_column_key(column_key).count(lambda x: x is None))
         number_of_none = List(analyzed_columns).map(tuple_from_key).filter(lambda d: d[1] != len(table)).to_dict()
@@ -86,14 +89,30 @@ class EvaluationResult(TablePrintable, DictPrintable):
             'past_steps': self.config().get_past_steps(),
             'horizon': self.config().get_forecasting_horizon_steps(),
             'discount': self.config().get_forecasting_discount(),
-            'f1_cost': cost_get_safe('f1'),
-            'roc_auc_cost': cost_get_safe('roc_auc'),
+            # Classification
             'accuracy_cost': cost_get_safe('accuracy'),
             'cohen_kappa_cost': cost_get_safe('cohen_kappa'),
+            # Binary
+            'f1_cost': cost_get_safe('f1'),
+            'roc_auc_cost': cost_get_safe('roc_auc'),
             'average_precision_cost': cost_get_safe('average_precision'),
+            'precision_cost': cost_get_safe('precision'),
+            'recall_cost': cost_get_safe('recall'),
+            'log_loss_cost': cost_get_safe('log_loss'),
+            # Regression
+            'mape_cost': cost_get_safe('mape'),
             'r2_cost': cost_get_safe('r2'),
             'mae_cost': cost_get_safe('mae'),
             'mse_cost': cost_get_safe('mse'),
+            # Multiclass
+            'f1_micro_cost': cost_get_safe('f1_micro'),
+            'f1_macro_cost': cost_get_safe('f1_macro'),
+            'roc_auc_micro_cost': cost_get_safe('roc_auc_micro'),
+            'roc_auc_macro_cost': cost_get_safe('roc_auc_macro'),
+            'average_precision_micro_cost': cost_get_safe('average_precision_micro'),
+            'average_precision_macro_cost': cost_get_safe('average_precision_macro'),
+
+
         }
 
     def get_description_dict(self) -> dict:
