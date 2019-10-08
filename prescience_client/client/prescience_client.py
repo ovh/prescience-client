@@ -1553,6 +1553,11 @@ class PrescienceClient(object):
 
 
     def get_confusion_matrix(self, model_id: str) -> pandas.DataFrame:
+        """
+        Create the pandas Dataframe of the confusion matrix for a given model
+        :param model_id: The model ID
+        :return: A new instance of pandas.Dataframe
+        """
         metric = self.model_metric(model_id)
         confusion_matrix_dict = metric.json_dict['confusion_matrix']
 
@@ -1582,6 +1587,47 @@ class PrescienceClient(object):
 
         return pandas.DataFrame(data=final_dict, index=row_names)
 
+    def get_metric_scores_dataframe(self, model_id) -> pandas.DataFrame:
+        """
+        Create the pandas Dataframe containing all metrics for a given model
+        :param model_id: The model ID
+        :return: A new instance of pandas.Dataframe
+        """
+        metric = self.model_metric(model_id)
+        scores = metric.json_dict['scores']
+
+        columns_names = set()
+        row_names = set()
+        tab_dict = {}
+
+        for _, row in scores.items():
+            column_name = row.get('type')
+            row_name = row.get('label') or 'global'
+            value = row.get('value')
+            if column_name and row_name and value:
+                row_names.add(row_name)
+                columns_names.add(column_name)
+
+                if not tab_dict.get(column_name):
+                    tab_dict[column_name] = {}
+
+                tab_dict[column_name][row_name] = value
+
+        columns_names = list(columns_names)
+        columns_names.sort()
+        row_names = list(row_names)
+        row_names.sort()
+        final_dict = {}
+
+        for column_name in columns_names:
+            for row_name in row_names:
+                if not final_dict.get(column_name):
+                    final_dict[column_name] = []
+                value_to_append = (tab_dict.get(column_name) or {}).get(row_name) or ''
+                final_dict[column_name].append(value_to_append)
+
+        return pandas.DataFrame(data=final_dict, index=row_names)
+
     def get_default_json_ouput(self):
         payload_directory = self\
             .config()\
@@ -1589,6 +1635,7 @@ class PrescienceClient(object):
 
         full_output = os.path.join(payload_directory, 'payload.json')
         return full_output
+
 
     def generate_payload_dict_for_model(self,
                                         model_id: str,
