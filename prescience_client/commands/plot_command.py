@@ -15,7 +15,8 @@ class PlotCommand(Command):
                 PlotSourceCommand(prescience_client),
                 PlotDatasetCommand(prescience_client),
                 PlotPredictionCommand(prescience_client),
-                PlotEvaluationsCommand(prescience_client)
+                PlotEvaluationsCommand(prescience_client),
+                PlotRocCurveCommand(prescience_client)
             ]
         )
 
@@ -153,4 +154,23 @@ class PlotEvaluationsCommand(Command):
         forecasting_horizon_steps = args.get('forecasting_horizon_steps')
         forecasting_discount = args.get('forecasting_discount')
         self.prescience_client.plot_evaluations(dataset_id, scoring_metric, forecasting_horizon_steps, forecasting_discount)
+
+
+class PlotRocCurveCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='roc',
+            help_message='Plot the ROC curve of a wanted model',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('model-id', type=str, help='The ID of the model.')
+
+
+    def exec(self, args: dict):
+        model_id = args.get('model-id')
+        self.prescience_client.plot_roc_curve(model_id=model_id, block=True)
 

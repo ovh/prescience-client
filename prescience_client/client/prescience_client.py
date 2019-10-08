@@ -1541,7 +1541,18 @@ class PrescienceClient(object):
 
         return full_output
 
-    def get_confusion_matrix(self, model_id: str):
+    def get_roc_curve_dataframe(self, model_id: str) -> pandas.DataFrame:
+        metric = self.model_metric(model_id)
+        roc_dict = metric.json_dict['roc']
+        return pandas.DataFrame ({'fpr': roc_dict.get('fpr'), 'tpr': roc_dict.get('tpr')})
+
+    def plot_roc_curve(self, model_id: str, block: bool=False):
+        df = self.get_roc_curve_dataframe(model_id=model_id)
+        df.plot(x='fpr', y='tpr', kind='area')
+        matplotlib.pyplot.show(block=block)
+
+
+    def get_confusion_matrix(self, model_id: str) -> pandas.DataFrame:
         metric = self.model_metric(model_id)
         confusion_matrix_dict = metric.json_dict['confusion_matrix']
 
