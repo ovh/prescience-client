@@ -106,6 +106,14 @@ class Source(TablePrintable, DictPrintable):
         """
         self.prescience.delete_source(self.source_id)
 
+    def update(self, last_point_date: datetime = None, sample_span: str = None):
+        """
+        Update Warp10 source
+        """
+
+        return self.prescience.update_source(self.source_id, last_point_date, sample_span)
+
+
     def preprocess(self,
                    dataset_id: str,
                    label: str = DEFAULT_LABEL_NAME,
