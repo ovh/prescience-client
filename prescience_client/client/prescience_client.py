@@ -158,9 +158,9 @@ class PrescienceClient(object):
         if sample_span:
             body['sample_span'] = sample_span
 
-         _, result, _ = self.__post(path=f'/ml/update/{source_id}', data=body)
-         from prescience_client.bean.task import TaskFactory
-         return TaskFactory.construct(result, self)
+        _, result, _ = self.__post(path=f'/ml/update/{source_id}', data=body)
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
 
 
     def delete_source(self, source_id: str):
