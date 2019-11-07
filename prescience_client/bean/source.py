@@ -3,6 +3,7 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import copy
+from datetime import datetime
 import json
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
@@ -105,6 +106,16 @@ class Source(TablePrintable, DictPrintable):
         Delete the current source on prescience
         """
         self.prescience.delete_source(self.source_id)
+
+    def update(self, last_point_date: datetime = None, sample_span: str = None):
+        """
+        Update Warp10 source
+        last_point_timestamp: The date of the last point to be considered in updating the time serie source. (in us) If not provided it is inferred to now.
+        sample_span: The size of the sample to be used in updating the time serie source. If not provided it is inferred to the existing sample span.
+        """
+
+        return self.prescience.update_source(self.source_id, last_point_date, sample_span)
+
 
     def preprocess(self,
                    dataset_id: str,

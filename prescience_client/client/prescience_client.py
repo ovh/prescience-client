@@ -143,6 +143,26 @@ class PrescienceClient(object):
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
+    def update_source(self, source_id: str, last_point_date: datetime = None, sample_span: str = None):
+        """
+        Refresh Warp10 source
+        :param source_id: The source_id
+        last_point_timestamp: The date of the last point to be considered in updating the time serie source. (in us) If not provided it is inferred to now.
+        sample_span: The size of the sample to be used in updating the time serie source. If not provided it is inferred to the existing sample span.
+        """
+
+        body = {}
+
+        if last_point_date:
+            body['last_point_timestamp'] = int(last_point_date.timestamp()*1e6)
+        if sample_span:
+            body['sample_span'] = sample_span
+
+        _, result, _ = self.__post(path=f'/ml/update/{source_id}', data=body)
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
+
+
     def delete_source(self, source_id: str):
         """
         Delete a source from its ID
