@@ -44,10 +44,10 @@ class ModelMetric(TablePrintable, DictPrintable):
         return self.json_dict.get('scores')
 
     def get_roc(self):
-        self.get_scores().get(str(ScoringMetric.ROC_AUC)).get('value')
+        return self.get_scores().get(str(ScoringMetric.ROC_AUC)).get('value')
 
     def get_log_loss(self):
-        self.get_scores().get(str(ScoringMetric.LOG_LOSS)).get('value')
+        return self.get_scores().get(str(ScoringMetric.LOG_LOSS)).get('value')
 
     def get_accuracy(self):
-        self.get_scores().get(str(ScoringMetric.ACCURACY)).get('value')
+        return self.get_scores().get(str(ScoringMetric.ACCURACY)).get('value')

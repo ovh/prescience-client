@@ -209,18 +209,21 @@ class EvaluationResult(TablePrintable, DictPrintable):
     def train(self,
               model_id: str,
               compute_shap_summary: bool = False,
-              chain_metric_task: bool = True
+              chain_metric_task: bool = True,
+              dataset_id: str = None
               ):
         """
         Launch a train task from the current evaluation result for creating a model
         :param model_id: The id that we want for the model
         :param compute_shap_summary: should chain the train task with a compute shap summary task ? (default: false)
         :param chain_metric_task: should chain the train task with a metric task ? (default: true)
+        :param dataset_id: dataset to use for the train (default: None, dataset parent of the evaluation)
         :return: The Train Task object
         """
         return self.prescience.train(
             evaluation_uuid=self.uuid(),
             model_id=model_id,
             compute_shap_summary=compute_shap_summary,
-            chain_metric_task=chain_metric_task
+            chain_metric_task=chain_metric_task,
+            dataset_id=dataset_id
         )

@@ -528,8 +528,8 @@ class StartAutoML(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('source-id', type=str, help='The source from which you want to start a AutoML task')
-        self.cmd_parser.add_argument('scoring-metric', type=ScoringMetric, choices=list(ScoringMetric),
+        self.cmd_parser.add_argument('source-id', nargs="?", type=str, help='The source from which you want to start a AutoML task')
+        self.cmd_parser.add_argument('scoring-metric', nargs="?", type=ScoringMetric, choices=list(ScoringMetric),
                                      help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
 
         self.cmd_parser.add_argument('--dataset-id', type=str, help='Name you want for the created dataset')
