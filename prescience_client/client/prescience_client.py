@@ -311,7 +311,8 @@ class PrescienceClient(object):
               evaluation_uuid: str,
               model_id: str,
               compute_shap_summary: bool = False,
-              chain_metric_task: bool = True
+              chain_metric_task: bool = True,
+              dataset_id: str = None
               ) -> 'TrainTask':
         """
         Launch a train task from an evaluation result for creating a model
@@ -319,13 +320,15 @@ class PrescienceClient(object):
         :param model_id: The id that we want for the model
         :param compute_shap_summary: should chain the train task with a compute shap summary task ? (default: false)
         :param chain_metric_task: should chain the train task with a metric task ? (default: true)
+        :param dataset_id: dataset to use for the train (default: None, dataset parent of the evaluation)
         :return: The Train Task object
         """
         query_parameters = {
             'model_id': model_id,
             'evaluation_uuid': evaluation_uuid,
             'enable_shap_summary': compute_shap_summary,
-            'chain_metric_task': chain_metric_task
+            'chain_metric_task': chain_metric_task,
+            'dataset_id': dataset_id
         }
         _, result, _ = self.__post(path=f'/ml/train', query_parameters=query_parameters)
         from prescience_client.bean.task import TaskFactory
@@ -580,6 +583,23 @@ class PrescienceClient(object):
         from prescience_client.bean.model_metric import ModelMetric
         return ModelMetric(json=metric, prescience=self)
 
+    def model_metric_from_csv(self,
+                      model_id: str,
+                      filepath: str
+                      ) -> 'Task':
+        """
+        Upload a local input file on prescience and launch a Parse Task on it for creating a source.
+        :param model_id: The id of the model to evaluate
+        :param filepath: The path of the local input file
+        :return: The model metric object
+        """
+        _, metric, _ = self.__post(
+            path=f'/metrics/{model_id}/transform-model',
+            filepath=filepath,
+            call_type=PrescienceWebService.SERVING)
+        from prescience_client.bean.model_metric import ModelMetric
+        return ModelMetric(json=metric, prescience=self)
+
     def model_test_evaluation(self, model_id: str) -> 'TestEvaluations':
         """
         Get the test evaluation of a wanted model
@@ -724,7 +744,8 @@ class PrescienceClient(object):
                data=None,
                multipart: list = None,
                query_parameters: dict = None,
-               call_type: PrescienceWebService = PrescienceWebService.API):
+               call_type: PrescienceWebService = PrescienceWebService.API,
+               filepath: str = None):
         """
         Generic HTTP POST call
         :param path: the http path to call
@@ -732,12 +753,16 @@ class PrescienceClient(object):
         :param multipart: The list of multipart part to send. None of any
         :param query_parameters: The dict of query parameters, None if any
         :param call_type: The prescience web service called
+        :param filepath: path ot data file
         :return: The tuple3 : (http response code, response content, cookie token)
         """
 
-        content_type = 'application/json'
-        if multipart is not None:
-            content_type = 'multipart/form-data'
+        if filepath is not None:
+            content_type = 'application/octet-stream'
+        else:
+            content_type = 'application/json'
+            if multipart is not None:
+                content_type = 'multipart/form-data'
         return self.call(
             method='POST',
             path=path,
@@ -745,7 +770,8 @@ class PrescienceClient(object):
             multipart=multipart,
             content_type=content_type,
             query_parameters=query_parameters,
-            call_type=call_type
+            call_type=call_type,
+            filepath=filepath
         )
 
     def __delete(self, path: str):
@@ -783,7 +809,8 @@ class PrescienceClient(object):
             multipart: list = None,
             content_type: str = 'application/json',
             call_type: PrescienceWebService = PrescienceWebService.API,
-            accept: str = 'application/json'
+            accept: str = 'application/json',
+            filepath: str = None
     ):
         """
         Generic HTTP call wrapper for pyCurl
@@ -837,6 +864,13 @@ class PrescienceClient(object):
         if self.config().is_verbose_activated():
             curl.setopt(pycurl.VERBOSE, 1)
 
+        file = None
+        if filepath is not None:
+            file = open(filepath, 'rb')
+            curl.setopt(pycurl.POST, 1)
+            curl.setopt(pycurl.POSTFIELDSIZE, os.stat(filepath).st_size)
+            curl.setopt(pycurl.READDATA, file)
+
         if data is not None:
             curl.setopt(pycurl.POSTFIELDS, json.dumps(data))
 
@@ -862,6 +896,9 @@ class PrescienceClient(object):
         except pycurl.error as error:
             prescience_error = PyCurlExceptionFactory.construct(error)
             self.config().handle_exception(prescience_error)
+        finally:
+            if file is not None:
+                file.close()
 
         status_code = curl.getinfo(pycurl.RESPONSE_CODE)
         response_content = buffer.getvalue()

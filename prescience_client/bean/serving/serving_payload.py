@@ -70,6 +70,8 @@ class ServingPayload(object):
         self.prescience = prescience
         self.model_evaluator = model_evaluator
 
+        self.input_names = None
+
     def get_payload(self) -> dict:
         """
         Access the request payload dictionary
@@ -137,7 +139,7 @@ class ServingPayload(object):
         Access the result probabilities if any
         :return: the result probabilities if any, an empty dictionary otherwise
         """
-        return {k: v for k, v in  self.get_result_dict().items() if k.startswith('probability')}
+        return {k: v for k, v in self.get_result_dict().items() if k.startswith('probability')}
 
     def get_flow_type(self):
         """
@@ -236,3 +238,10 @@ class ServingPayload(object):
             return self.show_arguments()
         else:
             return self.show_result()
+
+    def get_input_names(self):
+        if self.input_names is not None:
+            return self.input_names
+        else:
+            self.input_names = [payload_input.get_name() for payload_input in self.current_inputs_evaluators()]
+            return self.input_names
