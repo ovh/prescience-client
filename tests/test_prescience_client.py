@@ -295,7 +295,7 @@ class TestPrescienceClient(unittest.TestCase):
         self.assertIsInstance(task, ParseTask)
         self.assertEqual(Status.PENDING, task.status())
 
-        expected_parse_payload = {'source_id': 'my-source-id','type': 'CSV', 'headers': True}
+        expected_parse_payload = {'source_id': 'my-source-id','type': 'CSV', 'headers': True, 'separator': 'COMMA'}
         self.presience_client.call.assert_called_with(
             method='POST',
             path='/ml/upload/source',
