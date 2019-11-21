@@ -52,12 +52,18 @@ class StartParseCommand(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false', help='Indicates that there is no header line on the csv file')
-        self.cmd_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
-        self.cmd_parser.add_argument('--input-type', type=InputType, choices=list(InputType), help=f"The input type of your local file (default: {DEFAULT_INPUT_TYPE})")
-        self.cmd_parser.add_argument('--separator', type=Separator, choices=list(Separator), help=f"The CSV Separator (default: {DEFAULT_SEPARATOR})")
-        self.cmd_parser.add_argument('--source-id', nargs='?', type=str, help='Identifier of your future source object.')
-        self.cmd_parser.add_argument('input-filepath', nargs='?', type=str, help='Local input file to send and parse on prescience. If unset it will trigger the interactive mode.')
+        self.cmd_parser.add_argument('--no-headers', default=True, dest='headers', action='store_false',
+                                     help='Indicates that there is no header line on the csv file')
+        self.cmd_parser.add_argument('--watch', default=False, action='store_true',
+                                     help='Wait until the task ends and watch the progression')
+        self.cmd_parser.add_argument('--input-type', type=InputType, choices=list(InputType),
+                                     help=f"The input type of your local file (default: {DEFAULT_INPUT_TYPE})")
+        self.cmd_parser.add_argument('--separator', type=Separator, choices=list(Separator),
+                                     help=f"The CSV Separator (default: {DEFAULT_SEPARATOR})")
+        self.cmd_parser.add_argument('--source-id', nargs='?', type=str,
+                                     help='Identifier of your future source object.')
+        self.cmd_parser.add_argument('input-filepath', nargs='?', type=str,
+                                     help='Local input file to send and parse on prescience. If unset it will trigger the interactive mode.')
 
     def exec(self, args: dict):
         filepath = args.get('input-filepath')
@@ -123,6 +129,7 @@ class StartParseCommand(Command):
         if watch:
             parse_task.watch()
 
+
 class StartPreprocessCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -135,22 +142,23 @@ class StartPreprocessCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('source-id', nargs='?', type=str,
-                                       help='Identifier of the source object to use for preprocessing. If unset it will trigger the interactive mode.')
+                                     help='Identifier of the source object to use for preprocessing. If unset it will trigger the interactive mode.')
         self.cmd_parser.add_argument('dataset-id', nargs='?', type=str,
-                                       help='Identifier of your future dataset object. If unset it will trigger the interactive mode.')
+                                     help='Identifier of your future dataset object. If unset it will trigger the interactive mode.')
         self.cmd_parser.add_argument('label', nargs='?', type=str,
-                                       help='Identifier of the column to predict. If unset it will trigger the interactive mode.')
+                                     help='Identifier of the column to predict. If unset it will trigger the interactive mode.')
         self.cmd_parser.add_argument('--columns', type=List[str],
-                                       help='Subset of columns to include in the dataset. (default: all)')
+                                     help='Subset of columns to include in the dataset. (default: all)')
         self.cmd_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType),
-                                       help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
-                                       default=DEFAULT_PROBLEM_TYPE)
+                                     help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
+                                     default=DEFAULT_PROBLEM_TYPE)
         self.cmd_parser.add_argument('--time-column', type=str,
-                                       help='Identifier of the time column for time series. Only for forecasts problems.')
+                                     help='Identifier of the time column for time series. Only for forecasts problems.')
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
-                                       help='Wait until the task ends and watch the progression')
+                                     help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
-        self.cmd_parser.add_argument('--date-format', type=str, help='The date format to use for your time column (if any)')
+        self.cmd_parser.add_argument('--date-format', type=str,
+                                     help='The date format to use for your time column (if any)')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -251,6 +259,7 @@ class StartPreprocessCommand(Command):
         if watch:
             task.watch()
 
+
 class StartOptimizeCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -275,7 +284,6 @@ class StartOptimizeCommand(Command):
         self.cmd_parser.add_argument('--forecast-discount', type=float,
                                      help='Discount to apply on each time step before the horizon (Only in case of time series forecast)')
 
-
     def exec(self, args: dict):
         interactive_mode = args.get('dataset-id') is None
         dataset_id = get_args_or_prompt_list(
@@ -298,7 +306,8 @@ class StartOptimizeCommand(Command):
             choices_function=lambda: list(map(str, ScoringMetric)),
             force_interactive=interactive_mode
         )
-        if interactive_mode and self.prescience_client.dataset(dataset_id).problem_type() == ProblemType.TIME_SERIES_FORECAST:
+        if interactive_mode and self.prescience_client.dataset(
+                dataset_id).problem_type() == ProblemType.TIME_SERIES_FORECAST:
             forecast_horizon_steps = get_args_or_prompt_input(
                 arg_name='forecast_horizon_steps',
                 args=args,
@@ -333,6 +342,7 @@ class StartOptimizeCommand(Command):
         if watch:
             task.watch()
 
+
 class StartTrainCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -346,8 +356,8 @@ class StartTrainCommand(Command):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('uuid', type=str, help='Chosen evaluation result uuid to train on')
         self.cmd_parser.add_argument('model-id', type=str, help='Identifier of your future model object')
-        self.cmd_parser.add_argument('--watch', default=False, action='store_true', help='Wait until the task ends and watch the progression')
-
+        self.cmd_parser.add_argument('--watch', default=False, action='store_true',
+                                     help='Wait until the task ends and watch the progression')
 
     def exec(self, args: dict):
         evaluation_result_uuid = args['uuid']
@@ -356,6 +366,7 @@ class StartTrainCommand(Command):
         task = self.prescience_client.train(evaluation_uuid=evaluation_result_uuid, model_id=model_id)
         if watch:
             task.watch()
+
 
 class StartReTrainCommand(Command):
     def __init__(self, prescience_client):
@@ -369,10 +380,10 @@ class StartReTrainCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('--watch', action='store_true',
-                                    help='Wait until the task ends and watch the progression')
+                                     help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('model-id', type=str, help='Model to retrain')
         self.cmd_parser.add_argument('--input-filepath', type=str,
-                                    help='Local input file to send in order to retrain the model on prescience')
+                                     help='Local input file to send in order to retrain the model on prescience')
 
     def exec(self, args: dict):
         file = args['input_filepath']
@@ -395,10 +406,10 @@ class StartRefreshCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('--watch', action='store_true',
-                                    help='Wait until the task ends and watch the progression')
+                                     help='Wait until the task ends and watch the progression')
         self.cmd_parser.add_argument('dataset-id', type=str, help='Dataset to refresh')
         self.cmd_parser.add_argument('--input-filepath', type=str,
-                                    help='Local input file/directory to send in order to refresh the dataset on prescience')
+                                     help='Local input file/directory to send in order to refresh the dataset on prescience')
 
     def exec(self, args: dict):
         file = args['input_filepath']
@@ -407,6 +418,7 @@ class StartRefreshCommand(Command):
         task = self.prescience_client.refresh_dataset(dataset_id=dataset_id, filepath=file)
         if watch:
             task.watch()
+
 
 class StartEvaluateCommand(Command):
     def __init__(self, prescience_client):
@@ -420,11 +432,11 @@ class StartEvaluateCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('dataset-id', nargs='?', type=str,
-                                       help='Dataset to launch an evaluation on. If unset it will trigger the interactive mode.')
+                                     help='Dataset to launch an evaluation on. If unset it will trigger the interactive mode.')
         self.cmd_parser.add_argument('custom-config', nargs='?', type=str,
-                                       help='Configuration to use on the evaluation (in json format). If unset it will trigger the interactive mode.')
+                                     help='Configuration to use on the evaluation (in json format). If unset it will trigger the interactive mode.')
         self.cmd_parser.add_argument('--watch', action='store_true',
-                                       help='Wait until the task ends and watch the progression')
+                                     help='Wait until the task ends and watch the progression')
 
     def exec(self, args: dict):
         interactive_mode = args.get('dataset-id') is None
@@ -466,6 +478,7 @@ class StartEvaluateCommand(Command):
         if watch:
             task.watch()
 
+
 class StartMaskCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -479,10 +492,10 @@ class StartMaskCommand(Command):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('dataset-id', type=str, nargs='?', help='Initial existing dataset')
         self.cmd_parser.add_argument('mask-id', type=str, nargs='?', help='Wanted name for the mask')
-        self.cmd_parser.add_argument('columns', type=str, nargs='*', help='List of all initial columns to keep in the mask')
+        self.cmd_parser.add_argument('columns', type=str, nargs='*',
+                                     help='List of all initial columns to keep in the mask')
 
     def exec(self, args: dict):
-
         interactive_mode = args.get('dataset-id') is None
         dataset_id = get_args_or_prompt_list(
             arg_name='dataset-id',
@@ -494,7 +507,7 @@ class StartMaskCommand(Command):
         dataset = self.prescience_client.dataset(dataset_id)
         field_selection_function = lambda: [x.name() for x in dataset.schema().fields()]
 
-        interactive_mode = interactive_mode or  args.get('mask-id') is None
+        interactive_mode = interactive_mode or args.get('mask-id') is None
         mask_id = get_args_or_prompt_input(
             arg_name='mask-id',
             args=args,
@@ -517,6 +530,7 @@ class StartMaskCommand(Command):
             selected_column=columns
         )
 
+
 class StartAutoML(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -528,19 +542,19 @@ class StartAutoML(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('source-id', nargs="?", type=str, help='The source from which you want to start a AutoML task')
+        self.cmd_parser.add_argument('source-id', nargs="?", type=str,
+                                     help='The source from which you want to start a AutoML task')
         self.cmd_parser.add_argument('scoring-metric', nargs="?", type=ScoringMetric, choices=list(ScoringMetric),
                                      help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
 
         self.cmd_parser.add_argument('--dataset-id', type=str, help='Name you want for the created dataset')
         self.cmd_parser.add_argument('--model-id', type=str, help='Name you want for the created model')
 
-
         self.cmd_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType),
-                                       help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
-                                       default=DEFAULT_PROBLEM_TYPE)
+                                     help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
+                                     default=DEFAULT_PROBLEM_TYPE)
         self.cmd_parser.add_argument('--time-column', type=str,
-                                       help='Identifier of the time column for time series. Only for forecasts problems.')
+                                     help='Identifier of the time column for time series. Only for forecasts problems.')
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
         self.cmd_parser.add_argument('--label', type=str,
                                      help='Column of your source that you want to use as the label')
@@ -589,7 +603,8 @@ class StartAutoML(Command):
                 args=args,
                 message='Select the columns you want to keep for your preprocessing',
                 choices_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
-                selected_function=lambda: [x.name() for x in self.prescience_client.source(source_id).schema().fields()],
+                selected_function=lambda: [x.name() for x in
+                                           self.prescience_client.source(source_id).schema().fields()],
                 force_interactive=interactive_mode
             )
         else:
@@ -697,6 +712,7 @@ class StartAutoML(Command):
         if watch:
             task.watch()
 
+
 class StartAutoMLWarp(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -711,27 +727,34 @@ class StartAutoMLWarp(Command):
         self.cmd_parser.add_argument('source-id', type=str, nargs='?', help='The source name')
         self.cmd_parser.add_argument('read-token', type=str, nargs='?', help='The warp10 read token')
         self.cmd_parser.add_argument('selector', type=str, nargs='?', help='The warp10 selector')
-        self.cmd_parser.add_argument('sample-span', type=str, nargs='?', help='The span over which the sample is read.(e.g: 6w for 6 weeks)')
-        self.cmd_parser.add_argument('sampling-interval', type=str, nargs='?', help='The size of the interval which is reduced to a single point.(e.g: 1d for 1 day)')
+        self.cmd_parser.add_argument('sample-span', type=str, nargs='?',
+                                     help='The span over which the sample is read.(e.g: 6w for 6 weeks)')
+        self.cmd_parser.add_argument('sampling-interval', type=str, nargs='?',
+                                     help='The size of the interval which is reduced to a single point.(e.g: 1d for 1 day)')
 
         self.cmd_parser.add_argument('--labels', type=str,
                                      help='The labels of the warp 10 Time Series in json (ex: {"label":"label1"})')
 
-        self.cmd_parser.add_argument('--scoring-metric', nargs='?', default=ScoringMetric.MSE, type=ScoringMetric, choices=list(ScoringMetric),
+        self.cmd_parser.add_argument('--scoring-metric', nargs='?', default=ScoringMetric.MSE, type=ScoringMetric,
+                                     choices=list(ScoringMetric),
                                      help=f'The scoring metric to optimize on. If unset it will trigger the interactive mode.')
 
-        self.cmd_parser.add_argument('--sampling-strategy', nargs='?', type=SamplingStrategy, choices=list(SamplingStrategy), default=SamplingStrategy.MEAN,
+        self.cmd_parser.add_argument('--sampling-strategy', nargs='?', type=SamplingStrategy,
+                                     choices=list(SamplingStrategy), default=SamplingStrategy.MEAN,
                                      help=f'The strategy to use to transform an interval into a point.')
 
         self.cmd_parser.add_argument('--dataset-id', type=str, help='Name you want for the created dataset')
         self.cmd_parser.add_argument('--model-id', type=str, help='Name you want for the created model')
-        self.cmd_parser.add_argument('--backend-url', type=str, help='The Warp10 backend url (Default: https://warp10.gra1-ovh.metrics.ovh.net)',
+        self.cmd_parser.add_argument('--backend-url', type=str,
+                                     help='The Warp10 backend url (Default: https://warp10.gra1-ovh.metrics.ovh.net)',
                                      default='https://warp10.gra1-ovh.metrics.ovh.net')
 
-        self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited', default=10)
+        self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited',
+                                     default=10)
 
         self.cmd_parser.add_argument('--budget', type=int,
-                                     help='Budget to allow on optimization (default: it will use the one configure on prescience server side)', default=6)
+                                     help='Budget to allow on optimization (default: it will use the one configure on prescience server side)',
+                                     default=6)
 
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
                                      help='Wait until the task ends and watch the progression')
@@ -769,14 +792,14 @@ class StartAutoMLWarp(Command):
         selector = get_args_or_prompt_input(
             arg_name='selector',
             args=args,
-            message='What is your warp 10 selector, It must match only one GTS',
+            message='What is your warp 10 selector, combined with labels it must match only one GTS',
             force_interactive=interactive_mode
         )
 
         labels = get_args_or_prompt_input(
             arg_name='labels',
             args=args,
-            message='What is your warp 10 labels, It must match only one GTS (ex: {"label":"label1"})',
+            message='What is your warp 10 labels (ex: {"label":"label1"})',
             force_interactive=interactive_mode
         )
 
@@ -832,7 +855,7 @@ class StartAutoMLWarp(Command):
         forecast_discount = get_args_or_prompt_input(
             arg_name='forecast_discount',
             args=args,
-            message='Which discount value fo you want to apply on your forecasted values ?',
+            message='Which discount value do you want to apply on your forecasted values ?',
             force_interactive=interactive_mode,
             validator=FloatValidator,
             filter_func=float
