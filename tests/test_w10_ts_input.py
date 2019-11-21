@@ -19,11 +19,9 @@ class TestPrescienceConfig(unittest.TestCase):
             read_token='AZERTY',
             value=TimeSerieFeature(
                 selector='ml.kpi.global.selector',
-                labels={
-                    'kpi': 'label1'
-                }
+                labels='{"kpi": "label1"}'
             ),
-            last_point_date=datetime.datetime(2018,1,1,0,0,0,0),
+            last_point_date=datetime.datetime(2018, 1, 1, 0, 0, 0, 0),
             sample_span="100w",
             sampling_interval="1d",
             sampling_strategy=SamplingStrategy.MEAN,
@@ -31,16 +29,14 @@ class TestPrescienceConfig(unittest.TestCase):
 
         input_payload = input_payload.add_augmentation_feature(
             AugmentationFeature(
-            augmentationStrategy=AugmentationStrategy.MEAN,
-            windowSize=5
+                augmentationStrategy=AugmentationStrategy.MEAN,
+                windowSize=5
             )
         )
         input_payload = input_payload.add_exogeneous_feature(
             TimeSerieFeature(
                 selector='ml.kpi.global.selector2',
-                labels={
-                    'kpi2': 'label2'
-                }
+                labels='{"kpi2": "label2"}'
             )
         )
 

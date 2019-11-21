@@ -4,7 +4,6 @@
 
 import copy
 from datetime import datetime
-import json
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE

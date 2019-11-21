@@ -4,6 +4,8 @@
 
 import json
 import os
+from multiprocessing import Process, Queue
+
 import pycurl
 import re
 import shutil
@@ -36,7 +38,7 @@ from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory, PrescienceClientException
-from prescience_client.utils import dataframe_to_dict_series, filter_dataframe_on_index
+from prescience_client.utils import dataframe_to_dict_series
 from prescience_client.utils.monad import Option
 
 
@@ -154,14 +156,13 @@ class PrescienceClient(object):
         body = {}
 
         if last_point_date:
-            body['last_point_timestamp'] = int(last_point_date.timestamp()*1e6)
+            body['last_point_timestamp'] = int(last_point_date.timestamp() * 1e6)
         if sample_span:
             body['sample_span'] = sample_span
 
         _, result, _ = self.__post(path=f'/ml/update/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
-
 
     def delete_source(self, source_id: str):
         """
@@ -248,9 +249,6 @@ class PrescienceClient(object):
 
         if len(date_time_info) != 0:
             body['datetime_info'] = date_time_info
-
-
-
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -355,10 +353,9 @@ class PrescienceClient(object):
         }
 
         if last_point_date:
-            query_parameters['last_point_timestamp'] = int(last_point_date.timestamp()*1e6)
+            query_parameters['last_point_timestamp'] = int(last_point_date.timestamp() * 1e6)
         if sample_span:
             query_parameters['sample_span'] = sample_span
-
 
         if filepath:
             if os.path.isdir(filepath):
@@ -535,7 +532,7 @@ class PrescienceClient(object):
         :return: the page object containing the evaluation results
         """
         query_parameters = {
-            'dataset_id':dataset_id,
+            'dataset_id': dataset_id,
             'page': page,
             'sort_column': sort_column,
             'forecasting_horizon_steps': forecasting_horizon_steps,
@@ -609,7 +606,6 @@ class PrescienceClient(object):
         _, test_evaluation_dict, _ = self.__get(path=f'/model/{model_id}/additional-information/test_evaluations')
         from prescience_client.bean.test_evaluation import TestEvaluations
         return TestEvaluations(json=test_evaluation_dict, prescience=self)
-
 
     def get_list_source_files(self, source_id: str) -> list:
         """
@@ -789,7 +785,7 @@ class PrescienceClient(object):
     def progress_curl():
         bar = None
 
-        def progress(download_t, download_d, upload_t, upload_d):
+        def progress(download_t, download_d, upload_t, upload_d):  # pylint: disable=unused-argument
             nonlocal bar
             if upload_t > 0 and not bar:
                 bar = IncrementalBar('Uploading', max=upload_t)
@@ -798,7 +794,6 @@ class PrescienceClient(object):
                 bar.next(upload_d - bar.index)
 
         return progress
-
 
     def call(
             self,
@@ -859,7 +854,6 @@ class PrescienceClient(object):
         curl.setopt(pycurl.CUSTOMREQUEST, method)
         curl.setopt(pycurl.NOPROGRESS, False)
         curl.setopt(pycurl.XFERINFOFUNCTION, self.progress_curl())
-
 
         if self.config().is_verbose_activated():
             curl.setopt(pycurl.VERBOSE, 1)
@@ -969,24 +963,23 @@ class PrescienceClient(object):
         from prescience_client.bean.algorithm_configuration import AlgorithmConfigurationList
         return AlgorithmConfigurationList(json_dict=result, category=kind)
 
-
     def start_auto_ml(
-        self,
-        source_id,
-        label_id: str,
-        problem_type: ProblemType,
-        scoring_metric: ScoringMetric,
-        dataset_id: str = None,
-        model_id: str = None,
-        time_column: str = None,
-        nb_fold: int = None,
-        selected_column: list = None,
-        budget: int = None,
-        forecasting_horizon_steps: int = None,
-        forecast_discount: float = None,
-        formatter: str = None,
-        datetime_exogenous: list = None,
-        granularity: str = None
+            self,
+            source_id,
+            label_id: str,
+            problem_type: ProblemType,
+            scoring_metric: ScoringMetric,
+            dataset_id: str = None,
+            model_id: str = None,
+            time_column: str = None,
+            nb_fold: int = None,
+            selected_column: list = None,
+            budget: int = None,
+            forecasting_horizon_steps: int = None,
+            forecast_discount: float = None,
+            formatter: str = None,
+            datetime_exogenous: list = None,
+            granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml task
@@ -1122,7 +1115,6 @@ class PrescienceClient(object):
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self), dataset_id, model_id
 
-
     ############################################
     ########### WEB-SOCKET METHODS #############
     ############################################
@@ -1140,15 +1132,15 @@ class PrescienceClient(object):
         return ws
 
     # Wait for the next message related to the given task
-    def __wait_for_task_message(self, ws, initial_task: 'Task'):
+    def __wait_for_task_message(self, ws, task: 'Task'):
         """
         Wait until the next related task
         :param ws: The web socket connection
-        :param initial_task: the initial task
+        :param task: the task to watch
         :return: The related task catch from WS connection
         """
         task_message = None
-        while task_message is None or task_message.uuid() != initial_task.uuid() or task_message.type() != initial_task.type():
+        while task_message is None or task_message.uuid() != task.uuid() or task_message.type() != task.type():
             rcv_message = ws.recv()
             message = json.loads(rcv_message)['entity']
             from prescience_client.bean.task import TaskFactory
@@ -1162,23 +1154,48 @@ class PrescienceClient(object):
         :param initial_task:
         :return: The last state of the Task
         """
+        bar = ChargingBar(initial_task.type(), max=initial_task.total_step())
+        if initial_task.current_step_description() is not None:
+            bar.message = f'{initial_task.type()} - {initial_task.current_step_description()}'
+        bar.next(0)
+
         # Initialize web-socket connection
         websocket = self.__init_ws_connection()
-        current_task = initial_task
-        bar = ChargingBar(current_task.type(), max=current_task.total_step())
-        if current_task.current_step_description() is not None:
-            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
-        bar.next(0)
-        while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
-            current_task = self.__wait_for_task_message(websocket, initial_task)
-            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
-            bar.next()
-        bar.message = f'{current_task.type()} - {current_task.status().to_colored()}'
-        bar.next()
-        bar.finish()
+
+        result_queue = Queue()
+        exec_process = Process(target=self.wait_for_finish, args=(websocket, bar, initial_task, result_queue))
+        exec_process.start()
+
+        final_task = self.task(initial_task.uuid())
+        if final_task.status() in [Status.DONE, Status.ERROR]:
+            # in this case the task was finished potentially before the websocket was connected, we do not need to watch
+            exec_process.terminate()
+        else:
+            # in this case when we started to watch the websocket, the task was not over, we wait
+            result_payload = result_queue.get()
+            from prescience_client.bean.task import TaskFactory
+            final_task = TaskFactory.construct(result_payload, self)
+            exec_process.join()
+
+        result_queue.close()
         # Closing web-socket
         websocket.close()
-        return current_task
+
+        bar.message = f'{final_task.type()} - {final_task.status().to_colored()}'
+        if final_task.status() == Status.DONE:
+            # Complete the progression in case we missed some messages
+            bar.next(bar.remaining)
+
+        bar.finish()
+        return final_task
+
+    def wait_for_finish(self, websocket, bar, task, queue: Queue):
+        current_task = task
+        while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
+            current_task = self.__wait_for_task_message(websocket, current_task)
+            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
+            bar.next()
+        queue.put(current_task.initial_payload)
 
     ############################################
     ############### FACTORY METHODS ############
@@ -1241,7 +1258,7 @@ class PrescienceClient(object):
         """
         cache_dataset_directory = self.config().get_or_create_cache_datasets_directory()
         if test_part:
-            test_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number),'test')
+            test_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'test')
             return self.config().create_config_path_if_not_exist(test_path)
         else:
             train_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'train')
@@ -1314,7 +1331,6 @@ class PrescienceClient(object):
             )
 
         return fold_path
-
 
     def update_cache_dataset(self, dataset_id, test_part: bool) -> str:
         """
@@ -1403,10 +1419,10 @@ class PrescienceClient(object):
 
     def plot_source(self,
                     source_id: str,
-                    x: str=None,
-                    y: str=None,
-                    kind: str=None,
-                    clss: str=None,
+                    x: str = None,
+                    y: str = None,
+                    kind: str = None,
+                    clss: str = None,
                     block=False):
         """
         Plot a wanted source data
@@ -1438,9 +1454,11 @@ class PrescienceClient(object):
     def _plot_dataframe_with_class(cls, dataframe: pandas.DataFrame, clss: str, kind: str, x: str, y: str):
         available_columns = [x for x in dataframe.columns]
         if x not in available_columns:
-            raise PrescienceClientException(Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
+            raise PrescienceClientException(
+                Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
         if y not in available_columns:
-            raise PrescienceClientException(Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
+            raise PrescienceClientException(
+                Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
 
         available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
         clss_value = dataframe[clss].unique().tolist()
@@ -1523,7 +1541,8 @@ class PrescienceClient(object):
 
         matplotlib.pyplot.show(block=block)
 
-    def plot_evaluations(self, dataset_id: str, scoring_metric: ScoringMetric, forecasting_horizon_steps: str=None, forecasting_discount: str=None):
+    def plot_evaluations(self, dataset_id: str, scoring_metric: ScoringMetric, forecasting_horizon_steps: str = None,
+                         forecasting_discount: str = None):
         """
         Plot the evolution of evalution result scoring metrics for a given dataset
         :param dataset_id: The related dataset ID
@@ -1567,7 +1586,7 @@ class PrescienceClient(object):
             # Try to parse from_data to int
             try:
                 from_data = int(from_data)
-            except:
+            except:  # pylint: disable=bare-except
                 pass
 
             # Fill the payload from the data
@@ -1601,13 +1620,12 @@ class PrescienceClient(object):
     def get_roc_curve_dataframe(self, model_id: str) -> pandas.DataFrame:
         metric = self.model_metric(model_id)
         roc_dict = metric.json_dict['roc']
-        return pandas.DataFrame ({'fpr': roc_dict.get('fpr'), 'tpr': roc_dict.get('tpr')})
+        return pandas.DataFrame({'fpr': roc_dict.get('fpr'), 'tpr': roc_dict.get('tpr')})
 
-    def plot_roc_curve(self, model_id: str, block: bool=False):
+    def plot_roc_curve(self, model_id: str, block: bool = False):
         df = self.get_roc_curve_dataframe(model_id=model_id)
         df.plot(x='fpr', y='tpr', kind='area')
         matplotlib.pyplot.show(block=block)
-
 
     def get_confusion_matrix(self, model_id: str) -> pandas.DataFrame:
         """
@@ -1623,7 +1641,7 @@ class PrescienceClient(object):
         tab_dict = {}
 
         for column_name, row in confusion_matrix_dict.items():
-            for row_name,value in row.items():
+            for row_name, value in row.items():
                 columns_names.add(column_name)
                 row_names.add(row_name)
                 if not tab_dict.get(column_name):
@@ -1686,18 +1704,17 @@ class PrescienceClient(object):
         return pandas.DataFrame(data=final_dict, index=row_names)
 
     def get_default_json_ouput(self):
-        payload_directory = self\
-            .config()\
+        payload_directory = self \
+            .config() \
             .get_or_create_cache_payload_directory()
 
         full_output = os.path.join(payload_directory, 'payload.json')
         return full_output
 
-
     def generate_payload_dict_for_model(self,
                                         model_id: str,
                                         payload_json: str = None,
-                                        from_data = None):
+                                        from_data=None):
 
         if payload_json is None:
             payload_json = self.generate_serving_payload(from_data, model_id)

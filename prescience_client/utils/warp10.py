@@ -35,7 +35,7 @@ class Warp10Util:
 
     @staticmethod
     def split_interval(s):
-        match = re.compile("[^\W\d]").search(s)
+        match = re.compile(r"[^\W\d]").search(s)
         number = s[:match.start()]
         letter = s[match.start():]
         return f'{number} {letter}'
