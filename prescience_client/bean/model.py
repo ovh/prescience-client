@@ -72,7 +72,7 @@ class Model(TablePrintable, DictPrintable):
         return {
             'model_id': self.model_id(),
             'status': self.status().to_colored(output),
-            'config_name': self.config().name(),
+            'config_name': self.config().name() if self.config() is not None else None,
             'dataset_id': self.dataset_id(),
             'source_id': self.source_id()
         }
