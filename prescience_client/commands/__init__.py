@@ -23,6 +23,7 @@ def get_args_or_prompt_list(
         arg_value = answers.get(arg_name)
     return arg_value
 
+
 def get_args_or_prompt_checkbox(
         arg_name: str,
         args: dict,
@@ -46,6 +47,7 @@ def get_args_or_prompt_checkbox(
         arg_value = answers.get(arg_name)
     return arg_value
 
+
 def get_args_or_prompt_confirm(
         arg_name: str,
         args: dict,
@@ -65,14 +67,15 @@ def get_args_or_prompt_confirm(
         arg_value = answers.get(arg_name)
     return arg_value
 
+
 def get_args_or_prompt_input(
         arg_name: str,
         args: dict,
         message: str,
         force_interactive: bool = False,
-        validator = None,
-        filter_func = None,
-        default = None
+        validator=None,
+        filter_func=None,
+        default=None
 ):
     arg_value = args.get(arg_name)
     if arg_value is None or force_interactive:
@@ -91,6 +94,7 @@ def get_args_or_prompt_input(
         arg_value = answers.get(arg_name)
     return arg_value
 
+
 def prompt_for_model_id_if_needed(args: dict, prescience):
     return get_args_or_prompt_list(
         arg_name='id',
@@ -99,13 +103,15 @@ def prompt_for_model_id_if_needed(args: dict, prescience):
         choices_function=lambda: [x.model_id() for x in prescience.models(page=1).content]
     )
 
+
 def prompt_for_source_id_if_needed(args: dict, prescience):
     return get_args_or_prompt_list(
         arg_name='id',
         args=args,
         message='Which source do you want to get ?',
-        choices_function=lambda: [x.source_id for x in prescience.sources(page=1).content]
+        choices_function=lambda: [x.get_source_id() for x in prescience.sources(page=1).content]
     )
+
 
 def prompt_for_dataset_id_if_needed(args: dict, prescience):
     return get_args_or_prompt_list(

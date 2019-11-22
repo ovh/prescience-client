@@ -37,7 +37,7 @@ from prescience_client.enum.sort_direction import SortDirection
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
-    HttpErrorExceptionFactory, PrescienceClientException
+    HttpErrorExceptionFactory, PrescienceClientException, PrescienceException
 from prescience_client.utils import dataframe_to_dict_series
 from prescience_client.utils.monad import Option
 
@@ -576,14 +576,16 @@ class PrescienceClient(object):
         :param model_id: The model ID
         :return: The model metric object
         """
+        model = self.model(model_id)
         _, metric, _ = self.__get(path=f'/model/{model_id}/additional-information/metrics')
-        from prescience_client.bean.model_metric import ModelMetric
-        return ModelMetric(json=metric, prescience=self)
+
+        from prescience_client.bean.model_metric import get_model_metric
+        return get_model_metric(metric, model)
 
     def model_metric_from_csv(self,
-                      model_id: str,
-                      filepath: str
-                      ) -> 'Task':
+                              model_id: str,
+                              filepath: str
+                              ) -> 'Task':
         """
         Upload a local input file on prescience and launch a Parse Task on it for creating a source.
         :param model_id: The id of the model to evaluate
@@ -1544,7 +1546,7 @@ class PrescienceClient(object):
     def plot_evaluations(self, dataset_id: str, scoring_metric: ScoringMetric, forecasting_horizon_steps: str = None,
                          forecasting_discount: str = None):
         """
-        Plot the evolution of evalution result scoring metrics for a given dataset
+        Plot the evolution of evaluation result scoring metrics for a given dataset
         :param dataset_id: The related dataset ID
         :param scoring_metric: The scoring metric to display
         :param forecasting_horizon_steps: The forecasting_horizon_steps to filter on (if needed)
@@ -1620,6 +1622,8 @@ class PrescienceClient(object):
     def get_roc_curve_dataframe(self, model_id: str) -> pandas.DataFrame:
         metric = self.model_metric(model_id)
         roc_dict = metric.json_dict['roc']
+        if roc_dict is None:
+            raise PrescienceException(Exception(f"Unsupported method for model {model_id}."))
         return pandas.DataFrame({'fpr': roc_dict.get('fpr'), 'tpr': roc_dict.get('tpr')})
 
     def plot_roc_curve(self, model_id: str, block: bool = False):
@@ -1635,6 +1639,8 @@ class PrescienceClient(object):
         """
         metric = self.model_metric(model_id)
         confusion_matrix_dict = metric.json_dict['confusion_matrix']
+        if confusion_matrix_dict is None:
+            raise PrescienceException(Exception(f"Unsupported method for model {model_id}."))
 
         columns_names = set()
         row_names = set()

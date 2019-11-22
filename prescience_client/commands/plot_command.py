@@ -1,8 +1,12 @@
 import matplotlib
 
-from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed
+from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed, \
+    get_args_or_prompt_list, get_args_or_prompt_input
 from prescience_client.commands.command import Command
-from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.problem_type import ProblemType
+from prescience_client.enum.scoring_metric import ScoringMetric, ScoringMetricBinary, ScoringMetricRegression, \
+    ScoringMetricMulticlass, get_scoring_metrics
+from prescience_client.utils.validator import IntegerValidator, FloatValidator
 
 
 class PlotCommand(Command):
@@ -20,6 +24,7 @@ class PlotCommand(Command):
             ]
         )
 
+
 class PlotSourceCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -32,11 +37,12 @@ class PlotSourceCommand(Command):
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('id', nargs='?', type=str,
-                                        help='Identifier of the source object. If unset if will trigger the interactive mode for selecting one.')
+                                     help='Identifier of the source object. If unset if will trigger the interactive mode for selecting one.')
         self.cmd_parser.add_argument('--x', type=str, help='Column that should be used as X axe')
         self.cmd_parser.add_argument('--y', type=str, help='Column that should be used as Y axe')
         self.cmd_parser.add_argument('--kind', type=str, help='Kind of the plot figure. Default: line')
-        self.cmd_parser.add_argument('--class', type=str, help='Column that should be used as category if any (i.e class or label)')
+        self.cmd_parser.add_argument('--class', type=str,
+                                     help='Column that should be used as category if any (i.e class or label)')
 
     def exec(self, args: dict):
         source_id = prompt_for_source_id_if_needed(args, self.prescience_client)
@@ -58,13 +64,17 @@ class PlotDatasetCommand(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('id', nargs ='?', type=str, help='Identifier of the dataset object. If unset if will trigger the interactive mode for selecting one.')
+        self.cmd_parser.add_argument('id', nargs='?', type=str,
+                                     help='Identifier of the dataset object. If unset if will trigger the interactive mode for selecting one.')
         self.cmd_parser.add_argument('--fold', type=int, help='Fold number to plot')
-        self.cmd_parser.add_argument('--no-test', default=True, dest='plot_test', action='store_false', help='Won\'t plot the test part')
-        self.cmd_parser.add_argument('--no-train', default=True, dest='plot_train', action='store_false', help='Won\'t plot the train part')
+        self.cmd_parser.add_argument('--no-test', default=True, dest='plot_test', action='store_false',
+                                     help='Won\'t plot the test part')
+        self.cmd_parser.add_argument('--no-train', default=True, dest='plot_train', action='store_false',
+                                     help='Won\'t plot the train part')
         self.cmd_parser.add_argument('--x', type=str, help='Column that should be used as X axe')
         self.cmd_parser.add_argument('--y', type=str, help='Column that should be used as Y axe')
-        self.cmd_parser.add_argument('--class', type=str, help='Column that should be used as category if any (i.e class or label)')
+        self.cmd_parser.add_argument('--class', type=str,
+                                     help='Column that should be used as category if any (i.e class or label)')
 
     def exec(self, args: dict):
         dataset_id = prompt_for_dataset_id_if_needed(args, self.prescience_client)
@@ -87,7 +97,6 @@ class PlotDatasetCommand(Command):
         )
 
 
-
 class PlotPredictionCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -107,8 +116,8 @@ class PlotPredictionCommand(Command):
                                      dest='from_data',
                                      type=int,
                                      help=f"Generate a prediction payload from an index in the initial data in case of a classification/regression problem or from the time value in case of a timeseries forecast problem. It will be saved as the default cached file for payload before sending to prescience-serving")
-        self.cmd_parser.add_argument('--rolling', type=int, default=0, help='How many time do you want to roll on prediction (default: 0). It will only work if all inputs of your model are predicted by outputs.')
-
+        self.cmd_parser.add_argument('--rolling', type=int, default=0,
+                                     help='How many time do you want to roll on prediction (default: 0). It will only work if all inputs of your model are predicted by outputs.')
 
     def exec(self, args: dict):
         model_id = args.get('model-id')
@@ -129,6 +138,7 @@ class PlotPredictionCommand(Command):
         df_final.plot()
         matplotlib.pyplot.show(block=True)
 
+
 class PlotEvaluationsCommand(Command):
     def __init__(self, prescience_client):
         super().__init__(
@@ -140,20 +150,58 @@ class PlotEvaluationsCommand(Command):
 
     def init_from_subparser(self, subparsers, selector):
         super().init_from_subparser(subparsers, selector)
-        self.cmd_parser.add_argument('id', type=str,
-                                    help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
-        self.cmd_parser.add_argument('scoring-metric', type=ScoringMetric, choices=list(ScoringMetric),
+        self.cmd_parser.add_argument('id', nargs="?", type=str,
+                                     help='The ID of the dataset. If unset if will trigger the interactive mode for selecting one.')
+        self.cmd_parser.add_argument('scoring-metric', nargs="?", type=ScoringMetric,
+                                     choices=list(ScoringMetricBinary) + list(ScoringMetricMulticlass) + list(
+                                         ScoringMetricRegression),
                                      help=f'The scoring metric to filter on. If unset it will trigger the interactive mode.')
-        self.cmd_parser.add_argument('--forecasting-horizon-steps', type=int, help=f'The forecasting horizon steps to filter on (if any). If unset it will trigger the interactive mode.')
-        self.cmd_parser.add_argument('--forecasting-discount', type=float, help=f'The forecasting discount to filter on (if any). If unset it will trigger the interactive mode.')
-
+        self.cmd_parser.add_argument('--forecasting-horizon-steps', type=int,
+                                     help=f'The forecasting horizon steps to filter on (if any). If unset it will trigger the interactive mode.')
+        self.cmd_parser.add_argument('--forecasting-discount', type=float,
+                                     help=f'The forecasting discount to filter on (if any). If unset it will trigger the interactive mode.')
 
     def exec(self, args: dict):
-        dataset_id = args.get('id')
-        scoring_metric = args.get('scoring-metric')
-        forecasting_horizon_steps = args.get('forecasting_horizon_steps')
-        forecasting_discount = args.get('forecasting_discount')
-        self.prescience_client.plot_evaluations(dataset_id, scoring_metric, forecasting_horizon_steps, forecasting_discount)
+        interactive_mode = args.get('id') is None
+
+        dataset_id = get_args_or_prompt_list(
+            arg_name='id',
+            args=args,
+            message='For which dataset do you want to plot evaluations ?',
+            choices_function=lambda: [x.dataset_id() for x in self.prescience_client.datasets(page=1).content],
+            force_interactive=interactive_mode
+        )
+
+        dataset = self.prescience_client.dataset(dataset_id)
+        scoring_metric = get_args_or_prompt_list(
+            arg_name='scoring-metric',
+            args=args,
+            message='On which scoring metric do you want to optimize on ?',
+            choices_function=lambda: get_scoring_metrics(dataset.problem_type(), dataset.label_id(), dataset.source()),
+            force_interactive=interactive_mode
+        )
+
+        if dataset.problem_type() == ProblemType.TIME_SERIES_FORECAST:
+            forecasting_horizon_steps = get_args_or_prompt_input(
+                arg_name='forecast_horizon_steps',
+                args=args,
+                message='For which horizon do you want to plot evaluations ?',
+                force_interactive=interactive_mode,
+                validator=IntegerValidator,
+                filter_func=int
+            )
+            forecasting_discount = get_args_or_prompt_input(
+                arg_name='forecast_discount',
+                args=args,
+                message='For Which discount value do you want to plot evaluations ?',
+                force_interactive=interactive_mode,
+                validator=FloatValidator,
+                filter_func=float
+            )
+            self.prescience_client.plot_evaluations(dataset_id, scoring_metric, forecasting_horizon_steps,
+                                                    forecasting_discount)
+        else:
+            self.prescience_client.plot_evaluations(dataset_id, scoring_metric)
 
 
 class PlotRocCurveCommand(Command):
@@ -169,8 +217,6 @@ class PlotRocCurveCommand(Command):
         super().init_from_subparser(subparsers, selector)
         self.cmd_parser.add_argument('model-id', type=str, help='The ID of the model.')
 
-
     def exec(self, args: dict):
         model_id = args.get('model-id')
         self.prescience_client.plot_roc_curve(model_id=model_id, block=True)
-

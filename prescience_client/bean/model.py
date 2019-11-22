@@ -337,7 +337,7 @@ class Model(TablePrintable, DictPrintable):
 
         return self.model_evaluator
 
-    def get_metric(self):
+    def get_metrics(self):
         """
         Get the model metric of a wanted model
         :return: The model metric object
