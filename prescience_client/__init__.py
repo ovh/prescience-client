@@ -12,6 +12,7 @@ from prescience_client.exception.prescience_client_exception import PrescienceEx
 config = PrescienceConfig().load()
 prescience: PrescienceClient = PrescienceClient(config)
 
+
 def print_logo():
     logo = """
   _____                    _                     
@@ -23,6 +24,7 @@ def print_logo():
  
     """
     print(logo)
+
 
 def main():
     """
@@ -36,6 +38,5 @@ def main():
         root_cmd.exec(args)
         exit(0)
 
-    except PrescienceException as exception:
-        exception.print()
+    except PrescienceException:
         exit(1)
