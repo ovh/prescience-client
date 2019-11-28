@@ -4,6 +4,8 @@
 
 import copy
 from datetime import datetime
+
+from prescience_client import PrescienceException
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
@@ -66,6 +68,12 @@ class Source(TablePrintable, DictPrintable):
         else:
             return None
 
+    def is_multiclass(self, field_name):
+        for field in self.schema().fields():
+            if field.name() == field_name:
+                return field.metadata().n_cat() > 2
+        raise PrescienceException(Exception("Field not found in source."))
+
     def get_total_row_count(self):
         """
         Access the total row number of your source
@@ -114,7 +122,6 @@ class Source(TablePrintable, DictPrintable):
         """
 
         return self.prescience.update_source(self.source_id, last_point_date, sample_span)
-
 
     def preprocess(self,
                    dataset_id: str,
@@ -165,21 +172,21 @@ class Source(TablePrintable, DictPrintable):
         return self.source_id
 
     def start_auto_ml(
-        self,
-        label_id: str,
-        problem_type: ProblemType,
-        scoring_metric: ScoringMetric,
-        dataset_id: str = None,
-        model_id: str = None,
-        time_column: str = None,
-        nb_fold: int = None,
-        selected_column: list = None,
-        budget: int = None,
-        forecasting_horizon_steps: int = None,
-        forecast_discount: float = None,
-        formatter: str = None,
-        datetime_exogenous: list = None,
-        granularity: str = None
+            self,
+            label_id: str,
+            problem_type: ProblemType,
+            scoring_metric: ScoringMetric,
+            dataset_id: str = None,
+            model_id: str = None,
+            time_column: str = None,
+            nb_fold: int = None,
+            selected_column: list = None,
+            budget: int = None,
+            forecasting_horizon_steps: int = None,
+            forecast_discount: float = None,
+            formatter: str = None,
+            datetime_exogenous: list = None,
+            granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml task from the current source
@@ -200,7 +207,7 @@ class Source(TablePrintable, DictPrintable):
         :return: The tuple3 of (initial task, dataset id, model id)
         """
         return self.prescience.start_auto_ml(
-            source_id=self.get_source_id(),
+            source_id=self.source_id(),
             dataset_id=dataset_id,
             label_id=label_id,
             model_id=model_id,
@@ -217,7 +224,7 @@ class Source(TablePrintable, DictPrintable):
             granularity=granularity
         )
 
-    def plot(self, x: str=None, y: str=None, kind: str = None, clss: str=None, block=False):
+    def plot(self, x: str = None, y: str = None, kind: str = None, clss: str = None, block=False):
         self.prescience.plot_source(
             source_id=self.get_source_id(),
             x=x,

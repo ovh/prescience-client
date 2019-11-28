@@ -18,7 +18,7 @@ from prescience_client.bean.source import Source
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.problem_type import ProblemType
-from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.scoring_metric import ScoringMetricBinary
 from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from tests.utils import get_resource_file_path
@@ -43,11 +43,9 @@ class TestPrescienceClient(unittest.TestCase):
         # Creating prescience client
         self.presience_client = PrescienceClient(prescience_config=self.prescience_config)
 
-
     def tearDown(self):
         # Remove the directory after the test
         shutil.rmtree(self.config_path)
-
 
     def test_get_sources(self):
         """
@@ -70,7 +68,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_sources = self.presience_client.sources()
-        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters= {'page': 1}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters={'page': 1},
+                                                      accept='application/json')
         self.assertEqual(2, all_sources.metadata.page_number)
         self.assertEqual(2, all_sources.metadata.total_pages)
         self.assertEqual(1, all_sources.metadata.elements_on_page)
@@ -81,8 +80,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.sources(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters={'page': 2}, accept='application/json')
-
+        self.presience_client.call.assert_called_with(method='GET', path='/source', query_parameters={'page': 2},
+                                                      accept='application/json')
 
     def test_get_datasets(self):
         """
@@ -105,7 +104,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_datasets = self.presience_client.datasets()
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters= {'page': 1}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters={'page': 1},
+                                                      accept='application/json')
         self.assertEqual(2, all_datasets.metadata.page_number)
         self.assertEqual(2, all_datasets.metadata.total_pages)
         self.assertEqual(1, all_datasets.metadata.elements_on_page)
@@ -116,7 +116,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.datasets(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters={'page': 2}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset', query_parameters={'page': 2},
+                                                      accept='application/json')
 
     def test_get_models(self):
         """
@@ -139,7 +140,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         all_models = self.presience_client.models()
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 1}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 1},
+                                                      accept='application/json')
         self.assertEqual(2, all_models.metadata.page_number)
         self.assertEqual(2, all_models.metadata.total_pages)
         self.assertEqual(1, all_models.metadata.elements_on_page)
@@ -150,11 +152,14 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 2
         self.presience_client.models(page=2)
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2},
+                                                      accept='application/json')
 
         # Test 3
         self.presience_client.models(page=2, dataset_id_filter='my-dataset-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/model', query_parameters={'page': 2, 'dataset_id': 'my-dataset-id'}, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/model',
+                                                      query_parameters={'page': 2, 'dataset_id': 'my-dataset-id'},
+                                                      accept='application/json')
 
     def test_get_evaluation_results(self):
         """
@@ -218,7 +223,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_source = self.presience_client.source('my-source-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/source/my-source-id', query_parameters=None, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/source/my-source-id', query_parameters=None,
+                                                      accept='application/json')
         self.assertEqual('my-source-id', my_source.source_id)
 
     def test_delete_single_source(self):
@@ -241,7 +247,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_dataset = self.presience_client.dataset('my-dataset-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/dataset/my-dataset-id', query_parameters=None, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/dataset/my-dataset-id',
+                                                      query_parameters=None, accept='application/json')
         self.assertEqual('my-dataset-id', my_dataset.dataset_id())
 
     def test_delete_single_dataset(self):
@@ -264,7 +271,8 @@ class TestPrescienceClient(unittest.TestCase):
 
         # Test 1
         my_model = self.presience_client.model('my-model-id')
-        self.presience_client.call.assert_called_with(method='GET', path='/model/my-model-id', query_parameters=None, accept='application/json')
+        self.presience_client.call.assert_called_with(method='GET', path='/model/my-model-id', query_parameters=None,
+                                                      accept='application/json')
         self.assertEqual('my-model-id', my_model.model_id())
 
     def test_delete_single_model(self):
@@ -295,16 +303,18 @@ class TestPrescienceClient(unittest.TestCase):
         self.assertIsInstance(task, ParseTask)
         self.assertEqual(Status.PENDING, task.status())
 
-        expected_parse_payload = {'source_id': 'my-source-id','type': 'CSV', 'headers': True, 'separator': 'COMMA'}
+        expected_parse_payload = {'source_id': 'my-source-id', 'type': 'CSV', 'headers': True, 'separator': 'COMMA'}
         self.presience_client.call.assert_called_with(
             method='POST',
             path='/ml/upload/source',
             content_type='multipart/form-data',
             multipart=[
-                ('input', (pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE, 'application/json')),
+                ('input', (
+                pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE, 'application/json')),
                 ('input-file', (pycurl.FORM_FILE, csv_path))
             ],
             data=None,
+            filepath=None,
             query_parameters=None,
             call_type=PrescienceWebService.API
         )
@@ -334,6 +344,7 @@ class TestPrescienceClient(unittest.TestCase):
             path='/ml/preprocess/my-source-id',
             content_type='application/json',
             data={'dataset_id': 'my-dataset-id', 'label_id': 'my-label', 'problem_type': 'regression'},
+            filepath=None,
             multipart=None,
             query_parameters=None,
             call_type=PrescienceWebService.API
@@ -349,7 +360,7 @@ class TestPrescienceClient(unittest.TestCase):
         dataset = Dataset(json={'dataset_id': 'my-dataset-id'}, prescience=self.presience_client)
 
         # Test
-        optimize_task = dataset.optimize(budget=10, scoring_metric=ScoringMetric.ACCURACY)
+        optimize_task = dataset.optimize(budget=10, scoring_metric=ScoringMetricBinary.ACCURACY)
         self.assertEqual('optimize-task-uuid', optimize_task.uuid())
         self.assertEqual('optimize', optimize_task.type())
         self.assertEqual(Status.PENDING, optimize_task.status())
@@ -359,6 +370,7 @@ class TestPrescienceClient(unittest.TestCase):
             path='/ml/optimize/my-dataset-id',
             content_type='application/json',
             data={'scoring_metric': 'accuracy', 'budget': 10},
+            filepath=None,
             multipart=None,
             query_parameters=None,
             call_type=PrescienceWebService.API
@@ -386,10 +398,12 @@ class TestPrescienceClient(unittest.TestCase):
                 'model_id': 'my-model',
                 'evaluation_uuid': 'azerty',
                 'enable_shap_summary': True,
-                'chain_metric_task': False
+                'chain_metric_task': False,
+                'dataset_id': None
             },
             content_type='application/json',
             data=None,
+            filepath=None,
             multipart=None,
             call_type=PrescienceWebService.API
         )
@@ -408,6 +422,7 @@ class TestPrescienceClient(unittest.TestCase):
             query_parameters={'mask_id': 'dataset-mask'},
             content_type='application/json',
             data=['col1', 'col2', 'label'],
+            filepath=None,
             multipart=None,
             call_type=PrescienceWebService.API
         )
