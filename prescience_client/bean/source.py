@@ -9,6 +9,7 @@ from prescience_client import PrescienceException
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
@@ -127,10 +128,12 @@ class Source(TablePrintable, DictPrintable):
                    dataset_id: str,
                    label: str = DEFAULT_LABEL_NAME,
                    problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
-                   selected_columns: list = None,
+                   log_enabled: bool = False,
+                   selected_column: list = None,
                    time_column: str = None,
                    nb_fold: int = None,
                    fold_size: int = None,
+                   fold_strategy: FoldStrategy = None,
                    test_ratio: float = None,
                    formatter: str = None,
                    datetime_exogenous: list = None,
@@ -140,7 +143,16 @@ class Source(TablePrintable, DictPrintable):
         :param dataset_id: The id that we want for the Dataset
         :param label: The name of the Source column that we want to predict (the label)
         :param problem_type: The type of machine learning problem that we want to solve
+        :param log_enabled: Preprocess numeric variable with log10
+        :param selected_column: subset of the source column to use for preprocessing, by default it will use all
+        :param time_column: Indicates the time column (or step column) for a time-series problem type
+        :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param fold_size: The number of fold to use on cross-validation
+        :param fold_strategy: For time series the way to split data in different fold
+        :param test_ratio: The size of test ratio
         :param formatter: The formatter to use for parsing the time_column
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The task object of the Preprocess Task
         """
         return self.prescience.preprocess(
@@ -148,9 +160,11 @@ class Source(TablePrintable, DictPrintable):
             dataset_id=dataset_id,
             label_id=label,
             problem_type=problem_type,
-            selected_column=selected_columns,
+            log_enabled=log_enabled,
+            selected_column=selected_column,
             time_column=time_column,
             fold_size=fold_size,
+            fold_strategy=fold_strategy,
             nb_fold=nb_fold,
             test_ratio=test_ratio,
             formatter=formatter,

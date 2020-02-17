@@ -30,6 +30,7 @@ from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBL
 from prescience_client.config.prescience_config import PrescienceConfig
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.flow_type import FlowType
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
@@ -191,10 +192,12 @@ class PrescienceClient(object):
             dataset_id: str,
             label_id: str = DEFAULT_LABEL_NAME,
             problem_type: ProblemType = DEFAULT_PROBLEM_TYPE,
+            log_enabled: bool = False,
             selected_column: list = None,
             time_column: str = None,
             nb_fold: int = None,
             fold_size: int = None,
+            fold_strategy: FoldStrategy = None,
             test_ratio: float = None,
             formatter: str = None,
             datetime_exogenous: list = None,
@@ -206,10 +209,13 @@ class PrescienceClient(object):
         :param dataset_id: The id that we want for the Dataset
         :param label_id: The name of the Source column that we want to predict (the label)
         :param problem_type: The type of machine learning problem that we want to solve
+        :param log_enabled: Preprocess numeric variable with log10
         :param selected_column: subset of the source column to use for preprocessing, by default it will use all
         :param time_column: Indicates the time column (or step column) for a time-series problem type
         :param nb_fold: The number of fold to create during the preprocessing of the source
         :param fold_size: The number of fold to use on cross-validation
+        :param fold_strategy: For time series the way to split data in different fold
+        :param test_ratio: The size of test ratio
         :param formatter: (For TS only) The string formatter that prescience should use for parsing date column (ex: yyyy-MM-dd)
         :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
         :param granularity: (For TS only) The granularity to use for the date
@@ -230,11 +236,17 @@ class PrescienceClient(object):
         if fold_size is not None and fold_size >= 0:
             body['fold_size'] = fold_size
 
+        if fold_strategy is not None:
+            body['fold_strategy'] = str(fold_strategy)
+
         if nb_fold is not None and nb_fold >= 0:
             body['nb_fold'] = nb_fold
 
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
+
+        if log_enabled:
+            body['log_enabled'] = "true"
 
         date_time_info = {}
 
@@ -249,6 +261,9 @@ class PrescienceClient(object):
 
         if len(date_time_info) != 0:
             body['datetime_info'] = date_time_info
+
+
+
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
