@@ -224,7 +224,8 @@ class PrescienceClient(object):
         body = {
             'dataset_id': dataset_id,
             'label_id': label_id,
-            'problem_type': str(problem_type)
+            'problem_type': str(problem_type),
+            'log_enabled': log_enabled
         }
 
         if selected_column is not None:
@@ -244,9 +245,6 @@ class PrescienceClient(object):
 
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
-
-        if log_enabled:
-            body['log_enabled'] = "true"
 
         date_time_info = {}
 
@@ -986,10 +984,12 @@ class PrescienceClient(object):
             label_id: str,
             problem_type: ProblemType,
             scoring_metric: ScoringMetric,
+            log_enabled: bool = False,
             dataset_id: str = None,
             model_id: str = None,
             time_column: str = None,
             nb_fold: int = None,
+            fold_strategy: FoldStrategy = None,
             selected_column: list = None,
             budget: int = None,
             forecasting_horizon_steps: int = None,
@@ -1004,10 +1004,12 @@ class PrescienceClient(object):
         :param label_id: ID of the label to predict
         :param problem_type: The type of the problem
         :param scoring_metric: The scoring metric to optimize on
+        :param log_enabled: Preprocess numeric variable with log10
         :param dataset_id: The wanted dataset_id (will generate one if unset)
         :param model_id: The wanted model_id (will generate one if unset)
         :param time_column: The ID of the time column (Only in case of a time_series_forecast)
         :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param fold_strategy: For time series the way to split data in different fold
         :param selected_column: The column to keep (will keep everything if unset)
         :param budget: The budget to use during optimization
         :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
@@ -1030,7 +1032,8 @@ class PrescienceClient(object):
             'scoring_metric': str(scoring_metric),
             'custom_parameters': {},
             'optimization_method': 'SMAC',
-            'multiclass': False
+            'multiclass': False,
+            'log_enabled': log_enabled
         }
 
         if time_column is not None:
@@ -1038,6 +1041,9 @@ class PrescienceClient(object):
 
         if nb_fold is not None and nb_fold > 1:
             body['nb_fold'] = nb_fold
+
+        if fold_strategy is not None:
+            body['fold_strategy'] = str(fold_strategy)
 
         if selected_column is not None and len(selected_column) >= 0:
             body['selected_column'] = selected_column
@@ -1078,10 +1084,14 @@ class PrescienceClient(object):
             scoring_metric: ScoringMetric,
             dataset_id: str = None,
             model_id: str = None,
+            log_enabled: bool = False,
             nb_fold: int = None,
+            fold_strategy: FoldStrategy = None,
             budget: int = None,
             forecasting_horizon_steps: int = None,
             forecast_discount: float = None,
+            datetime_exogenous: list = None,
+            granularity: str = None
     ) -> ('Task', str, str):
         """
         Start an auto-ml-warp task
@@ -1090,10 +1100,14 @@ class PrescienceClient(object):
         :param scoring_metric: The scoring metric to optimize on
         :param dataset_id: The wanted dataset_id (will generate one if unset)
         :param model_id: The wanted model_id (will generate one if unset)
+        :param log_enabled: Preprocess numeric variable with log10
         :param nb_fold: The number of fold to create during the preprocessing of the source
+        :param fold_strategy: For time series the way to split data in different fold
         :param budget: The budget to use during optimization
         :param forecasting_horizon_steps: The wanted forecasting horizon (in case of a time_series_forecast)
         :param forecast_discount: The wanted forecasting discount
+        :param datetime_exogenous: (For TS only) The augmented features related to date to computing during preprocessing
+        :param granularity: (For TS only) The granularity to use for the date
         :return: The tuple3 of (initial task, dataset id, model id)
         """
 
@@ -1105,11 +1119,15 @@ class PrescienceClient(object):
         body = {
             'dataset_id': dataset_id,
             'model_id': model_id,
-            'scoring_metric': str(scoring_metric)
+            'scoring_metric': str(scoring_metric),
+            'log_enabled': log_enabled
         }
 
         if nb_fold and nb_fold > 1:
             body['nb_fold'] = nb_fold
+
+        if fold_strategy is not None:
+            body['fold_strategy'] = str(fold_strategy)
 
         if budget and budget >= 0:
             body['budget'] = budget
@@ -1119,6 +1137,17 @@ class PrescienceClient(object):
 
         if forecast_discount:
             body['forecasting_discount'] = forecast_discount
+
+        date_time_info = {'format': 'TS_N'}
+
+        if datetime_exogenous is not None:
+            date_time_info['exogenous'] = [str(x) for x in datetime_exogenous]
+
+        if granularity is not None:
+            date_time_info['granularity'] = str(granularity)
+
+        if len(date_time_info) > 1:
+            body['datetime_info'] = date_time_info
 
         body.update(warp_input.to_dict())
 
