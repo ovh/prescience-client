@@ -69,7 +69,7 @@ class Warp10TimeSerieInput(typing.NamedTuple):
             'type': str(self.get_type()),
             'read_token': self.read_token,
             'value': self.value.to_dict(),
-            'last_point_date': self.last_point_date.isoformat() if self.last_point_date else None,
+            'last_point_timestamp': datetime.timestamp(self.last_point_date) * 1000000 if self.last_point_date else None,
             'sample_span': self.sample_span,
             'sampling_interval': self.sampling_interval,
             'sampling_strategy': str(self.sampling_strategy),

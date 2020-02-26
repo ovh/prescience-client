@@ -848,6 +848,9 @@ class PrescienceClient(object):
         complete_url = switch.get(call_type)
 
         if query_parameters is not None and len(query_parameters) != 0:
+            #remove None Parameter
+            query_parameters = {k:query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
+
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'
 
