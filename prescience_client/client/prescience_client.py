@@ -828,7 +828,8 @@ class PrescienceClient(object):
         :param path: The path to call
         :param query_parameters: The dict of query parameters, None if any
         :param data: The body json data to send (as dict). None if any
-        :param multipart: The list of multipart part to send. None of any
+        :param multipart: The list of multipart part to se
+        nd. None of any
         :param content_type: The content type header to use (default: application/json)
         :param timeout_seconds: The timeout of the http request
         :param call_type: The prescience web service called
@@ -848,8 +849,13 @@ class PrescienceClient(object):
         complete_url = switch.get(call_type)
 
         if query_parameters is not None and len(query_parameters) != 0:
+            #remove None Parameter
+            query_parameters = {k:query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
+
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'
+
+
 
         buffer = BytesIO()
 
