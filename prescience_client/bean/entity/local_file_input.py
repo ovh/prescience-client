@@ -78,7 +78,6 @@ class LocalFileInput(object):
             filepath=self.filepath
         )
 
-
 class CsvLocalFileInput(LocalFileInput):
     """
     Local data file of type CSV

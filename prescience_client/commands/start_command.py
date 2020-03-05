@@ -62,6 +62,19 @@ class StartParseCommand(Command):
                                      help=f"The CSV Separator (default: {DEFAULT_SEPARATOR})")
         self.cmd_parser.add_argument('--source-id', nargs='?', type=str,
                                      help='Identifier of your future source object.')
+
+        self.cmd_parser.add_argument('--w10-read-token', type=str, dest='w10token',
+                                     help='In case the input type is WARP_SCRIPT, define the wharp script read token to use to fetch data')
+        self.cmd_parser.add_argument('--w10-url', type=str, dest='w10url',
+                                     help='In case the input type is WARP_SCRIPT, define the Warp10 backend url to use to fetch data')
+
+        self.cmd_parser.add_argument('--w10-grouping-keys', nargs='*', type=str, dest='w10_grouping_keys',
+                                     help='The grouping keys to use for separating several time-series')
+        self.cmd_parser.add_argument('--w10-last-date', type=str, dest='w10_last_date',
+                                     help='End date to use when fetching data. Will be set to $READTOKEN in warp script')
+        self.cmd_parser.add_argument('--w10-span', type=str, dest='w10_span',
+                                     help='Span to use when fetching data. Will be set to $SPAN in warp script')
+
         self.cmd_parser.add_argument('input-filepath', nargs='?', type=str,
                                      help='Local input file to send and parse on prescience. If unset it will trigger the interactive mode.')
 
@@ -71,7 +84,12 @@ class StartParseCommand(Command):
         input_type = args.get('input_type')
         separator = args.get('separator')
         has_headers = args.get('headers')
+        w10_read_token = args.get('w10token')
+        w10_url = args.get('w10url')
         watch = args.get('watch')
+        w10_grouping_key = args.get('w10_grouping_keys')
+        w10_last_date = args.get('w10_last_date')
+        sample_span = args.get('w10_span')
 
         interactive_mode = filepath is None
         if interactive_mode:
@@ -88,7 +106,7 @@ class StartParseCommand(Command):
                 choices_function=lambda: list(map(str, InputType)),
                 force_interactive=interactive_mode
             )
-            if input_type == InputType.CSV:
+            if str(input_type) == str(InputType.CSV):
                 separator = get_args_or_prompt_list(
                     arg_name='separator',
                     args=args,
@@ -96,15 +114,41 @@ class StartParseCommand(Command):
                     choices_function=lambda: list(map(str, Separator)),
                     force_interactive=interactive_mode
                 )
-            else:
+                has_headers = get_args_or_prompt_confirm(
+                    arg_name='headers',
+                    args=args,
+                    message='Does your csv file has a header row ? (doesn\'t matter in case of a parquet file)',
+                    force_interactive=interactive_mode
+                )
+            elif str(input_type) == str(InputType.PARQUET):
                 separator = None
+                has_headers = True
+            elif str(input_type) == str(InputType.WARP_SCRIPT):
+                w10_url = get_args_or_prompt_input(
+                    arg_name='w10url',
+                    args=args,
+                    message='Please indicate the Warp10 url to use for fetching data',
+                    force_interactive=interactive_mode
+                )
+                w10_grouping_key = get_args_or_prompt_input(
+                    arg_name='w10_grouping_keys',
+                    args=args,
+                    message='Please indicate the grouping keys that will be used to identify several time series',
+                    force_interactive=interactive_mode
+                )
+                w10_last_date = get_args_or_prompt_input(
+                    arg_name='w10_last_date',
+                    args=args,
+                    message='Please indicate the last date to use to fetch data',
+                    force_interactive=interactive_mode
+                )
+                sample_span = get_args_or_prompt_input(
+                    arg_name='w10_span',
+                    args=args,
+                    message='Please indicate the span to use as $SPAN parameter in the warp script',
+                    force_interactive=interactive_mode
+                )
 
-            has_headers = get_args_or_prompt_confirm(
-                arg_name='headers',
-                args=args,
-                message='Does your csv file has a header row ? (doesn\'t matter in case of a parquet file)',
-                force_interactive=interactive_mode
-            )
             source_id = get_args_or_prompt_input(
                 arg_name='source_id',
                 args=args,
@@ -118,14 +162,26 @@ class StartParseCommand(Command):
                 force_interactive=interactive_mode
             )
 
-        input_local_file = LocalFileInput(
-            input_type=input_type,
-            headers=has_headers,
-            separator=separator,
-            filepath=filepath,
-            prescience=self.prescience_client
-        )
-        parse_task = input_local_file.parse(source_id=source_id)
+        if str(input_type) == str(InputType.WARP_SCRIPT):
+            parse_task = self.prescience_client.parse_warp_script(
+                source_id=source_id,
+                backend_url=w10_url,
+                read_token=w10_read_token,
+                file_path=filepath,
+                grouping_keys=w10_grouping_key,
+                last_point_timestamp=w10_last_date,
+                sample_span=sample_span
+            )
+        else:
+            input_local_file = LocalFileInput(
+                input_type=input_type,
+                headers=has_headers,
+                separator=separator,
+                filepath=filepath,
+                prescience=self.prescience_client
+            )
+            parse_task = input_local_file.parse(source_id=source_id)
+
         if watch:
             parse_task.watch()
 

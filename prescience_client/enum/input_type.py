@@ -10,6 +10,7 @@ class InputType(Enum):
     CSV = 'CSV'
     PARQUET = 'PARQUET'
     TIME_SERIE = 'TIME_SERIE'
+    WARP_SCRIPT = 'WARP_SCRIPT'
 
     def __str__(self):
         return self.value

@@ -60,6 +60,7 @@ class PrescienceServerException(PrescienceException):
     def message(self):
         return f'An error happened on prescience server-side : code_error = {str(self.code_error)} body_error = {str(self.body)}'
 
+
 class UnauthorizedException(PrescienceServerException):
     def __init__(self, code_error: int, body: str = None):
         super().__init__(code_error, body)
@@ -74,15 +75,29 @@ class UnauthorizedException(PrescienceServerException):
             '- You can change the currently used token by typing prescience.config().set_project(<current-project-name>, <your-token>)\n'\
             'If you want a prescience token, you can request one here : https://survey.ovh.com/index.php/379341?lang=en'
 
+
+class BadRequestException(PrescienceServerException):
+    def __init__(self, code_error: int, body: str = None):
+        super().__init__(code_error, body)
+
+    def message(self):
+        return f'The prescience server answered us with an \'BadRequest\' response.'
+
+    def resolution_hint(self):
+        return 'You are probably trying to create a prescience object which is incomplete'
+
+
 class ConflictException(PrescienceServerException):
     def __init__(self, code_error: int, body: str = None):
         super().__init__(code_error, body)
 
     def message(self):
         return f'The prescience server answered us with an \'Conflict\' response.'
+
     def resolution_hint(self):
         return 'You are probably trying to create a prescience object with an identifier that already exist.\n' + \
             'You should try again after changing the identifier.'
+
 
 class MethodNotAllowedException(PrescienceServerException):
     def __init__(self, code_error: int, body: str = None):
@@ -90,6 +105,7 @@ class MethodNotAllowedException(PrescienceServerException):
 
     def message(self):
         return f'The prescience server answered us with an \'MethodNotAllowed\' response. You are probably requesting a method that need specific rights to be executed.'
+
 
 class NotFoundException(PrescienceServerException):
     def __init__(self, code_error: int, body: str = None):
@@ -119,7 +135,8 @@ class HttpErrorExceptionFactory:
             E_UNAUTORIZED: UnauthorizedException,
             E_NOT_FOUND: NotFoundException,
             E_METHOD_NOT_ALLOWED: MethodNotAllowedException,
-            E_CONFLICT: ConflictException
+            E_CONFLICT: ConflictException,
+            E_BAD_REQUEST: BadRequestException
         }
         constructor = switch.get(code_error, PrescienceServerException)
         return constructor(code_error, body)

@@ -24,7 +24,7 @@ from websocket import create_connection
 from hashids import Hashids
 
 from prescience_client.bean.config import Config
-from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler, WarpScriptInput
 from prescience_client.bean.project import Project
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -132,6 +132,32 @@ class PrescienceClient(object):
 
         _, result, _ = self.__post(path='/ml/upload/source', multipart=multipart)
 
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
+
+    def parse_warp_script(self,
+                          source_id: str,
+                          backend_url: str,
+                          read_token: str,
+                          file_path: str,
+                          sample_span: str,
+                          grouping_keys: list = None,
+                          last_point_timestamp: int = None) -> 'Task':
+
+        warp_script_input = WarpScriptInput.from_file(
+            source_id, backend_url, read_token, file_path, sample_span, grouping_keys, last_point_timestamp)
+        return self.parse_warp_script_input(warp_script_input)
+
+    def parse_warp_script_input(self, warp_script_input: WarpScriptInput) -> 'Task':
+        """
+        Launch a parse task on a WarpScript
+        :param warp_script_input: Input Payload containing all WarpScript
+        :return: The created parse task
+        """
+        payload = warp_script_input.to_dict()
+        print("Uploading source with following arguments :")
+        print(json.dumps(payload, indent=4))
+        _, result, _ = self.__post(path='/ml/parse/ts', data=payload)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
