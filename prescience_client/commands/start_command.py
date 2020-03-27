@@ -10,6 +10,7 @@ from prescience_client.commands import get_args_or_prompt_input, get_args_or_pro
     get_args_or_prompt_checkbox
 from prescience_client.commands.command import Command
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_INPUT_TYPE, DEFAULT_SEPARATOR
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.sampling_strategy import SamplingStrategy
@@ -124,6 +125,12 @@ class StartParseCommand(Command):
                 separator = None
                 has_headers = True
             elif str(input_type) == str(InputType.WARP_SCRIPT):
+                w10_read_token = get_args_or_prompt_input(
+                    arg_name='w10token',
+                    args=args,
+                    message='Please indicate the Warp10 read token to use to fetch data',
+                    force_interactive=interactive_mode
+                )
                 w10_url = get_args_or_prompt_input(
                     arg_name='w10url',
                     args=args,
@@ -208,6 +215,8 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType),
                                      help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
                                      default=DEFAULT_PROBLEM_TYPE)
+        self.cmd_parser.add_argument('--fold-strategy', type=FoldStrategy, choices=list(FoldStrategy),
+                                     help=f"Fold Strategy to apply")
         self.cmd_parser.add_argument('--time-column', type=str,
                                      help='Identifier of the time column for time series. Only for forecasts problems.')
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
@@ -282,6 +291,13 @@ class StartPreprocessCommand(Command):
                 selected_function=lambda: [],
                 force_interactive=interactive_mode
             )
+        fold_strategy = get_args_or_prompt_list(
+            arg_name='fold_strategy',
+            args=args,
+            message='Which fold strategy do you want ?',
+            choices_function=lambda: list(map(str, FoldStrategy)),
+            force_interactive=interactive_mode
+        )
         nb_fold = get_args_or_prompt_input(
             arg_name='nb_fold',
             args=args,
@@ -310,7 +326,8 @@ class StartPreprocessCommand(Command):
             nb_fold=int(nb_fold),
             formatter=formatter,
             datetime_exogenous=exogenous,
-            granularity=granularity
+            granularity=granularity,
+            fold_strategy=fold_strategy
         )
         if watch:
             task.watch()

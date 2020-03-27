@@ -145,6 +145,7 @@ class GetDatasetCommand(Command):
         self.cmd_parser.add_argument('--schema', default=False, action='store_true',
                                     help='Display the schema of the dataset')
         self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the dataset.')
+        self.cmd_parser.add_argument('--fold', type=int, help='Fold number to preview')
         self.cmd_parser.add_argument('--download-train', dest='download_train', type=str,
                                     help='Directory in which to download data files for this train dataset')
         self.cmd_parser.add_argument('--download-test', dest='download_test', type=str,
@@ -165,11 +166,16 @@ class GetDatasetCommand(Command):
         preview = args.get('preview')
         tree = args.get('tree')
         cache = args.get('cache')
+        fold = args.get('fold')
         if display_schema:
             self.prescience_client.dataset(dataset_id).schema().show(output)
 
         elif preview is not None:
-            df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            if fold is not None:
+                df = self.prescience_client.fold_dataframe(dataset_id=dataset_id, fold_number=fold, test_part=False)
+            else:
+                df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            print(f'{df.shape}')
             TablePrinter.print_dataframe(df.head(100), wanted_keys=preview, output=output)
 
         elif download_train_directory is not None:

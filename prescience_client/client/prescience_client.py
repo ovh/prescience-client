@@ -18,6 +18,8 @@ from datetime import datetime
 import matplotlib
 import numpy
 import pandas
+
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.separator import Separator
 from progress.bar import ChargingBar, IncrementalBar
 from websocket import create_connection
@@ -224,7 +226,8 @@ class PrescienceClient(object):
             test_ratio: float = None,
             formatter: str = None,
             datetime_exogenous: list = None,
-            granularity: str = None
+            granularity: str = None,
+            fold_strategy: FoldStrategy = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset
@@ -262,6 +265,9 @@ class PrescienceClient(object):
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
 
+        if fold_strategy is not None:
+            body['fold_strategy'] = str(fold_strategy)
+
         date_time_info = {}
 
         if formatter is not None:
@@ -275,6 +281,9 @@ class PrescienceClient(object):
 
         if len(date_time_info) != 0:
             body['datetime_info'] = date_time_info
+
+        print("Starting Preprocessing with following arguments :")
+        print(json.dumps(body, indent=4))
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -1461,12 +1470,30 @@ class PrescienceClient(object):
         :param block: should block until user close the window
         :param clss: the name of the category column if any (i.e class or label)
         """
-        if kind is None and clss is None:
-            kind = 'line'
 
-        if kind is None and clss is not None:
-            kind = 'scatter'
+        # Get source info
+        source = self.source(source_id=source_id)
+        input_type = source.get_input_type()
 
+        # If the source is a TS, we can guess 'kind' and 'x' values
+        if input_type.is_time_serie():
+            if kind is None:
+                kind = 'line'
+            if x is None:
+                x = 'time-column'
+            if clss is None and input_type == InputType.WARP_SCRIPT:
+                grouping_keys = source.json_dict['input_details']['grouping_keys']
+                if len(grouping_keys) > 0:
+                    clss = grouping_keys[0]
+
+        # If 'kind' has still not be set, use default values
+        if kind is None:
+            if clss is not None:
+                kind = 'scatter'
+            else:
+                kind = 'line'
+
+        # Load source panda dataframe
         dataframe = self.source_dataframe(source_id=source_id)
         if x is not None:
             dataframe = dataframe.sort_values(by=[x])
@@ -1484,9 +1511,9 @@ class PrescienceClient(object):
         if x not in available_columns:
             raise PrescienceClientException(
                 Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
-        if y not in available_columns:
-            raise PrescienceClientException(
-                Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
+        # if y not in available_columns:
+        #     raise PrescienceClientException(
+        #         Exception(f'Given y value \'{y}\' is not present in columns list {str(available_columns)}'))
 
         available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
         clss_value = dataframe[clss].unique().tolist()
@@ -1548,20 +1575,44 @@ class PrescienceClient(object):
                     time_column = [x for x in transformed_timecolumn if x.endswith('_ts')][-1]
             index_column = time_column
 
+            if y is None:
+                remaining_features = [v[0] for k, v in dataset.get_feature_target_map().items() if k not in [dataset.get_time_column_id(), 'TS_ID']]
+                y = remaining_features[0]
+
             if df_train is not None:
                 df_train = df_train.set_index(index_column)
-                df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
+                df_train['fold'] = 'train'
             else:
                 df_train = pandas.DataFrame({})
 
             if df_test is not None:
                 df_test = df_test.set_index(index_column)
-                df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
+                df_test['fold'] = 'test'
             else:
                 df_test = pandas.DataFrame({})
 
+            is_grouped_ts = 'TS_ID' in df_train.columns.values or 'TS_ID' in df_test.columns.values
+
+            group_by_tab = [time_column, 'fold']
+            if is_grouped_ts:
+                group_by_tab.append('TS_ID')
+
+            df_train = df_train.groupby(group_by_tab).sum()[y].unstack()
+            df_test = df_test.groupby(group_by_tab).sum()[y].unstack()
+
+            if is_grouped_ts:
+                df_train = df_train.unstack()
+                df_test = df_test.unstack()
+
             df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
-            df_final.plot()
+
+            colors = []
+            for column in df_final.columns.values:
+                if 'train' in column:
+                    colors.append('C0')
+                else:
+                    colors.append('C1')
+            df_final.plot(color=colors)
 
         else:
             df_final = pandas.concat([df_train, df_test])

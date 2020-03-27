@@ -6,14 +6,11 @@ from enum import Enum, unique
 
 
 @unique
-class InputType(Enum):
-    CSV = 'CSV'
-    PARQUET = 'PARQUET'
-    TIME_SERIE = 'TIME_SERIE'
-    WARP_SCRIPT = 'WARP_SCRIPT'
+class FoldStrategy(Enum):
+    STRATIFIED = 'STRATIFIED'
+    UNIFORM = 'UNIFORM'
+    ROLLING = 'ROLLING'
+    WINDOW = 'WINDOW'
 
     def __str__(self):
         return self.value
-
-    def is_time_serie(self):
-        return self == InputType.TIME_SERIE or self == InputType.WARP_SCRIPT

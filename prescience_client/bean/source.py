@@ -9,6 +9,8 @@ from prescience_client import PrescienceException
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
+from prescience_client.enum.fold_strategy import FoldStrategy
+from prescience_client.enum.input_type import InputType
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
@@ -46,6 +48,9 @@ class Source(TablePrintable, DictPrintable):
         self.headers = json_dict.get('headers', None)
         self.selected = False
         self.prescience = prescience
+
+    def get_input_type(self) -> InputType:
+        return InputType(self.input_type)
 
     def set_selected(self):
         """
@@ -134,7 +139,8 @@ class Source(TablePrintable, DictPrintable):
                    test_ratio: float = None,
                    formatter: str = None,
                    datetime_exogenous: list = None,
-                   granularity: str = None):
+                   granularity: str = None,
+                   fold_strategy: FoldStrategy = None):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset
@@ -155,7 +161,8 @@ class Source(TablePrintable, DictPrintable):
             test_ratio=test_ratio,
             formatter=formatter,
             datetime_exogenous=datetime_exogenous,
-            granularity=granularity
+            granularity=granularity,
+            fold_strategy=fold_strategy
         )
 
     def tree(self) -> SourceTree:
