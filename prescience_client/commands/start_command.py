@@ -224,6 +224,8 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
         self.cmd_parser.add_argument('--date-format', type=str,
                                      help='The date format to use for your time column (if any)')
+        self.cmd_parser.add_argument('--test-ratio', type=float,
+                                     help='The test ratio to apply on your global data')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -291,6 +293,12 @@ class StartPreprocessCommand(Command):
                 selected_function=lambda: [],
                 force_interactive=interactive_mode
             )
+        test_ratio = get_args_or_prompt_input(
+            arg_name='test_ratio',
+            args=args,
+            message='Which test ratio will be apply ?',
+            force_interactive=interactive_mode
+        )
         fold_strategy = get_args_or_prompt_list(
             arg_name='fold_strategy',
             args=args,
@@ -327,7 +335,8 @@ class StartPreprocessCommand(Command):
             formatter=formatter,
             datetime_exogenous=exogenous,
             granularity=granularity,
-            fold_strategy=fold_strategy
+            fold_strategy=fold_strategy,
+            test_ratio=float(test_ratio)
         )
         if watch:
             task.watch()

@@ -1579,30 +1579,36 @@ class PrescienceClient(object):
                 remaining_features = [v[0] for k, v in dataset.get_feature_target_map().items() if k not in [dataset.get_time_column_id(), 'TS_ID']]
                 y = remaining_features[0]
 
+            all_columns = set()
+            if df_train is not None:
+                for x in df_train.columns.values:
+                    all_columns.add(x)
+            if df_test is not None:
+                for x in df_test.columns.values:
+                    all_columns.add(x)
+
+            is_grouped_ts = 'TS_ID' in all_columns
+            group_by_tab = [time_column, 'fold']
+            if is_grouped_ts:
+                group_by_tab.append('TS_ID')
+
             if df_train is not None:
                 df_train = df_train.set_index(index_column)
                 df_train['fold'] = 'train'
+                df_train = df_train.groupby(group_by_tab).sum()[y].unstack()
+                if is_grouped_ts:
+                    df_train = df_train.unstack()
             else:
                 df_train = pandas.DataFrame({})
 
             if df_test is not None:
                 df_test = df_test.set_index(index_column)
                 df_test['fold'] = 'test'
+                df_test = df_test.groupby(group_by_tab).sum()[y].unstack()
+                if is_grouped_ts:
+                    df_test = df_test.unstack()
             else:
                 df_test = pandas.DataFrame({})
-
-            is_grouped_ts = 'TS_ID' in df_train.columns.values or 'TS_ID' in df_test.columns.values
-
-            group_by_tab = [time_column, 'fold']
-            if is_grouped_ts:
-                group_by_tab.append('TS_ID')
-
-            df_train = df_train.groupby(group_by_tab).sum()[y].unstack()
-            df_test = df_test.groupby(group_by_tab).sum()[y].unstack()
-
-            if is_grouped_ts:
-                df_train = df_train.unstack()
-                df_test = df_test.unstack()
 
             df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
 
