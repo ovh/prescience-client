@@ -3,11 +3,13 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 import pandas
 
-def get_dataframe_from_series_dict(series_dict: dict, time_feature_name: str, suffix: str):
-    index_serie = series_dict.pop(time_feature_name)
-    df = pandas.DataFrame(series_dict, index=index_serie)
-
-    return df.rename(columns={k: f'{k}{suffix}' for k, _ in series_dict.items()})
+# def get_dataframe_from_series_dict(series_dict: dict, time_feature_name: str, suffix: str):
+#     index_serie = series_dict.pop(time_feature_name)
+#     df = pandas.DataFrame(series_dict, index=index_serie)
+#     df['kind'] = suffix
+#     return df
+#
+#     # return df.rename(columns={k: f'{k}{suffix}' for k, _ in series_dict.items()})
 
 def get_dataframe_real_predict_theoric(
         series_dict_input: dict,
@@ -21,7 +23,9 @@ def get_dataframe_real_predict_theoric(
     series_dict_predict = {k: v for k, v in series_dict_predict.items() if k in {label_id, time_feature_name}}
 
     last_input_points = {key: value[-1] for key, value in series_dict_input.items()}
-    last_predict_points = {key: value[-1] for key, value in series_dict_predict.items()}
+    last_input_points_time = last_input_points[time_feature_name]
+
+    forward_steps = len(series_dict_predict[time_feature_name])
 
     if join:
         # Adding last points of real to predict dict
@@ -31,20 +35,28 @@ def get_dataframe_real_predict_theoric(
 
     intersect = set(series_dict_predict.keys()).intersection(set(initial_dataframe.columns))
     df_theoric = initial_dataframe[list(intersect)]
-    df_theoric = filter_dataframe_on_index(
-        df=df_theoric,
-        index=time_feature_name,
-        min_bound=last_input_points[time_feature_name],
-        max_bound=last_predict_points[time_feature_name]
-    )
-    df_theoric = df_theoric.set_index(time_feature_name)
-    df_theoric = df_theoric.rename(columns={k: f'{k}_theoric' for k in list(df_theoric.columns)})
+    df_theoric = df_theoric\
+        .set_index(time_feature_name)\
+        .truncate(before=last_input_points_time)\
+        .head(forward_steps + 1)\
+        .reset_index()
+    df_theoric['kind'] = 'theoric'
+    df_theoric = df_theoric[[time_feature_name, label_id, 'kind']]
+    df_theoric = df_theoric.set_index(time_feature_name).sort_index().reset_index()
 
-    df_input = get_dataframe_from_series_dict(series_dict_input, time_feature_name, '_input')
-    df_predict = get_dataframe_from_series_dict(series_dict_predict, time_feature_name, '_predicted')
+    df_input = pandas.DataFrame(series_dict_input)
+    df_input['kind'] = 'input'
+    df_input = df_input[[time_feature_name, label_id, 'kind']]
+    df_input = df_input.set_index(time_feature_name).sort_index().reset_index()
 
+    df_predict = pandas.DataFrame(series_dict_predict)
+    df_predict['kind'] = 'predict'
+    df_predict = df_predict[[time_feature_name, label_id, 'kind']]
+    df_predict = df_predict.set_index(time_feature_name).sort_index().reset_index()
+    # To avoid different timescale between predicted time scale and the one present in source
+    df_predict[time_feature_name] = df_theoric[time_feature_name]
 
-    df_final = pandas.concat([df_input, df_predict, df_theoric], axis='columns', sort=True)
+    df_final = pandas.concat([df_input, df_predict, df_theoric]).groupby([time_feature_name, 'kind']).sum().unstack()
     return df_final
 
 

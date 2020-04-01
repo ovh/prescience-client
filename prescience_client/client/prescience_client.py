@@ -1413,17 +1413,24 @@ class PrescienceClient(object):
 
         return sourceid_path
 
-    def source_dataframe(self, source_id, index_column: str = None):
+    def source_dataframe(self, source_id, index_column: str = None, selected_keys: dict = None):
         """
         Update source local cache for the given source and return the pandas dataframe for this source
         :param source_id: the wanted source
         :return:
         """
+
         source_data_path = self.update_cache_source(source_id=source_id)
         df = pandas.read_parquet(path=source_data_path)
+
+        if selected_keys:
+            for k, v in selected_keys.items():
+                df = df[df[k] == v]
+
         if index_column is not None:
             df = df.set_index(index_column)
             df = df.set_index(index_column)
+
         return df
 
     def dataset_dataframe(self, dataset_id: str, test_part: bool):
@@ -1471,9 +1478,14 @@ class PrescienceClient(object):
         :param clss: the name of the category column if any (i.e class or label)
         """
 
+        # Load source panda dataframe
+        dataframe = self.source_dataframe(source_id=source_id)
+
         # Get source info
         source = self.source(source_id=source_id)
         input_type = source.get_input_type()
+        sort_keys = []
+        groupby_keys = []
 
         # If the source is a TS, we can guess 'kind' and 'x' values
         if input_type.is_time_serie():
@@ -1481,10 +1493,10 @@ class PrescienceClient(object):
                 kind = 'line'
             if x is None:
                 x = 'time-column'
-            if clss is None and input_type == InputType.WARP_SCRIPT:
-                grouping_keys = source.json_dict['input_details']['grouping_keys']
-                if len(grouping_keys) > 0:
-                    clss = grouping_keys[0]
+
+            grouping_keys = source.json_dict['input_details']['grouping_keys'] or []
+            groupby_keys.append(x)
+            groupby_keys.extend(grouping_keys)
 
         # If 'kind' has still not be set, use default values
         if kind is None:
@@ -1493,8 +1505,14 @@ class PrescienceClient(object):
             else:
                 kind = 'line'
 
-        # Load source panda dataframe
-        dataframe = self.source_dataframe(source_id=source_id)
+        if len(groupby_keys) != 0:
+            dataframe = dataframe.groupby(groupby_keys).sum()
+            for key in groupby_keys:
+                if key != x:
+                    dataframe = dataframe.unstack()
+            dataframe = dataframe.sort_index()
+            dataframe.reset_index(inplace=True)
+
         if x is not None:
             dataframe = dataframe.sort_values(by=[x])
 
@@ -1648,7 +1666,7 @@ class PrescienceClient(object):
         df.plot()
         matplotlib.pyplot.show(block=True)
 
-    def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
+    def generate_serving_payload(self, from_data, model_id: str, output=None, selected_keys: dict = None) -> str:
         """
         Generate a serving payload for a prescience model
         :param from_data: integer value indicating the index of the data for classification/regression or the value of the time column for a TS.
@@ -1676,7 +1694,7 @@ class PrescienceClient(object):
 
             # Fill the payload from the data
             source_id = model.source_id()
-            df = self.source_dataframe(source_id=source_id)
+            df = self.source_dataframe(source_id=source_id, selected_keys=selected_keys)
             if problem_type == ProblemType.TIME_SERIES_FORECAST:
                 time_feature = evaluator.get_time_feature_name()
                 max_steps = evaluator.get_max_steps()
@@ -1803,10 +1821,11 @@ class PrescienceClient(object):
     def generate_payload_dict_for_model(self,
                                         model_id: str,
                                         payload_json: str = None,
-                                        from_data=None):
+                                        from_data=None,
+                                        selected_keys: dict = None):
 
         if payload_json is None:
-            payload_json = self.generate_serving_payload(from_data, model_id)
+            payload_json = self.generate_serving_payload(from_data=from_data, model_id=model_id, selected_keys=selected_keys)
         else:
             payload_json = payload_json.strip()
         if len(payload_json) > 0 and payload_json[0] == '{' and payload_json[-1] == '}':

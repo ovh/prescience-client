@@ -351,7 +351,7 @@ class Model(TablePrintable, DictPrintable):
         """
         return self.prescience.model_test_evaluation(self.model_id())
 
-    def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0):
+    def get_dataframe_for_plot_result(self, input_payload_dict: dict, rolling_steps: int=0, selected_keys: dict = None):
         input_payload_dict = copy.deepcopy(input_payload_dict)
         if self.problem_type() != ProblemType.TIME_SERIES_FORECAST:
             raise PrescienceClientException(
@@ -383,6 +383,6 @@ class Model(TablePrintable, DictPrintable):
             series_dict_predict=series_dict_predict,
             time_feature_name=time_feature_name,
             label_id=self.label_id(),
-            initial_dataframe=self.prescience.source_dataframe(self.source_id())
+            initial_dataframe=self.prescience.source_dataframe(source_id=self.source_id(), selected_keys=selected_keys)
         )
         return df_final

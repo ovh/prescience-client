@@ -1,4 +1,5 @@
 import matplotlib
+import json
 
 from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed, \
     get_args_or_prompt_list, get_args_or_prompt_input
@@ -118,22 +119,30 @@ class PlotPredictionCommand(Command):
                                      help=f"Generate a prediction payload from an index in the initial data in case of a classification/regression problem or from the time value in case of a timeseries forecast problem. It will be saved as the default cached file for payload before sending to prescience-serving")
         self.cmd_parser.add_argument('--rolling', type=int, default=0,
                                      help='How many time do you want to roll on prediction (default: 0). It will only work if all inputs of your model are predicted by outputs.')
+        self.cmd_parser.add_argument('--keys', type=str,
+                                     help='Json dict on the grouping key that you want to filter')
 
     def exec(self, args: dict):
         model_id = args.get('model-id')
         payload_json = args.get('from_json')
         from_data = args.get('from_data')
         rolling = args.get('rolling')
+        selected_keys = args.get('keys')
+
+        if selected_keys:
+            selected_keys = json.loads(selected_keys) # {'cluster': 'F', 'install': 'false'}
 
         payload_dict = self.prescience_client.generate_payload_dict_for_model(
             model_id=model_id,
             payload_json=payload_json,
-            from_data=from_data
+            from_data=from_data,
+            selected_keys=selected_keys
         )
         model = self.prescience_client.model(model_id)
         df_final = model.get_dataframe_for_plot_result(
             input_payload_dict=payload_dict,
-            rolling_steps=rolling
+            rolling_steps=rolling,
+            selected_keys=selected_keys
         )
         df_final.plot()
         matplotlib.pyplot.show(block=True)
