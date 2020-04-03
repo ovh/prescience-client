@@ -1301,6 +1301,15 @@ class PrescienceClient(object):
             train_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'train')
             return self.config().create_config_path_if_not_exist(train_path)
 
+    def cache_cube_model_metrics_get_full_path(self, model_id: str) -> str:
+        """
+        Get the full path of the local cache for the cube model metrics of the given model
+        :param model_id: the wanted model id
+        :return: the full path of the local cache for the cube model metrics of the given model
+        """
+        cube_directory = self.config().get_or_create_cube_model_metrics()
+        return os.path.join(cube_directory, model_id)
+
     def cache_clean_fold(self, dataset_id: str, fold_number: int, test_part: bool):
         """
         Clean the local cache data of the given fold
@@ -1839,3 +1848,22 @@ class PrescienceClient(object):
             payload_dict = json.loads('{}')
 
         return payload_dict
+
+    def get_or_update_cube_metric_cache(self, model_id: str, force_update: bool = False, output: str = None):
+        model = self.model(model_id)
+        default_output = self.cache_cube_model_metrics_get_full_path(model_id)
+        if output is None:
+            output = default_output
+
+        if not os.path.exists(output) or force_update:
+            if os.path.exists(output):
+                print(f'Path {output} already exist, removing it ...')
+                os.remove(output)
+
+            cube = model.generate_cube_metrics()
+            print(f'Saving cube model metrics on {output}')
+            cube.to_parquet(output)
+        else:
+            cube = pandas.read_parquet(output)
+
+        return cube

@@ -16,7 +16,8 @@ from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
-from prescience_client.utils import get_dataframe_real_predict_theoric
+from prescience_client.utils import get_dataframe_real_predict_theoric, compute_prediction_df, \
+    compute_cube_from_prediction
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
 
@@ -386,3 +387,45 @@ class Model(TablePrintable, DictPrintable):
             initial_dataframe=self.prescience.source_dataframe(source_id=self.source_id(), selected_keys=selected_keys)
         )
         return df_final
+
+    def generate_cube_metrics(self):
+        dataset = self.dataset()
+        source = self.source()
+        evaluator = self.get_model_evaluator()
+        source_dataframe = source.dataframe()
+
+        time_column = dataset.get_time_column_id()
+        label = dataset.label_id()
+        grouping_keys = source.get_grouping_keys()
+        selected_column = dataset.selected_columns()
+        past_steps = evaluator.get_max_steps()
+        forward_steps = evaluator.get_forecasting_horizon_steps()
+
+        if time_column in selected_column:
+            selected_column.remove(time_column)
+
+        if label in selected_column:
+            selected_column.remove(label)
+
+        ## OVERRIDING VALUES FOR TESTS
+        source_dataframe = source_dataframe[source_dataframe[time_column] <= 1585655858700889.0]
+        ##
+
+        prediction_df = compute_prediction_df(
+            source_dataframe=source_dataframe,
+            time_column=time_column,
+            label=label,
+            grouping_keys=grouping_keys,
+            past_steps=past_steps,
+            forward_steps=forward_steps,
+            selected_column=selected_column,
+            prediction_lambda=lambda x: self.get_model_evaluation_payload(arguments=x).evaluate().get_result_dict()
+        )
+        cube = compute_cube_from_prediction(
+            prediction_dataframe=prediction_df,
+            label=label,
+            time_column=time_column,
+            forward_steps=forward_steps,
+            grouping_keys=grouping_keys
+        )
+        return cube

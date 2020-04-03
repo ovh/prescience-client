@@ -1,5 +1,7 @@
 import matplotlib
 import json
+import os
+import pandas
 
 from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed, \
     get_args_or_prompt_list, get_args_or_prompt_input
@@ -7,6 +9,7 @@ from prescience_client.commands.command import Command
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric, ScoringMetricBinary, ScoringMetricRegression, \
     ScoringMetricMulticlass, get_scoring_metrics
+from prescience_client.utils import metrics_regression, METRICS_MEASURE_COLUMN, compute_cube_agg, plot_df
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
 
 
@@ -21,7 +24,8 @@ class PlotCommand(Command):
                 PlotDatasetCommand(prescience_client),
                 PlotPredictionCommand(prescience_client),
                 PlotEvaluationsCommand(prescience_client),
-                PlotRocCurveCommand(prescience_client)
+                PlotRocCurveCommand(prescience_client),
+                PlotCubeMetricCommand(prescience_client)
             ]
         )
 
@@ -229,3 +233,35 @@ class PlotRocCurveCommand(Command):
     def exec(self, args: dict):
         model_id = args.get('model-id')
         self.prescience_client.plot_roc_curve(model_id=model_id, block=True)
+
+
+class PlotCubeMetricCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='cube-metric',
+            help_message='Plot the cube model metric',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('id', type=str, help='The ID of the model or the path on cube parquet file')
+        self.cmd_parser.add_argument('metric', type=str, help='The metric to compute')
+        self.cmd_parser.add_argument('-d', '--dim', nargs='*', type=str, help='The dimensions to use for aggregation')
+        self.cmd_parser.add_argument('-k', '--kind', type=str, help='Kind of the plot figure. Default: line')
+        self.cmd_parser.add_argument('-u', '--update', default=False, action='store_true', help='Force the update of cache')
+
+    def exec(self, args: dict):
+        model_id = args.get('id')
+        metric = args.get('metric')
+        dimensions = args.get('dim')
+        update = args.get('update')
+        kind = args.get('kind')
+
+        if kind is None:
+            kind = 'bar'
+
+        cube = self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=update)
+        agg_result = compute_cube_agg(cube, dimensions=dimensions, measure=metric, unstack=True)
+        plot_df(df=agg_result, kind=kind, block=True)
