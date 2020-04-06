@@ -229,8 +229,7 @@ class PrescienceClient(object):
             test_ratio: float = None,
             formatter: str = None,
             datetime_exogenous: list = None,
-            granularity: str = None,
-            fold_strategy: FoldStrategy = None
+            granularity: str = None
     ):
         """
         Launch a Preprocess Task from a Source for creating a Dataset

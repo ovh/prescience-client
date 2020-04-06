@@ -146,8 +146,7 @@ class Source(TablePrintable, DictPrintable):
                    test_ratio: float = None,
                    formatter: str = None,
                    datetime_exogenous: list = None,
-                   granularity: str = None,
-                   fold_strategy: FoldStrategy = None):
+                   granularity: str = None):
         """
         Launch a Preprocess Task from the current Source for creating a Dataset
         :param dataset_id: The id that we want for the Dataset
@@ -179,8 +178,7 @@ class Source(TablePrintable, DictPrintable):
             test_ratio=test_ratio,
             formatter=formatter,
             datetime_exogenous=datetime_exogenous,
-            granularity=granularity,
-            fold_strategy=fold_strategy
+            granularity=granularity
         )
 
     def tree(self) -> SourceTree:
