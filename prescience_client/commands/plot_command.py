@@ -1,7 +1,5 @@
 import matplotlib
 import json
-import os
-import pandas
 
 from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed, \
     get_args_or_prompt_list, get_args_or_prompt_input
