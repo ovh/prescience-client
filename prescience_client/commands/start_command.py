@@ -10,6 +10,7 @@ from prescience_client.commands import get_args_or_prompt_input, get_args_or_pro
     get_args_or_prompt_checkbox
 from prescience_client.commands.command import Command
 from prescience_client.config.constants import DEFAULT_PROBLEM_TYPE, DEFAULT_INPUT_TYPE, DEFAULT_SEPARATOR
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.input_type import InputType
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.sampling_strategy import SamplingStrategy
@@ -62,6 +63,19 @@ class StartParseCommand(Command):
                                      help=f"The CSV Separator (default: {DEFAULT_SEPARATOR})")
         self.cmd_parser.add_argument('--source-id', nargs='?', type=str,
                                      help='Identifier of your future source object.')
+
+        self.cmd_parser.add_argument('--w10-read-token', type=str, dest='w10token',
+                                     help='In case the input type is WARP_SCRIPT, define the wharp script read token to use to fetch data')
+        self.cmd_parser.add_argument('--w10-url', type=str, dest='w10url',
+                                     help='In case the input type is WARP_SCRIPT, define the Warp10 backend url to use to fetch data')
+
+        self.cmd_parser.add_argument('--w10-grouping-keys', nargs='*', type=str, dest='w10_grouping_keys',
+                                     help='The grouping keys to use for separating several time-series')
+        self.cmd_parser.add_argument('--w10-last-date', type=str, dest='w10_last_date',
+                                     help='End date to use when fetching data. Will be set to $READTOKEN in warp script')
+        self.cmd_parser.add_argument('--w10-span', type=str, dest='w10_span',
+                                     help='Span to use when fetching data. Will be set to $SPAN in warp script')
+
         self.cmd_parser.add_argument('input-filepath', nargs='?', type=str,
                                      help='Local input file to send and parse on prescience. If unset it will trigger the interactive mode.')
 
@@ -71,7 +85,12 @@ class StartParseCommand(Command):
         input_type = args.get('input_type')
         separator = args.get('separator')
         has_headers = args.get('headers')
+        w10_read_token = args.get('w10token')
+        w10_url = args.get('w10url')
         watch = args.get('watch')
+        w10_grouping_key = args.get('w10_grouping_keys')
+        w10_last_date = args.get('w10_last_date')
+        sample_span = args.get('w10_span')
 
         interactive_mode = filepath is None
         if interactive_mode:
@@ -88,7 +107,7 @@ class StartParseCommand(Command):
                 choices_function=lambda: list(map(str, InputType)),
                 force_interactive=interactive_mode
             )
-            if input_type == InputType.CSV:
+            if str(input_type) == str(InputType.CSV):
                 separator = get_args_or_prompt_list(
                     arg_name='separator',
                     args=args,
@@ -96,15 +115,47 @@ class StartParseCommand(Command):
                     choices_function=lambda: list(map(str, Separator)),
                     force_interactive=interactive_mode
                 )
-            else:
+                has_headers = get_args_or_prompt_confirm(
+                    arg_name='headers',
+                    args=args,
+                    message='Does your csv file has a header row ? (doesn\'t matter in case of a parquet file)',
+                    force_interactive=interactive_mode
+                )
+            elif str(input_type) == str(InputType.PARQUET):
                 separator = None
+                has_headers = True
+            elif str(input_type) == str(InputType.WARP_SCRIPT):
+                w10_read_token = get_args_or_prompt_input(
+                    arg_name='w10token',
+                    args=args,
+                    message='Please indicate the Warp10 read token to use to fetch data',
+                    force_interactive=interactive_mode
+                )
+                w10_url = get_args_or_prompt_input(
+                    arg_name='w10url',
+                    args=args,
+                    message='Please indicate the Warp10 url to use for fetching data',
+                    force_interactive=interactive_mode
+                )
+                w10_grouping_key = get_args_or_prompt_input(
+                    arg_name='w10_grouping_keys',
+                    args=args,
+                    message='Please indicate the grouping keys that will be used to identify several time series',
+                    force_interactive=interactive_mode
+                )
+                w10_last_date = get_args_or_prompt_input(
+                    arg_name='w10_last_date',
+                    args=args,
+                    message='Please indicate the last date to use to fetch data',
+                    force_interactive=interactive_mode
+                )
+                sample_span = get_args_or_prompt_input(
+                    arg_name='w10_span',
+                    args=args,
+                    message='Please indicate the span to use as $SPAN parameter in the warp script',
+                    force_interactive=interactive_mode
+                )
 
-            has_headers = get_args_or_prompt_confirm(
-                arg_name='headers',
-                args=args,
-                message='Does your csv file has a header row ? (doesn\'t matter in case of a parquet file)',
-                force_interactive=interactive_mode
-            )
             source_id = get_args_or_prompt_input(
                 arg_name='source_id',
                 args=args,
@@ -118,14 +169,26 @@ class StartParseCommand(Command):
                 force_interactive=interactive_mode
             )
 
-        input_local_file = LocalFileInput(
-            input_type=input_type,
-            headers=has_headers,
-            separator=separator,
-            filepath=filepath,
-            prescience=self.prescience_client
-        )
-        parse_task = input_local_file.parse(source_id=source_id)
+        if str(input_type) == str(InputType.WARP_SCRIPT):
+            parse_task = self.prescience_client.parse_warp_script(
+                source_id=source_id,
+                backend_url=w10_url,
+                read_token=w10_read_token,
+                file_path=filepath,
+                grouping_keys=w10_grouping_key,
+                last_point_timestamp=w10_last_date,
+                sample_span=sample_span
+            )
+        else:
+            input_local_file = LocalFileInput(
+                input_type=input_type,
+                headers=has_headers,
+                separator=separator,
+                filepath=filepath,
+                prescience=self.prescience_client
+            )
+            parse_task = input_local_file.parse(source_id=source_id)
+
         if watch:
             parse_task.watch()
 
@@ -152,6 +215,8 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--problem-type', type=ProblemType, choices=list(ProblemType),
                                      help=f"Type of problem for the dataset (default: {DEFAULT_PROBLEM_TYPE})",
                                      default=DEFAULT_PROBLEM_TYPE)
+        self.cmd_parser.add_argument('--fold-strategy', type=FoldStrategy, choices=list(FoldStrategy),
+                                     help=f"Fold Strategy to apply")
         self.cmd_parser.add_argument('--time-column', type=str,
                                      help='Identifier of the time column for time series. Only for forecasts problems.')
         self.cmd_parser.add_argument('--watch', default=False, action='store_true',
@@ -159,6 +224,8 @@ class StartPreprocessCommand(Command):
         self.cmd_parser.add_argument('--nb-fold', type=int, help='How many folds the dataset will be splited')
         self.cmd_parser.add_argument('--date-format', type=str,
                                      help='The date format to use for your time column (if any)')
+        self.cmd_parser.add_argument('--test-ratio', type=float,
+                                     help='The test ratio to apply on your global data')
 
     def exec(self, args: dict):
         interactive_mode = args.get('source-id') is None
@@ -226,6 +293,19 @@ class StartPreprocessCommand(Command):
                 selected_function=lambda: [],
                 force_interactive=interactive_mode
             )
+        test_ratio = get_args_or_prompt_input(
+            arg_name='test_ratio',
+            args=args,
+            message='Which test ratio will be apply ?',
+            force_interactive=interactive_mode
+        )
+        fold_strategy = get_args_or_prompt_list(
+            arg_name='fold_strategy',
+            args=args,
+            message='Which fold strategy do you want ?',
+            choices_function=lambda: list(map(str, FoldStrategy)),
+            force_interactive=interactive_mode
+        )
         nb_fold = get_args_or_prompt_input(
             arg_name='nb_fold',
             args=args,
@@ -254,7 +334,9 @@ class StartPreprocessCommand(Command):
             nb_fold=int(nb_fold),
             formatter=formatter,
             datetime_exogenous=exogenous,
-            granularity=granularity
+            granularity=granularity,
+            fold_strategy=fold_strategy,
+            test_ratio=float(test_ratio)
         )
         if watch:
             task.watch()

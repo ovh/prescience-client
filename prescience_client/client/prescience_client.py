@@ -18,13 +18,15 @@ from datetime import datetime
 import matplotlib
 import numpy
 import pandas
+
+from prescience_client.enum.fold_strategy import FoldStrategy
 from prescience_client.enum.separator import Separator
 from progress.bar import ChargingBar, IncrementalBar
 from websocket import create_connection
 from hashids import Hashids
 
 from prescience_client.bean.config import Config
-from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler
+from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, Warp10Scheduler, WarpScriptInput
 from prescience_client.bean.project import Project
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.config.prescience_config import PrescienceConfig
@@ -133,6 +135,32 @@ class PrescienceClient(object):
 
         _, result, _ = self.__post(path='/ml/upload/source', multipart=multipart)
 
+        from prescience_client.bean.task import TaskFactory
+        return TaskFactory.construct(result, self)
+
+    def parse_warp_script(self,
+                          source_id: str,
+                          backend_url: str,
+                          read_token: str,
+                          file_path: str,
+                          sample_span: str,
+                          grouping_keys: list = None,
+                          last_point_timestamp: int = None) -> 'Task':
+
+        warp_script_input = WarpScriptInput.from_file(
+            source_id, backend_url, read_token, file_path, sample_span, grouping_keys, last_point_timestamp)
+        return self.parse_warp_script_input(warp_script_input)
+
+    def parse_warp_script_input(self, warp_script_input: WarpScriptInput) -> 'Task':
+        """
+        Launch a parse task on a WarpScript
+        :param warp_script_input: Input Payload containing all WarpScript
+        :return: The created parse task
+        """
+        payload = warp_script_input.to_dict()
+        print("Uploading source with following arguments :")
+        print(json.dumps(payload, indent=4))
+        _, result, _ = self.__post(path='/ml/parse/ts', data=payload)
         from prescience_client.bean.task import TaskFactory
         return TaskFactory.construct(result, self)
 
@@ -246,6 +274,9 @@ class PrescienceClient(object):
         if test_ratio is not None and test_ratio > 0:
             body['test_ratio'] = test_ratio
 
+        if fold_strategy is not None:
+            body['fold_strategy'] = str(fold_strategy)
+
         date_time_info = {}
 
         if formatter is not None:
@@ -260,8 +291,8 @@ class PrescienceClient(object):
         if len(date_time_info) != 0:
             body['datetime_info'] = date_time_info
 
-
-
+        print("Starting Preprocessing with following arguments :")
+        print(json.dumps(body, indent=4))
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -1313,6 +1344,15 @@ class PrescienceClient(object):
             train_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'train')
             return self.config().create_config_path_if_not_exist(train_path)
 
+    def cache_cube_model_metrics_get_full_path(self, model_id: str) -> str:
+        """
+        Get the full path of the local cache for the cube model metrics of the given model
+        :param model_id: the wanted model id
+        :return: the full path of the local cache for the cube model metrics of the given model
+        """
+        cube_directory = self.config().get_or_create_cube_model_metrics()
+        return os.path.join(cube_directory, model_id)
+
     def cache_clean_fold(self, dataset_id: str, fold_number: int, test_part: bool):
         """
         Clean the local cache data of the given fold
@@ -1425,17 +1465,24 @@ class PrescienceClient(object):
 
         return sourceid_path
 
-    def source_dataframe(self, source_id, index_column: str = None):
+    def source_dataframe(self, source_id, index_column: str = None, selected_keys: dict = None):
         """
         Update source local cache for the given source and return the pandas dataframe for this source
         :param source_id: the wanted source
         :return:
         """
+
         source_data_path = self.update_cache_source(source_id=source_id)
         df = pandas.read_parquet(path=source_data_path)
+
+        if selected_keys:
+            for k, v in selected_keys.items():
+                df = df[df[k] == v]
+
         if index_column is not None:
             df = df.set_index(index_column)
             df = df.set_index(index_column)
+
         return df
 
     def dataset_dataframe(self, dataset_id: str, test_part: bool):
@@ -1482,13 +1529,42 @@ class PrescienceClient(object):
         :param block: should block until user close the window
         :param clss: the name of the category column if any (i.e class or label)
         """
-        if kind is None and clss is None:
-            kind = 'line'
 
-        if kind is None and clss is not None:
-            kind = 'scatter'
-
+        # Load source panda dataframe
         dataframe = self.source_dataframe(source_id=source_id)
+
+        # Get source info
+        source = self.source(source_id=source_id)
+        input_type = source.get_input_type()
+        sort_keys = []
+        groupby_keys = []
+
+        # If the source is a TS, we can guess 'kind' and 'x' values
+        if input_type.is_time_serie():
+            if kind is None:
+                kind = 'line'
+            if x is None:
+                x = 'time-column'
+
+            grouping_keys = source.json_dict['input_details']['grouping_keys'] or []
+            groupby_keys.append(x)
+            groupby_keys.extend(grouping_keys)
+
+        # If 'kind' has still not be set, use default values
+        if kind is None:
+            if clss is not None:
+                kind = 'scatter'
+            else:
+                kind = 'line'
+
+        if len(groupby_keys) != 0:
+            dataframe = dataframe.groupby(groupby_keys).sum()
+            for key in groupby_keys:
+                if key != x:
+                    dataframe = dataframe.unstack()
+            dataframe = dataframe.sort_index()
+            dataframe.reset_index(inplace=True)
+
         if x is not None:
             dataframe = dataframe.sort_values(by=[x])
 
@@ -1505,9 +1581,9 @@ class PrescienceClient(object):
         if x not in available_columns:
             raise PrescienceClientException(
                 Exception(f'Given x value \'{x}\' is not present in columns list {str(available_columns)}'))
-        if y not in available_columns:
-            raise PrescienceClientException(
-                Exception(f'Given x value \'{y}\' is not present in columns list {str(available_columns)}'))
+        # if y not in available_columns:
+        #     raise PrescienceClientException(
+        #         Exception(f'Given y value \'{y}\' is not present in columns list {str(available_columns)}'))
 
         available_colors = ['mediumseagreen', 'steelblue', 'tomato', 'DarkOrange', 'darkmagenta', 'darkviolet']
         clss_value = dataframe[clss].unique().tolist()
@@ -1569,20 +1645,50 @@ class PrescienceClient(object):
                     time_column = [x for x in transformed_timecolumn if x.endswith('_ts')][-1]
             index_column = time_column
 
+            if y is None:
+                remaining_features = [v[0] for k, v in dataset.get_feature_target_map().items() if k not in [dataset.get_time_column_id(), 'TS_ID']]
+                y = remaining_features[0]
+
+            all_columns = set()
+            if df_train is not None:
+                for x in df_train.columns.values:
+                    all_columns.add(x)
+            if df_test is not None:
+                for x in df_test.columns.values:
+                    all_columns.add(x)
+
+            is_grouped_ts = 'TS_ID' in all_columns
+            group_by_tab = [time_column, 'fold']
+            if is_grouped_ts:
+                group_by_tab.append('TS_ID')
+
             if df_train is not None:
                 df_train = df_train.set_index(index_column)
-                df_train = df_train.rename(columns={i: f'{i}_train' for i in list(df_train.columns)})
+                df_train['fold'] = 'train'
+                df_train = df_train.groupby(group_by_tab).sum()[y].unstack()
+                if is_grouped_ts:
+                    df_train = df_train.unstack()
             else:
                 df_train = pandas.DataFrame({})
 
             if df_test is not None:
                 df_test = df_test.set_index(index_column)
-                df_test = df_test.rename(columns={i: f'{i}_test' for i in list(df_test.columns)})
+                df_test['fold'] = 'test'
+                df_test = df_test.groupby(group_by_tab).sum()[y].unstack()
+                if is_grouped_ts:
+                    df_test = df_test.unstack()
             else:
                 df_test = pandas.DataFrame({})
 
             df_final = pandas.concat([df_train, df_test], axis='columns', sort=True)
-            df_final.plot()
+
+            colors = []
+            for column in df_final.columns.values:
+                if 'train' in column:
+                    colors.append('C0')
+                else:
+                    colors.append('C1')
+            df_final.plot(color=colors)
 
         else:
             df_final = pandas.concat([df_train, df_test])
@@ -1612,7 +1718,7 @@ class PrescienceClient(object):
         df.plot()
         matplotlib.pyplot.show(block=True)
 
-    def generate_serving_payload(self, from_data, model_id: str, output=None) -> str:
+    def generate_serving_payload(self, from_data, model_id: str, output=None, selected_keys: dict = None) -> str:
         """
         Generate a serving payload for a prescience model
         :param from_data: integer value indicating the index of the data for classification/regression or the value of the time column for a TS.
@@ -1640,7 +1746,7 @@ class PrescienceClient(object):
 
             # Fill the payload from the data
             source_id = model.source_id()
-            df = self.source_dataframe(source_id=source_id)
+            df = self.source_dataframe(source_id=source_id, selected_keys=selected_keys)
             if problem_type == ProblemType.TIME_SERIES_FORECAST:
                 time_feature = evaluator.get_time_feature_name()
                 max_steps = evaluator.get_max_steps()
@@ -1767,10 +1873,11 @@ class PrescienceClient(object):
     def generate_payload_dict_for_model(self,
                                         model_id: str,
                                         payload_json: str = None,
-                                        from_data=None):
+                                        from_data=None,
+                                        selected_keys: dict = None):
 
         if payload_json is None:
-            payload_json = self.generate_serving_payload(from_data, model_id)
+            payload_json = self.generate_serving_payload(from_data=from_data, model_id=model_id, selected_keys=selected_keys)
         else:
             payload_json = payload_json.strip()
         if len(payload_json) > 0 and payload_json[0] == '{' and payload_json[-1] == '}':
@@ -1784,3 +1891,22 @@ class PrescienceClient(object):
             payload_dict = json.loads('{}')
 
         return payload_dict
+
+    def get_or_update_cube_metric_cache(self, model_id: str, force_update: bool = False, output: str = None):
+        model = self.model(model_id)
+        default_output = self.cache_cube_model_metrics_get_full_path(model_id)
+        if output is None:
+            output = default_output
+
+        if not os.path.exists(output) or force_update:
+            if os.path.exists(output):
+                print(f'Path {output} already exist, removing it ...')
+                os.remove(output)
+
+            cube = model.generate_cube_metrics()
+            print(f'Saving cube model metrics on {output}')
+            cube.to_parquet(output)
+        else:
+            cube = pandas.read_parquet(output)
+
+        return cube

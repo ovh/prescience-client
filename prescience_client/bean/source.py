@@ -3,20 +3,23 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import copy
+import pandas
 from datetime import datetime
+from termcolor import colored
 
 from prescience_client import PrescienceException
 from prescience_client.bean.schema import Schema
 from prescience_client.client.prescience_client import PrescienceClient
 from prescience_client.config.constants import DEFAULT_LABEL_NAME, DEFAULT_PROBLEM_TYPE
 from prescience_client.enum.fold_strategy import FoldStrategy
+from prescience_client.enum.input_type import InputType
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from prescience_client.utils.tree_printer import SourceTree
-from termcolor import colored
+
 
 
 class Source(TablePrintable, DictPrintable):
@@ -47,6 +50,12 @@ class Source(TablePrintable, DictPrintable):
         self.headers = json_dict.get('headers', None)
         self.selected = False
         self.prescience = prescience
+
+    def get_input_type(self) -> InputType:
+        return InputType(self.input_type)
+
+    def get_grouping_keys(self) -> list:
+        return self.json_dict.get('input_details').get('grouping_keys')
 
     def set_selected(self):
         """
@@ -253,3 +262,6 @@ class Source(TablePrintable, DictPrintable):
             clss=clss,
             block=block
         )
+
+    def dataframe(self) -> pandas.DataFrame:
+        return self.prescience.source_dataframe(self.source_id)

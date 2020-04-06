@@ -1,4 +1,5 @@
 import json
+import os
 
 from prescience_client.commands import prompt_for_source_id_if_needed, prompt_for_dataset_id_if_needed, \
     get_args_or_prompt_list
@@ -6,6 +7,7 @@ from prescience_client.commands.command import Command
 from prescience_client.enum.algorithm_configuration_category import AlgorithmConfigurationCategory
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.sort_direction import SortDirection
+from prescience_client.utils import compute_cube_agg
 from prescience_client.utils.table_printable import TablePrinter
 
 
@@ -27,7 +29,8 @@ class GetCommand(Command):
                 GetAlgorithmCommand(prescience_client),
                 GetAlgorithmListCommand(prescience_client),
                 GetEvaluationListCommand(prescience_client),
-                GetModelFlowCommand(prescience_client)
+                GetModelFlowCommand(prescience_client),
+                GetCubeModelMetricsCommand(prescience_client)
             ]
         )
 
@@ -145,6 +148,7 @@ class GetDatasetCommand(Command):
         self.cmd_parser.add_argument('--schema', default=False, action='store_true',
                                     help='Display the schema of the dataset')
         self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the dataset.')
+        self.cmd_parser.add_argument('--fold', type=int, help='Fold number to preview')
         self.cmd_parser.add_argument('--download-train', dest='download_train', type=str,
                                     help='Directory in which to download data files for this train dataset')
         self.cmd_parser.add_argument('--download-test', dest='download_test', type=str,
@@ -165,11 +169,16 @@ class GetDatasetCommand(Command):
         preview = args.get('preview')
         tree = args.get('tree')
         cache = args.get('cache')
+        fold = args.get('fold')
         if display_schema:
             self.prescience_client.dataset(dataset_id).schema().show(output)
 
         elif preview is not None:
-            df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            if fold is not None:
+                df = self.prescience_client.fold_dataframe(dataset_id=dataset_id, fold_number=fold, test_part=False)
+            else:
+                df = self.prescience_client.dataset_dataframe(dataset_id=dataset_id, test_part=False)
+            print(f'{df.shape}')
             TablePrinter.print_dataframe(df.head(100), wanted_keys=preview, output=output)
 
         elif download_train_directory is not None:
@@ -430,3 +439,45 @@ class GetModelFlowCommand(Command):
         model = self.prescience_client.model(model_id)
         evaluator = model.get_model_evaluator()
         evaluator.show(output)
+
+
+class GetCubeModelMetricsCommand(Command):
+    def __init__(self, prescience_client):
+        super().__init__(
+            name='cube-metric',
+            help_message='Display a computed cube metric object related to a model',
+            prescience_client=prescience_client,
+            sub_commands=[]
+        )
+
+    def init_from_subparser(self, subparsers, selector):
+        super().init_from_subparser(subparsers, selector)
+        self.cmd_parser.add_argument('id', type=str, help='The ID of the model or the path on cube parquet file')
+        self.cmd_parser.add_argument('metric', type=str, help='The metric to compute')
+        self.cmd_parser.add_argument('-d', '--dim', nargs='*', type=str, help='The dimensions to use for aggregation')
+        self.cmd_parser.add_argument('-l', '--limit', help='Limit of row to display')
+        self.cmd_parser.add_argument('-s', '--unstack', default=False, action='store_true', help='Unstack last dimension')
+        self.cmd_parser.add_argument('-u', '--update', default=False, action='store_true', help='Force the update of cache')
+        self.cmd_parser.add_argument('-o', '--output',
+                                     dest='output',
+                                     type=OutputFormat,
+                                     choices=list(OutputFormat),
+                                     help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})",
+                                     default=OutputFormat.TABLE)
+
+    def exec(self, args: dict):
+        model_id = args.get('id')
+        metric = args.get('metric')
+        dimensions = args.get('dim')
+        limit = args.get('limit')
+        unstack = args.get('unstack')
+        update = args.get('update')
+        output = args.get('output') or OutputFormat.TABLE
+
+        cube = self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=update)
+        agg_result = compute_cube_agg(cube, dimensions=dimensions, measure=metric, unstack=unstack)
+        agg_result = agg_result.reset_index()
+        if limit is not None:
+            agg_result = agg_result.head(limit)
+
+        TablePrinter.print_dataframe(agg_result, wanted_keys=agg_result.columns.values.tolist(), output=output)

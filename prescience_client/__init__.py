@@ -38,5 +38,6 @@ def main():
         root_cmd.exec(args)
         exit(0)
 
-    except PrescienceException:
+    except PrescienceException as e:
+        e.print()
         exit(1)

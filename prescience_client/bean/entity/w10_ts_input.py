@@ -27,6 +27,7 @@ class TimeSerieFeature:
             'labels': self.labels
         }
 
+
 class AugmentationFeature(typing.NamedTuple):
     augmentationStrategy: AugmentationStrategy
     windowSize: int
@@ -44,6 +45,64 @@ class AugmentationFeature(typing.NamedTuple):
             'window_size': self.windowSize
         }
 
+
+class WarpScriptInput(typing.NamedTuple):
+    source_id: str
+    backend_url: str
+    read_token: str
+    warp_script: str
+    grouping_keys: list
+    last_point_timestamp: int
+    sample_span: str
+
+    def to_dict(self) -> dict:
+        """
+        Convert the WarpScriptInput into payload dictionary
+        :return: the payload dictionary
+        """
+        default_dict = {
+            'type': str(InputType.WARP_SCRIPT),
+            'source_id': str(self.source_id),
+            'backend_url': str(self.backend_url),
+            'read_token': str(self.read_token),
+            'warp_script': str(self.warp_script),
+            'sample_span': str(self.sample_span)
+        }
+        if self.grouping_keys:
+            default_dict['grouping_keys'] = self.grouping_keys
+
+        if self.last_point_timestamp:
+            default_dict['last_point_timestamp'] = self.last_point_timestamp
+
+        return default_dict
+
+    @staticmethod
+    def from_file(
+            source_id: str,
+            backend_url: str,
+            read_token: str,
+            file_path: str,
+            sample_span: str,
+            grouping_keys: list = None,
+            last_point_timestamp: int = None,
+    ) -> 'WarpScriptInput':
+        with open(file_path, 'r') as file:
+            data = file.read()
+
+        if type(grouping_keys) == str:
+            grouping_keys = grouping_keys.split(',')
+
+        return WarpScriptInput(
+            source_id=source_id,
+            backend_url=backend_url,
+            read_token=read_token,
+            warp_script=data,
+            grouping_keys=grouping_keys,
+            last_point_timestamp=last_point_timestamp,
+            sample_span=sample_span
+        )
+
+
 class Warp10TimeSerieInput(typing.NamedTuple):
     source_id: str
     read_token: str
@@ -56,7 +115,8 @@ class Warp10TimeSerieInput(typing.NamedTuple):
     exogeneous_features: list = []
     augmentation_features: list = []
 
-    def get_type(self) -> InputType:
+    @staticmethod
+    def get_type() -> InputType:
         return InputType.TIME_SERIE
 
     def to_dict(self) -> dict:
@@ -84,7 +144,7 @@ class Warp10TimeSerieInput(typing.NamedTuple):
         :param feature: The new exogenous feature
         :return: A new Warp10TimeSerieInput object
         """
-        return self._replace(exogeneous_features= self.exogeneous_features + [feature])
+        return self._replace(exogeneous_features=self.exogeneous_features + [feature])
 
     def add_augmentation_feature(self, feature: AugmentationFeature) -> 'Warp10TimeSerieInput':
         """
@@ -92,7 +152,7 @@ class Warp10TimeSerieInput(typing.NamedTuple):
         :param feature: The new augmentation feature
         :return: A new Warp10TimeSerieInput object
         """
-        return self._replace(augmentation_features= self.augmentation_features + [feature])
+        return self._replace(augmentation_features=self.augmentation_features + [feature])
 
 
 class Warp10Scheduler(typing.NamedTuple):
