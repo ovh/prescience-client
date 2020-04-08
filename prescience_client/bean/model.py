@@ -3,6 +3,8 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import copy
+import pandas
+
 from datetime import datetime
 
 from prescience_client.bean.config import Config
@@ -17,7 +19,7 @@ from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
 from prescience_client.utils import get_dataframe_real_predict_theoric, compute_prediction_df, \
-    compute_cube_from_prediction
+    compute_cube_from_prediction, FOLD_COLUMN
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
 
@@ -408,7 +410,8 @@ class Model(TablePrintable, DictPrintable):
             selected_column.remove(label)
 
         ## OVERRIDING VALUES FOR TESTS
-        source_dataframe = source_dataframe[source_dataframe[time_column] <= 1585655858700889.0]
+        source_dataframe = source_dataframe[source_dataframe[time_column] <= 1510838369670914]
+        source_dataframe = source_dataframe[source_dataframe['cluster'] == 'cluster003']
         ##
 
         prediction_df = compute_prediction_df(
@@ -421,6 +424,23 @@ class Model(TablePrintable, DictPrintable):
             selected_column=selected_column,
             prediction_lambda=lambda x: self.get_model_evaluation_payload(arguments=x).evaluate().get_result_dict()
         )
+
+        # Get the timestamp between train and test grouped by keys
+        test_df = self.prescience.dataset_dataframe(dataset_id=dataset.dataset_id(), test_part=True)
+        for key in grouping_keys:
+            test_df[key] = test_df[key].astype(str)
+        date_test_dict = test_df.groupby(grouping_keys).min()[time_column].to_dict()
+
+        def calculate_train_or_test(row):
+            timestamp = row[time_column]
+            fold_key = tuple(map(str, row[grouping_keys].values.tolist()))
+            if fold_key in date_test_dict and date_test_dict[fold_key] <= timestamp:
+                return 'test'
+            else:
+                return 'train'
+
+        prediction_df[FOLD_COLUMN] = prediction_df.apply(calculate_train_or_test, axis=1)
+
         cube = compute_cube_from_prediction(
             prediction_dataframe=prediction_df,
             label=label,

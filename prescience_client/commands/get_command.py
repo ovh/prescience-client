@@ -52,6 +52,8 @@ class GetSourceCommand(Command):
         self.cmd_parser.add_argument('--tree', default=False, action='store_true', help='Display the tree structure of your source')
         self.cmd_parser.add_argument('-o', '--output', dest='output', type=OutputFormat, choices=list(OutputFormat), help=f"Type of output to get on std out. (default: {OutputFormat.TABLE})")
         self.cmd_parser.add_argument('--preview', default=None, nargs='*', type=str, help='Display a preview of the source.')
+        self.cmd_parser.add_argument('-q', '--query', default=None, type=str, help='Panda query to run on a preview command.')
+
 
 
     def exec(self, args: dict):
@@ -61,9 +63,10 @@ class GetSourceCommand(Command):
         cache = args.get('cache')
         output = args.get('output')
         preview = args.get('preview')
+        query = args.get('query')
         tree = args.get('tree')
         if preview is not None:
-            df = self.prescience_client.source_dataframe(source_id=source_id)
+            df = self.prescience_client.source_dataframe(source_id=source_id, query=query)
             TablePrinter.print_dataframe(df.head(10), wanted_keys=preview, output=output)
         elif args.get('schema'):
             source.schema().show(output)

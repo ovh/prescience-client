@@ -223,6 +223,7 @@ class PrescienceClient(object):
             log_enabled: bool = False,
             selected_column: list = None,
             time_column: str = None,
+            time_step: str = None,
             nb_fold: int = None,
             fold_size: int = None,
             fold_strategy: FoldStrategy = None,
@@ -261,6 +262,9 @@ class PrescienceClient(object):
 
         if time_column is not None:
             body['time_column_id'] = time_column
+
+        if time_step is not None:
+            body['time_step'] = time_step
 
         if fold_size is not None and fold_size >= 0:
             body['fold_size'] = fold_size
@@ -1465,7 +1469,12 @@ class PrescienceClient(object):
 
         return sourceid_path
 
-    def source_dataframe(self, source_id, index_column: str = None, selected_keys: dict = None):
+    def source_dataframe(self,
+                         source_id,
+                         index_column: str = None,
+                         selected_keys: dict = None,
+                         query: str = None
+                         ):
         """
         Update source local cache for the given source and return the pandas dataframe for this source
         :param source_id: the wanted source
@@ -1478,6 +1487,9 @@ class PrescienceClient(object):
         if selected_keys:
             for k, v in selected_keys.items():
                 df = df[df[k] == v]
+
+        if query:
+            df = df.query(query)
 
         if index_column is not None:
             df = df.set_index(index_column)
@@ -1519,6 +1531,7 @@ class PrescienceClient(object):
                     y: str = None,
                     kind: str = None,
                     clss: str = None,
+                    query: str = None,
                     block=False):
         """
         Plot a wanted source data
@@ -1531,7 +1544,7 @@ class PrescienceClient(object):
         """
 
         # Load source panda dataframe
-        dataframe = self.source_dataframe(source_id=source_id)
+        dataframe = self.source_dataframe(source_id=source_id, query=query)
 
         # Get source info
         source = self.source(source_id=source_id)
@@ -1573,6 +1586,7 @@ class PrescienceClient(object):
         else:
             dataframe.plot(x=x, y=y, kind=kind)
 
+        # matplotlib.pyplot.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
         matplotlib.pyplot.show(block=block)
 
     @classmethod

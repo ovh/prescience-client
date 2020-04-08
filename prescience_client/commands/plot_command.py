@@ -7,7 +7,7 @@ from prescience_client.commands.command import Command
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric, ScoringMetricBinary, ScoringMetricRegression, \
     ScoringMetricMulticlass, get_scoring_metrics
-from prescience_client.utils import metrics_regression, METRICS_MEASURE_COLUMN, compute_cube_agg, plot_df
+from prescience_client.utils import compute_cube_agg, plot_df
 from prescience_client.utils.validator import IntegerValidator, FloatValidator
 
 
@@ -46,6 +46,7 @@ class PlotSourceCommand(Command):
         self.cmd_parser.add_argument('--kind', type=str, help='Kind of the plot figure. Default: line')
         self.cmd_parser.add_argument('--class', type=str,
                                      help='Column that should be used as category if any (i.e class or label)')
+        self.cmd_parser.add_argument('-q', '--query', default=None, type=str, help='Panda query to run on loading source data.')
 
     def exec(self, args: dict):
         source_id = prompt_for_source_id_if_needed(args, self.prescience_client)
@@ -53,7 +54,8 @@ class PlotSourceCommand(Command):
         x = args.get('x')
         y = args.get('y')
         clss = args.get('class')
-        self.prescience_client.plot_source(source_id=source_id, x=x, y=y, clss=clss, block=True, kind=kind)
+        query = args.get('query')
+        self.prescience_client.plot_source(source_id=source_id, x=x, y=y, clss=clss, query=query, block=True, kind=kind)
 
 
 class PlotDatasetCommand(Command):
@@ -132,7 +134,7 @@ class PlotPredictionCommand(Command):
         selected_keys = args.get('keys')
 
         if selected_keys:
-            selected_keys = json.loads(selected_keys) # {'cluster': 'F', 'install': 'false'}
+            selected_keys = json.loads(selected_keys)
 
         payload_dict = self.prescience_client.generate_payload_dict_for_model(
             model_id=model_id,

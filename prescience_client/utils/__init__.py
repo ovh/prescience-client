@@ -7,6 +7,7 @@ import os
 
 METRICS_MEASURE_COLUMN = 'label_theoric/label_predicted'
 DIMENSION_FORWARD = 'forward_step'
+FOLD_COLUMN = 'fold'
 
 
 def mae(serie: pandas.Series):
@@ -172,7 +173,8 @@ def compute_cube_from_prediction(
             serie = {
                 METRICS_MEASURE_COLUMN: label_row,
                 time_column: row[time_column],
-                DIMENSION_FORWARD: idx
+                DIMENSION_FORWARD: idx,
+                FOLD_COLUMN: row[FOLD_COLUMN]
             }
             for key in grouping_keys:
                 serie[key] = row[key]

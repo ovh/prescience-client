@@ -262,6 +262,7 @@ class StartPreprocessCommand(Command):
         formatter = None
         exogenous = None
         granularity = None
+        time_step = None
         if ProblemType(problem_type) == ProblemType.TIME_SERIES_FORECAST:
             available_time_columns = copy.deepcopy(selected_columns)
             available_time_columns.remove(label)
@@ -270,6 +271,12 @@ class StartPreprocessCommand(Command):
                 args=args,
                 message='What will be the column used for time ?',
                 choices_function=lambda: copy.deepcopy(available_time_columns),
+                force_interactive=interactive_mode
+            )
+            time_step = get_args_or_prompt_input(
+                arg_name='time_step',
+                args=args,
+                message='What will be the time step ? (None if it should be computed)',
                 force_interactive=interactive_mode
             )
             formatter = get_args_or_prompt_input(
@@ -331,6 +338,7 @@ class StartPreprocessCommand(Command):
             problem_type=problem_type,
             selected_column=selected_columns,
             time_column=time_column,
+            time_step=time_step,
             nb_fold=int(nb_fold),
             formatter=formatter,
             datetime_exogenous=exogenous,
