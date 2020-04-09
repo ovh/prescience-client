@@ -262,6 +262,11 @@ class PlotCubeMetricCommand(Command):
         if kind is None:
             kind = 'bar'
 
-        cube = self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=update)
-        agg_result = compute_cube_agg(cube, dimensions=dimensions, measure=metric, unstack=True)
+        agg_result = self.prescience_client.compute_cube_metric_agg(
+            model_id=model_id,
+            dimensions=dimensions,
+            measure=metric,
+            force_cache_update=update,
+            unstack=True
+        )
         plot_df(df=agg_result, kind=kind, block=True)

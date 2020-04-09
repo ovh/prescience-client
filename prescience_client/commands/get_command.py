@@ -477,8 +477,14 @@ class GetCubeModelMetricsCommand(Command):
         update = args.get('update')
         output = args.get('output') or OutputFormat.TABLE
 
-        cube = self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=update)
-        agg_result = compute_cube_agg(cube, dimensions=dimensions, measure=metric, unstack=unstack)
+        agg_result = self.prescience_client.compute_cube_metric_agg(
+            model_id=model_id,
+            dimensions=dimensions,
+            measure=metric,
+            force_cache_update=update,
+            unstack=unstack
+        )
+
         agg_result = agg_result.reset_index()
         if limit is not None:
             agg_result = agg_result.head(limit)

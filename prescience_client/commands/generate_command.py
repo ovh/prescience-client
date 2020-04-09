@@ -65,16 +65,4 @@ class GenerateCubeMetric(Command):
         # Save the json in the given file
         model_id = args.get('id')
         output = args.get('output')
-
-        model = self.prescience_client.model(model_id=model_id)
-        cube = model.generate_cube_metrics()
-
-        if output is None:
-            output = self.prescience_client.cache_cube_model_metrics_get_full_path(model_id)
-
-        if os.path.exists(output):
-            print(f'Path {output} already exist, removing it ...')
-            os.remove(output)
-
-        print(f'Saving cube model metrics on {output}')
-        cube.to_parquet(output)
+        self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=True, output=output)

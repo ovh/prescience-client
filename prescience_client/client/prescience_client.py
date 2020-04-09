@@ -41,7 +41,7 @@ from prescience_client.enum.status import Status
 from prescience_client.enum.web_service import PrescienceWebService
 from prescience_client.exception.prescience_client_exception import PyCurlExceptionFactory, \
     HttpErrorExceptionFactory, PrescienceClientException, PrescienceException
-from prescience_client.utils import dataframe_to_dict_series
+from prescience_client.utils import dataframe_to_dict_series, compute_cube_agg
 from prescience_client.utils.monad import Option
 
 
@@ -883,8 +883,8 @@ class PrescienceClient(object):
         complete_url = switch.get(call_type)
 
         if query_parameters is not None and len(query_parameters) != 0:
-            #remove None Parameter
-            query_parameters = {k:query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
+            # remove None Parameter
+            query_parameters = {k: query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
 
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'
@@ -1660,7 +1660,8 @@ class PrescienceClient(object):
             index_column = time_column
 
             if y is None:
-                remaining_features = [v[0] for k, v in dataset.get_feature_target_map().items() if k not in [dataset.get_time_column_id(), 'TS_ID']]
+                remaining_features = [v[0] for k, v in dataset.get_feature_target_map().items() if
+                                      k not in [dataset.get_time_column_id(), 'TS_ID']]
                 y = remaining_features[0]
 
             all_columns = set()
@@ -1891,7 +1892,8 @@ class PrescienceClient(object):
                                         selected_keys: dict = None):
 
         if payload_json is None:
-            payload_json = self.generate_serving_payload(from_data=from_data, model_id=model_id, selected_keys=selected_keys)
+            payload_json = self.generate_serving_payload(from_data=from_data, model_id=model_id,
+                                                         selected_keys=selected_keys)
         else:
             payload_json = payload_json.strip()
         if len(payload_json) > 0 and payload_json[0] == '{' and payload_json[-1] == '}':
@@ -1924,3 +1926,13 @@ class PrescienceClient(object):
             cube = pandas.read_parquet(output)
 
         return cube
+
+    def compute_cube_metric_agg(self,
+                                model_id: str,
+                                dimensions: list,
+                                measure: str,
+                                force_cache_update: bool = False,
+                                unstack: bool = False):
+
+        cube = self.get_or_update_cube_metric_cache(model_id=model_id, force_update=force_cache_update)
+        return compute_cube_agg(cube, dimensions=dimensions, measure=measure, unstack=unstack)
