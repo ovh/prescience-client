@@ -50,7 +50,7 @@ class TestPrescienceConfig(unittest.TestCase):
                     'kpi': 'label1'
                 }
             },
-            'last_point_date': '2018-01-01T00:00:00',
+            'last_point_timestamp': 1514761200000000.0,
             'sample_span': '100w',
             'sampling_interval': '1d',
             'sampling_strategy': 'MEAN',

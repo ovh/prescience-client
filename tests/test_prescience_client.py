@@ -310,7 +310,8 @@ class TestPrescienceClient(unittest.TestCase):
             content_type='multipart/form-data',
             multipart=[
                 ('input', (
-                pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE, 'application/json')),
+                    pycurl.FORM_CONTENTS, json.dumps(expected_parse_payload), pycurl.FORM_CONTENTTYPE,
+                    'application/json')),
                 ('input-file', (pycurl.FORM_FILE, csv_path))
             ],
             data=None,
@@ -343,7 +344,8 @@ class TestPrescienceClient(unittest.TestCase):
             method='POST',
             path='/ml/preprocess/my-source-id',
             content_type='application/json',
-            data={'dataset_id': 'my-dataset-id', 'label_id': 'my-label', 'problem_type': 'regression'},
+            data={'dataset_id': 'my-dataset-id', 'label_id': 'my-label',
+                  'problem_type': 'regression', 'log_enabled': False},
             filepath=None,
             multipart=None,
             query_parameters=None,
