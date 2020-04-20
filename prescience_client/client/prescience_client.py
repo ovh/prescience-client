@@ -20,7 +20,7 @@ import numpy
 import pandas
 from prescience_client.enum.separator import Separator
 from progress.bar import ChargingBar, IncrementalBar
-from websocket import create_connection
+from websocket import create_connection, WebSocketException
 from hashids import Hashids
 
 from prescience_client.bean.config import Config
@@ -259,9 +259,6 @@ class PrescienceClient(object):
 
         if len(date_time_info) != 0:
             body['datetime_info'] = date_time_info
-
-
-
 
         _, result, _ = self.__post(path=f'/ml/preprocess/{source_id}', data=body)
         from prescience_client.bean.task import TaskFactory
@@ -848,8 +845,8 @@ class PrescienceClient(object):
         complete_url = switch.get(call_type)
 
         if query_parameters is not None and len(query_parameters) != 0:
-            #remove None Parameter
-            query_parameters = {k:query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
+            # remove None Parameter
+            query_parameters = {k: query_parameters[k] for k in query_parameters.keys() if query_parameters[k]}
 
             encoded_parameter = urllib.parse.urlencode(query_parameters)
             complete_url = f'{complete_url}?{encoded_parameter}'
@@ -1205,30 +1202,10 @@ class PrescienceClient(object):
         """
         bar = ChargingBar(initial_task.type(), max=initial_task.total_step())
         if initial_task.current_step_description() is not None:
-            bar.message = f'{initial_task.type()} - {initial_task.current_step_description()}'
+            bar.message = f'{initial_task.type()}'
         bar.next(0)
 
-        # Initialize web-socket connection
-        websocket = self.__init_ws_connection()
-
-        result_queue = Queue()
-        exec_process = Process(target=self.wait_for_finish, args=(websocket, bar, initial_task, result_queue))
-        exec_process.start()
-
-        final_task = self.task(initial_task.uuid())
-        if final_task.status() in [Status.DONE, Status.ERROR]:
-            # in this case the task was finished potentially before the websocket was connected, we do not need to watch
-            exec_process.terminate()
-        else:
-            # in this case when we started to watch the websocket, the task was not over, we wait
-            result_payload = result_queue.get()
-            from prescience_client.bean.task import TaskFactory
-            final_task = TaskFactory.construct(result_payload, self)
-            exec_process.join()
-
-        result_queue.close()
-        # Closing web-socket
-        websocket.close()
+        final_task = self.retry_wait_for_finish(bar, initial_task, True)
 
         bar.message = f'{final_task.type()} - {final_task.status().to_colored()}'
         if final_task.status() == Status.DONE:
@@ -1238,13 +1215,48 @@ class PrescienceClient(object):
         bar.finish()
         return final_task
 
+    def retry_wait_for_finish(self, bar, initial_task, retry):
+        # Initialize web-socket connection
+        websocket = self.__init_ws_connection()
+        result_queue = Queue()
+        exec_process = Process(target=self.wait_for_finish, args=(websocket, bar, initial_task, result_queue))
+        exec_process.start()
+        final_task = self.task(initial_task.uuid())
+        if final_task.status() in [Status.DONE, Status.ERROR]:
+            # in this case the task was finished potentially before the websocket was connected, we do not need to watch
+            exec_process.terminate()
+        else:
+            # in this case when we started to watch the websocket, the task was not over, we wait
+            ok, result_payload = result_queue.get()
+            exec_process.join()
+            if ok:
+                from prescience_client.bean.task import TaskFactory
+                final_task = TaskFactory.construct(result_payload, self)
+            elif retry:
+                # we failed to watch the task through the end, start again once
+                # Closing web-socket
+                websocket.close()
+                self.retry_wait_for_finish(bar, initial_task, False)
+            else:
+                final_task = initial_task
+
+        # Closing result queue
+        result_queue.close()
+        # Closing web-socket
+        websocket.close()
+
+        return final_task
+
     def wait_for_finish(self, websocket, bar, task, queue: Queue):
         current_task = task
-        while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
-            current_task = self.__wait_for_task_message(websocket, current_task)
-            bar.message = f'{current_task.type()} - {current_task.current_step_description()}'
-            bar.next()
-        queue.put(current_task.initial_payload)
+        try:
+            while current_task.status() != Status.DONE and current_task.status() != Status.ERROR:
+                current_task = self.__wait_for_task_message(websocket, current_task)
+                bar.next()
+        except WebSocketException:
+            # we occasionally experience unexpected websocket connection close
+            queue.put((False, None))
+        queue.put((True, current_task.initial_payload))
 
     ############################################
     ############### FACTORY METHODS ############
