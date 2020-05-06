@@ -254,7 +254,8 @@ class Dataset(TablePrintable, DictPrintable):
                                  sort_column: str = None,
                                  sort_direction: SortDirection = SortDirection.ASC,
                                  forecasting_horizon_steps: int = None,
-                                 forecasting_discount: float = None) -> PageResult:
+                                 forecasting_discount: float = None,
+                                 status: Status = None   ) -> PageResult:
         """
         Get the paginated list of related evaluation results for the current dataset
         :param page: The number of the page to get
@@ -263,12 +264,13 @@ class Dataset(TablePrintable, DictPrintable):
         :param sort_direction: The direction to sort on
         :param forecasting_horizon_steps: The horizon step to filter on (default: None)
         :param forecasting_discount: The forecasting discount to filter on (default: None)
+        :param status: The optimization status to filter on
         :return: the page object containing the evaluation results
         """
         return self.prescience.get_evaluation_results(dataset_id=self.dataset_id(), page=page,
                                                       size=size, sort_column=sort_column, sort_direction=sort_direction,
                                                       forecasting_horizon_steps=forecasting_horizon_steps,
-                                                      forecasting_discount=forecasting_discount)
+                                                      forecasting_discount=forecasting_discount, status=status)
 
     def create_mask(self,
                     mask_id: str,

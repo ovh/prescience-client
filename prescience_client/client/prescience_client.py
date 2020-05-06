@@ -530,8 +530,8 @@ class PrescienceClient(object):
                                sort_column: str = None,
                                sort_direction: SortDirection = SortDirection.ASC,
                                forecasting_horizon_steps: int = None,
-                               forecasting_discount: float = None
-                               ) -> 'PageResult':
+                               forecasting_discount: float = None,
+                               status: Status = None ) -> 'PageResult':
         """
         Get the paginated list of evaluation results
         :param dataset_id: The dataset ID
@@ -541,6 +541,7 @@ class PrescienceClient(object):
         :param sort_direction: The direction to sort on
         :param forecasting_horizon_steps: The horizon step to filter on (default: None)
         :param forecasting_discount: The forecasting discount to filter on (default: None)
+        :param status: The optimization status to filter on
         :return: the page object containing the evaluation results
         """
         query_parameters = {
@@ -550,7 +551,8 @@ class PrescienceClient(object):
             'sort_column': sort_column,
             'forecasting_horizon_steps': forecasting_horizon_steps,
             'forecasting_discount': forecasting_discount,
-            'sort_direction': str(sort_direction)
+            'sort_direction': str(sort_direction),
+            'status': str(status)
         }
         final_query_parameters = {k: v for k, v in query_parameters.items() if v is not None}
         _, page, _ = self.__get(path='/evaluation-result', query_parameters=final_query_parameters)
