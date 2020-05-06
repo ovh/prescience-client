@@ -16,6 +16,7 @@ from prescience_client.enum.algorithm_configuration_category import AlgorithmCon
 from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.scoring_metric import ScoringMetric
+from prescience_client.enum.sort_direction import SortDirection
 from prescience_client.enum.status import Status
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from prescience_client.utils.tree_printer import SourceTree
@@ -248,13 +249,26 @@ class Dataset(TablePrintable, DictPrintable):
         """
         return self.prescience.custom_config(dataset_id=self.dataset_id(), config=config)
 
-    def evaluation_results(self, page: int = 1) -> PageResult:
+    def evaluation_results(self, page: int = 1,
+                                 size: int = 100,
+                                 sort_column: str = None,
+                                 sort_direction: SortDirection = SortDirection.ASC,
+                                 forecasting_horizon_steps: int = None,
+                                 forecasting_discount: float = None) -> PageResult:
         """
         Get the paginated list of related evaluation results for the current dataset
         :param page: The number of the page to get
+        :param size: The number of evaluations result to get (min 1)
+        :param sort_column: The column to sort on
+        :param sort_direction: The direction to sort on
+        :param forecasting_horizon_steps: The horizon step to filter on (default: None)
+        :param forecasting_discount: The forecasting discount to filter on (default: None)
         :return: the page object containing the evaluation results
         """
-        return self.prescience.get_evaluation_results(dataset_id=self.dataset_id(), page=page)
+        return self.prescience.get_evaluation_results(dataset_id=self.dataset_id(), page=page,
+                                                      size=size, sort_column=sort_column, sort_direction=sort_direction,
+                                                      forecasting_horizon_steps=forecasting_horizon_steps,
+                                                      forecasting_discount=forecasting_discount)
 
     def create_mask(self,
                     mask_id: str,

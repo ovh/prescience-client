@@ -526,6 +526,7 @@ class PrescienceClient(object):
     def get_evaluation_results(self,
                                dataset_id: str,
                                page: int = 1,
+                               size: int = 100,
                                sort_column: str = None,
                                sort_direction: SortDirection = SortDirection.ASC,
                                forecasting_horizon_steps: int = None,
@@ -535,6 +536,7 @@ class PrescienceClient(object):
         Get the paginated list of evaluation results
         :param dataset_id: The dataset ID
         :param page: The number of the page to get
+        :param size: The number of evaluations result to get (min 1)
         :param sort_column: The column to sort on
         :param sort_direction: The direction to sort on
         :param forecasting_horizon_steps: The horizon step to filter on (default: None)
@@ -544,6 +546,7 @@ class PrescienceClient(object):
         query_parameters = {
             'dataset_id': dataset_id,
             'page': page,
+            'size': size,
             'sort_column': sort_column,
             'forecasting_horizon_steps': forecasting_horizon_steps,
             'forecasting_discount': forecasting_discount,
