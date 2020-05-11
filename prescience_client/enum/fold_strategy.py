@@ -7,10 +7,10 @@ from enum import Enum, unique
 
 @unique
 class FoldStrategy(Enum):
+    WINDOW = 'WINDOW'
+    ROLLING = 'ROLLING'
     STRATIFIED = 'STRATIFIED'
     UNIFORM = 'UNIFORM'
-    ROLLING = 'ROLLING'
-    WINDOW = 'WINDOW'
 
     def __str__(self):
         return self.value
