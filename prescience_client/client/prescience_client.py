@@ -43,6 +43,7 @@ from prescience_client.exception.prescience_client_exception import PyCurlExcept
     HttpErrorExceptionFactory, PrescienceClientException, PrescienceException
 from prescience_client.utils import dataframe_to_dict_series, compute_cube_agg
 from prescience_client.utils.monad import Option
+from prescience_client.utils.prediction_dataframe import PredictionDataframe
 
 
 class PrescienceClient(object):
@@ -1348,14 +1349,14 @@ class PrescienceClient(object):
             train_path = os.path.join(cache_dataset_directory, dataset_id, 'fold', str(fold_number), 'train')
             return self.config().create_config_path_if_not_exist(train_path)
 
-    def cache_cube_model_metrics_get_full_path(self, model_id: str) -> str:
+    def cache_model_predictions_get_full_path(self, model_id: str) -> str:
         """
         Get the full path of the local cache for the cube model metrics of the given model
         :param model_id: the wanted model id
         :return: the full path of the local cache for the cube model metrics of the given model
         """
-        cube_directory = self.config().get_or_create_cube_model_metrics()
-        return os.path.join(cube_directory, model_id)
+        prediction_directory = self.config().get_or_create_model_predictions()
+        return os.path.join(prediction_directory, model_id)
 
     def cache_clean_fold(self, dataset_id: str, fold_number: int, test_part: bool):
         """
@@ -1618,7 +1619,8 @@ class PrescienceClient(object):
                      x: str = None,
                      y: str = None,
                      clss: str = None,
-                     block=False):
+                     block=False,
+                     plot_lambda=None):
         """
         Plot a wanted dataset data
         :param dataset_id: the wanted dataset id
@@ -1708,6 +1710,9 @@ class PrescienceClient(object):
         else:
             df_final = pandas.concat([df_train, df_test])
             self._plot_dataframe_with_class(dataframe=df_final, clss=clss, kind='scatter', x=x, y=y)
+
+        if plot_lambda is not None:
+            plot_lambda(matplotlib.pyplot)
 
         matplotlib.pyplot.show(block=block)
 
@@ -1908,9 +1913,12 @@ class PrescienceClient(object):
 
         return payload_dict
 
-    def get_or_update_cube_metric_cache(self, model_id: str, force_update: bool = False, output: str = None):
+    def get_or_update_model_predictions(self,
+                                        model_id: str,
+                                        force_update: bool = False,
+                                        output: str = None) -> PredictionDataframe:
         model = self.model(model_id)
-        default_output = self.cache_cube_model_metrics_get_full_path(model_id)
+        default_output = self.cache_model_predictions_get_full_path(model_id)
         if output is None:
             output = default_output
 
@@ -1919,13 +1927,24 @@ class PrescienceClient(object):
                 print(f'Path {output} already exist, removing it ...')
                 os.remove(output)
 
-            cube = model.generate_cube_metrics()
-            print(f'Saving cube model metrics on {output}')
-            cube.to_parquet(output)
+            model_prediction = model.compute_predictions_dataframe()
+            print(f'Saving model predictions on {output}')
+            model_prediction.dataframe.to_parquet(output)
         else:
-            cube = pandas.read_parquet(output)
+            model_prediction_df = pandas.read_parquet(output)
+            model = self.model(model_id=model_id)
+            dataset = model.dataset()
+            source = model.source()
+            evaluator = model.get_model_evaluator()
+            model_prediction = PredictionDataframe(
+                dataframe=model_prediction_df,
+                label=dataset.label_id(),
+                time_column=dataset.get_time_column_id(),
+                forward_steps=evaluator.get_forecasting_horizon_steps(),
+                grouping_keys=source.get_grouping_keys()
+            )
 
-        return cube
+        return model_prediction
 
     def compute_cube_metric_agg(self,
                                 model_id: str,
@@ -1934,5 +1953,6 @@ class PrescienceClient(object):
                                 force_cache_update: bool = False,
                                 unstack: bool = False):
 
-        cube = self.get_or_update_cube_metric_cache(model_id=model_id, force_update=force_cache_update)
+        predictions = self.get_or_update_model_predictions(model_id=model_id, force_update=force_cache_update)
+        cube = predictions.compute_cube_from_prediction()
         return compute_cube_agg(cube, dimensions=dimensions, measure=measure, unstack=unstack)

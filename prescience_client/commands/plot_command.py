@@ -136,20 +136,24 @@ class PlotPredictionCommand(Command):
         if selected_keys:
             selected_keys = json.loads(selected_keys)
 
-        payload_dict = self.prescience_client.generate_payload_dict_for_model(
-            model_id=model_id,
-            payload_json=payload_json,
-            from_data=from_data,
-            selected_keys=selected_keys
-        )
-        model = self.prescience_client.model(model_id)
-        df_final = model.get_dataframe_for_plot_result(
-            input_payload_dict=payload_dict,
-            rolling_steps=rolling,
-            selected_keys=selected_keys
-        )
-        df_final.plot()
+        # payload_dict = self.prescience_client.generate_payload_dict_for_model(
+        #     model_id=model_id,
+        #     payload_json=payload_json,
+        #     from_data=from_data,
+        #     selected_keys=selected_keys
+        # )
+        # model = self.prescience_client.model(model_id)
+        # df_final = model.get_dataframe_for_plot_result(
+        #     input_payload_dict=payload_dict,
+        #     rolling_steps=rolling,
+        #     selected_keys=selected_keys
+        # )
+        # df_final.plot(c)
+        # matplotlib.pyplot.show(block=True)
+        predictions = self.prescience_client.get_or_update_model_predictions(model_id=model_id)
+        predictions.plot_prediction(from_data, None, True)
         matplotlib.pyplot.show(block=True)
+
 
 
 class PlotEvaluationsCommand(Command):

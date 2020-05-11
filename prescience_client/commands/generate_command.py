@@ -1,11 +1,5 @@
-import pandas
-import os
-
 from prescience_client.commands import prompt_for_model_id_if_needed
 from prescience_client.commands.command import Command
-from prescience_client.enum.output_format import OutputFormat
-from prescience_client.utils import compute_prediction_df, compute_cube_from_prediction
-from prescience_client.utils.table_printable import TablePrinter
 
 
 class GenerateCommand(Command):
@@ -65,4 +59,4 @@ class GenerateCubeMetric(Command):
         # Save the json in the given file
         model_id = args.get('id')
         output = args.get('output')
-        self.prescience_client.get_or_update_cube_metric_cache(model_id=model_id, force_update=True, output=output)
+        self.prescience_client.get_or_update_model_predictions(model_id=model_id, force_update=True, output=output)

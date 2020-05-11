@@ -3,7 +3,6 @@
 # Copyright 2019 The Prescience-Client Authors. All rights reserved.
 
 import copy
-import pandas
 
 from datetime import datetime
 
@@ -18,8 +17,8 @@ from prescience_client.enum.output_format import OutputFormat
 from prescience_client.enum.problem_type import ProblemType
 from prescience_client.enum.status import Status
 from prescience_client.exception.prescience_client_exception import PrescienceClientException
-from prescience_client.utils import get_dataframe_real_predict_theoric, compute_prediction_df, \
-    compute_cube_from_prediction, FOLD_COLUMN
+from prescience_client.utils import get_dataframe_real_predict_theoric, compute_prediction_df, FOLD_COLUMN
+from prescience_client.utils.prediction_dataframe import PredictionDataframe
 from prescience_client.utils.table_printable import TablePrintable, DictPrintable
 from termcolor import colored
 
@@ -390,7 +389,7 @@ class Model(TablePrintable, DictPrintable):
         )
         return df_final
 
-    def generate_cube_metrics(self):
+    def compute_predictions_dataframe(self) -> PredictionDataframe:
         dataset = self.dataset()
         source = self.source()
         evaluator = self.get_model_evaluator()
@@ -410,8 +409,8 @@ class Model(TablePrintable, DictPrintable):
             selected_column.remove(label)
 
         ## OVERRIDING VALUES FOR TESTS
-        source_dataframe = source_dataframe[source_dataframe[time_column] <= 1510838369670914]
-        source_dataframe = source_dataframe[source_dataframe['cluster'] == 'cluster003']
+        # source_dataframe = source_dataframe[source_dataframe[time_column] <= 1510838369670914]
+        # source_dataframe = source_dataframe[source_dataframe['cluster'] == 'cluster003']
         ##
 
         prediction_df = compute_prediction_df(
@@ -441,11 +440,10 @@ class Model(TablePrintable, DictPrintable):
 
         prediction_df[FOLD_COLUMN] = prediction_df.apply(calculate_train_or_test, axis=1)
 
-        cube = compute_cube_from_prediction(
-            prediction_dataframe=prediction_df,
+        return PredictionDataframe(
+            dataframe=prediction_df,
             label=label,
             time_column=time_column,
             forward_steps=forward_steps,
             grouping_keys=grouping_keys
         )
-        return cube

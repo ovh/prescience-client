@@ -400,13 +400,13 @@ class PrescienceConfig(object):
         cache_datasets = os.path.join(cache_directory, 'datasets')
         return self.create_config_path_if_not_exist(cache_datasets)
 
-    def get_or_create_cube_model_metrics(self):
+    def get_or_create_model_predictions(self):
         """
         Access or create the prescience-client cache for cube model metrics directory
         :return: the prescience-client cache for cube model metrics directory
         """
         cache_directory = self.get_or_create_config_cache_directory()
-        directory = os.path.join(cache_directory, 'cube-model-metrics')
+        directory = os.path.join(cache_directory, 'predictions')
         return self.create_config_path_if_not_exist(directory)
 
     def get_or_create_cache_payload_directory(self):

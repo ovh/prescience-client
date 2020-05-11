@@ -127,27 +127,27 @@ def compute_prediction_df(
         all_window = [(window[:past_steps], window[past_steps:]) for window in v]
         past_windows = [windows[0] for windows in all_window]
         forward_windows = [windows[1] for windows in all_window]
-        prediction_df[(k, 'past')] = past_windows
-        prediction_df[(k, 'forward_expected')] = forward_windows
+        prediction_df[f'{k}/past'] = past_windows
+        prediction_df[f'{k}/forward_expected'] = forward_windows
         prediction_df.drop(columns=[k], inplace=True)
 
     prediction_df.reset_index(inplace=True)
     # Setting the time column to the time the prediction is made on
-    prediction_df[time_column] = [x[-1] for x in prediction_df[(time_column, 'past')].values.tolist()]
+    prediction_df[time_column] = [x[-1] for x in prediction_df[f'{time_column}/past'].values.tolist()]
 
     # Getting predictions from model
-    prediction = {(label, 'forward_real'): []}
+    prediction = {f'{label}/forward_real': []}
     for _, row in prediction_df.iterrows():
         query_payload = {
-            time_column: row[(time_column, 'past')],
-            label: row[(label, 'past')]
+            time_column: row[f'{time_column}/past'],
+            label: row[f'{label}/past']
         }
         for key in grouping_keys:
             if key in selected_column:
                 query_payload[key] = [row[key]] * past_steps
 
         series_dict_predict = prediction_lambda(query_payload)[label]
-        prediction[(label, 'forward_real')].append(series_dict_predict)
+        prediction[f'{label}/forward_real'].append(series_dict_predict)
         print(query_payload)
 
     # Add columns for predictions in dataframe
@@ -155,32 +155,6 @@ def compute_prediction_df(
         prediction_df[k] = v
 
     return prediction_df
-
-
-def compute_cube_from_prediction(
-        prediction_dataframe: pandas.DataFrame,
-        label: str,
-        time_column: str,
-        forward_steps: int,
-        grouping_keys: list
-) -> pandas.DataFrame:
-    cube = []
-    for index, row in prediction_dataframe.iterrows():
-        labels_theoric = row[(label, 'forward_expected')]
-        labels_predicted = row[(label, 'forward_real')]
-        expanded = [[labels_theoric[idx], labels_predicted[idx]] for idx in range(forward_steps)]
-        for idx, label_row in enumerate(expanded):
-            serie = {
-                METRICS_MEASURE_COLUMN: label_row,
-                time_column: row[time_column],
-                DIMENSION_FORWARD: idx,
-                FOLD_COLUMN: row[FOLD_COLUMN]
-            }
-            for key in grouping_keys:
-                serie[key] = row[key]
-            cube.append(pandas.Series(serie))
-
-    return pandas.DataFrame(cube)
 
 
 def compute_cube_agg(df_or_path, dimensions: list, measure: str, unstack: bool = False) -> pandas.DataFrame:
