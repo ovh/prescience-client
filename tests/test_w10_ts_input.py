@@ -4,6 +4,7 @@
 
 import unittest
 import datetime
+from dateutil import tz
 
 from prescience_client.bean.entity.w10_ts_input import Warp10TimeSerieInput, TimeSerieFeature, \
     AugmentationFeature
@@ -21,7 +22,7 @@ class TestPrescienceConfig(unittest.TestCase):
                 selector='ml.kpi.global.selector',
                 labels='{"kpi": "label1"}'
             ),
-            last_point_date=datetime.datetime(2018, 1, 1, 0, 0, 0, 0),
+            last_point_date=datetime.datetime(2018, 1, 1, 0, 0, 0, 0, tzinfo=tz.tzutc()),
             sample_span="100w",
             sampling_interval="1d",
             sampling_strategy=SamplingStrategy.MEAN,
@@ -50,7 +51,7 @@ class TestPrescienceConfig(unittest.TestCase):
                     'kpi': 'label1'
                 }
             },
-            'last_point_timestamp': 1514761200000000.0,
+            'last_point_timestamp': 1514764800000000.0,
             'sample_span': '100w',
             'sampling_interval': '1d',
             'sampling_strategy': 'MEAN',
