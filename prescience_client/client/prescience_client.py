@@ -551,8 +551,8 @@ class PrescienceClient(object):
             'sort_column': sort_column,
             'forecasting_horizon_steps': forecasting_horizon_steps,
             'forecasting_discount': forecasting_discount,
-            'sort_direction': str(sort_direction),
-            'status': str(status)
+            'sort_direction': sort_direction,
+            'status': status
         }
         final_query_parameters = {k: v for k, v in query_parameters.items() if v is not None}
         _, page, _ = self.__get(path='/evaluation-result', query_parameters=final_query_parameters)
