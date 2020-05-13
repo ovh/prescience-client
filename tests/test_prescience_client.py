@@ -184,7 +184,7 @@ class TestPrescienceClient(unittest.TestCase):
         self.presience_client.call.assert_called_with(
             method='GET',
             path='/evaluation-result',
-            query_parameters={'dataset_id': 'my-dataset-id', 'page': 2, 'sort_direction': 'asc'},
+            query_parameters={'dataset_id': 'my-dataset-id', 'page': 2, 'size': 100, 'sort_direction': 'asc'},
             accept='application/json'
         )
 
